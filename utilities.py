@@ -1,4 +1,3 @@
-from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 import py_jupedsim as jps
 from configs import log_error, log_info
 
@@ -213,3 +212,22 @@ def distribute_and_add_agents(
         ped_ids.append(ped_id)
 
     return ped_ids
+
+
+def create_velocity_model_profile(
+    pid: int, time_gap: float, tau: float, v0: float, radius: float
+) -> dict:
+    """create a new velocityModel profile
+
+    :param time_gap:
+    :type time_gap:
+    :param tau:
+    :type tau:
+    :param v0:
+    :type v0:
+    :param radius:
+    :type radius:
+    :returns:
+
+    """
+    return {pid: [time_gap, tau, v0, radius]}

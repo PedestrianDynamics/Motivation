@@ -14,35 +14,40 @@ from utilities import (
     init_velocity_agent_parameters,
 )
 
+from inifile_parser import (
+    parse_accessible_areas,
+    parse_destinations,
+    parse_velocity_model_parameter_profiles,
+    parse_way_points,
+)
+import json
 
-def main(fps: int, dt: float, trajectory_path: pathlib.Path):
+
+def main(
+    fps: int, dt: float, inifile_path: pathlib.Path, trajectory_path: pathlib.Path
+):
     """Main simulation loop
 
     :param fps:
     :param dt:
+    :param ini_file:
     :param trajectory_file:
     :returns:
 
     """
-    # todo: get these from json file
-    accessible_areas = [
-        # x, y list in CCW
-        [(0, 0), (10, 0), (10, 10), (0, 10)],
-        [(10, 4), (20, 4), (20, 6), (10, 6)],
-    ]
-    geometry = build_geometry(accessible_areas)
-    destinations = {
-        # id, list(x, y)
-        1: [(18, 4), (20, 4), (20, 6), (18, 6)]
-    }
-    labels = ["exit", "other-label"]
+    f = open(inifile_path, "r")
+    json_str = f.read()
+    f.close()
+    data = json.loads(json_str)
+    accessible_areas = parse_accessible_areas(data)
+    geometry = build_geometry(accessible_areas.values())
+    destinations = parse_destinations(data)
+    labels = ["exit", "other-label"]  # todo --> json file
     areas = build_areas(destinations, labels)
-    parameter_profiles = {
-        # id:  (timeGap, tau, v0, radius)
-        1: (1, 0.5, 1.0, 0.2),
-        2: (1, 0.5, 0.1, 0.2),
-    }
-    way_points = [((19, 5), 0.5)]
+    parameter_profiles = parse_velocity_model_parameter_profiles(data)
+    print(parameter_profiles)
+    # way_points = [ ((19, 5), 0.5)]
+    way_points = list(parse_way_points(data).values())
     model = build_velocity_model(
         a_ped=8,
         d_ped=0.1,
@@ -50,6 +55,7 @@ def main(fps: int, dt: float, trajectory_path: pathlib.Path):
         d_wall=0.02,
         parameter_profiles=parameter_profiles,
     )
+    # todo: here we already need to know the profiles, and can not calculate them on the fly.
     log_info(f"Init simulation with dt={dt} [s] and fps={fps}")
     simulation = jps.Simulation(model=model, geometry=geometry, areas=areas, dt=dt)
     log_info("Init simulation done")
@@ -80,7 +86,7 @@ def main(fps: int, dt: float, trajectory_path: pathlib.Path):
             simulation.switch_agent_profile(agent_id=test_id, profile_id=actual_profile)
         except RuntimeError:
             log_error(
-                f"Can not change Profile of Agent {test_id} to Profile={actual_profile} at Iteration={simulation.iteration_count()}"
+                f"Can not change Profile of Agent {test_id} to Profile={actual_profile} at Iteration={simulation.iteration_count()}."
             )
             # end the simulation
             break
@@ -92,4 +98,9 @@ def main(fps: int, dt: float, trajectory_path: pathlib.Path):
 
 if __name__ == "__main__":
     init_logger()
-    main(fps=10, dt=0.01, trajectory_path=pathlib.Path("out.txt"))
+    main(
+        fps=10,
+        dt=0.01,
+        inifile_path=pathlib.Path("inifile.json"),
+        trajectory_path=pathlib.Path("out.txt"),
+    )
