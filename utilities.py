@@ -1,3 +1,4 @@
+from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 import py_jupedsim as jps
 from configs import log_error, log_info
 
@@ -145,7 +146,7 @@ def init_gcfm_agent_parameters(
     phi_y: float,
     journey: jps.Journey,
     profile: int,
-) -> jps.AgentParameters:
+) -> jps.GCFMModelAgentParameters:
     """Init agent shape and parameters
 
     :param phi_x: direcion in x-axis
@@ -156,7 +157,7 @@ def init_gcfm_agent_parameters(
 
     """
     log_info("Create agents")
-    agent_parameters = jps.AgentParameters()
+    agent_parameters = jps.GCFMModelAgentParameters()
     # ----- Profile
     agent_parameters.journey_id = journey
     agent_parameters.orientation_x = phi_x
@@ -170,7 +171,7 @@ def init_velocity_agent_parameters(
     phi_y: float,
     journey: jps.Journey,
     profile: int,
-) -> jps.AgentParameters:
+) -> jps.VelocityModelAgentParameters:
     """Init agent shape and parameters
 
     :param radius: radius of the circle
@@ -193,7 +194,7 @@ def init_velocity_agent_parameters(
 
 def distribute_and_add_agents(
     simulation: jps.Simulation,
-    agent_parameters: jps.AgentParameters,
+    agent_parameters: jps.VelocityModelAgentParameters,
     positions: list,
 ) -> list:
     """Initialize positions of agents and insert them into the simulation

@@ -27,13 +27,13 @@ def main(fps: int, dt: float, trajectory_path: pathlib.Path):
     # todo: get these from json file
     accessible_areas = [
         # x, y list in CCW
-        [0, 0, 10, 0, 10, 10, 0, 10],
-        [10, 4, 20, 4, 20, 6, 10, 6],
+        [(0, 0), (10, 0), (10, 10), (0, 10)],
+        [(10, 4), (20, 4), (20, 6), (10, 6)],
     ]
     geometry = build_geometry(accessible_areas)
     destinations = {
         # id, list(x, y)
-        1: [18, 4, 20, 4, 20, 6, 18, 6]
+        1: [(18, 4), (20, 4), (20, 6), (18, 6)]
     }
     labels = ["exit", "other-label"]
     areas = build_areas(destinations, labels)
