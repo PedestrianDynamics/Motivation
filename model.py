@@ -1,7 +1,7 @@
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import pathlib
-
+from sys import argv
 import py_jupedsim as jps
 from configs import init_logger, log_error, log_info
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
@@ -17,15 +17,16 @@ from utilities import (
 from inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
+    parse_fps,
     parse_velocity_model_parameter_profiles,
     parse_way_points,
+    parse_fps,
+    parse_dt,
 )
 import json
 
 
-def main(
-    fps: int, dt: float, inifile_path: pathlib.Path, trajectory_path: pathlib.Path
-):
+def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
     """Main simulation loop
 
     :param fps:
@@ -35,10 +36,6 @@ def main(
     :returns:
 
     """
-    f = open(inifile_path, "r")
-    json_str = f.read()
-    f.close()
-    data = json.loads(json_str)
     accessible_areas = parse_accessible_areas(data)
     geometry = build_geometry(accessible_areas.values())
     destinations = parse_destinations(data)
@@ -98,9 +95,18 @@ def main(
 
 if __name__ == "__main__":
     init_logger()
+    if len(argv) < 2:
+        exit(f"usage: {argv[0]} inifile.json")
+
+    f = open(argv[1], "r")
+    json_str = f.read()
+    f.close()
+    data = json.loads(json_str)
+    fps = parse_fps(data)
+    dt = parse_dt(data)
     main(
-        fps=10,
-        dt=0.01,
-        inifile_path=pathlib.Path("inifile.json"),
+        fps=fps,
+        dt=dt,
+        data=data,
         trajectory_path=pathlib.Path("out.txt"),
     )
