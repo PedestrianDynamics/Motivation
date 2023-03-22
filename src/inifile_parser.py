@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 from typing import Dict, List, Tuple
 import shapely
+import jsonschema
 
 
 def parse_destinations(json_data: dict) -> Dict[int, List[List[Tuple[float, float]]]]:
@@ -143,26 +144,42 @@ def Print(obj: dict, name: str):
 
 
 if __name__ == "__main__":
-    if len(argv) < 2:
-        exit(f"usage: {argv[0]} inifile.json")
+    if len(argv) < 3:
+        exit(f"usage: {argv[0]} inifile.json schema_file.json")
 
     inifile = argv[1]
+    schema_file = argv[2]
+    schema = None
+    with open(schema_file, "r") as s:
+        schema_str = s.read()
+        schema = json.loads(schema_str)
+
     with open(inifile, "r") as f:
         json_str = f.read()
-        data = json.loads(json_str)
-        accessible_areas = parse_accessible_areas(data)
-        destinations = parse_destinations(data)
-        distribution_polygons = parse_distribution_polygons(data)
-        way_points = parse_way_points(data)
-        profiles = parse_velocity_model_parameter_profiles(data)
-        fps = parse_fps(data)
-        time_step = parse_time_step(data)
-        sim_time = parse_simulation_time(data)
-        print(f"fps: {fps}")
-        print(f"time_step: {time_step}")
-        print(f"simulation time: {sim_time}")
-        Print(accessible_areas, "accessible area")
-        Print(destinations, "destination")
-        Print(distribution_polygons, "distribution polygon")
-        Print(profiles, "profile")
-        Print(way_points, "way_point")
+
+        try:
+            data = json.loads(json_str)
+            jsonschema.validate(instance=data, schema=schema)
+            accessible_areas = parse_accessible_areas(data)
+            destinations = parse_destinations(data)
+            distribution_polygons = parse_distribution_polygons(data)
+            way_points = parse_way_points(data)
+            profiles = parse_velocity_model_parameter_profiles(data)
+            fps = parse_fps(data)
+            time_step = parse_time_step(data)
+            sim_time = parse_simulation_time(data)
+            print(f"fps: {fps}")
+            print(f"time_step: {time_step}")
+            print(f"simulation time: {sim_time}")
+            Print(accessible_areas, "accessible area")
+            Print(destinations, "destination")
+            Print(distribution_polygons, "distribution polygon")
+            Print(profiles, "profile")
+            Print(way_points, "way_point")
+
+        except jsonschema.exceptions.ValidationError as e:
+            print("Invalid JSON:", e)
+        except json.decoder.JSONDecodeError as e:
+            print("Invalid JSON syntax:", e)
+        except ValueError as e:
+            print("Invalid JSON:", e)

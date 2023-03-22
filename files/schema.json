@@ -1,0 +1,138 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "comments": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "version": {
+            "type": "number"
+        },
+        "fps": {
+            "type": "number"
+        },
+        "time_step": {
+            "type": "number"
+        },
+        "simulation_time": {
+            "type": "number"
+        },
+        "accessible_areas": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number"
+                    },
+                    "vertices": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                        }
+                    }
+                },
+                "required": ["id", "vertices"]
+            }
+        },
+        "destinations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number"
+                    },
+                    "vertices": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                        }
+                    }
+                },
+                "required": ["id", "vertices"]
+            }
+        },
+        "velocity_model_parameter_profiles": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number"
+                    },
+                    "time_gap": {
+                        "type": "number"
+                    },
+                    "tau": {
+                        "type": "number"
+                    },
+                    "v0": {
+                        "type": "number"
+                    },
+                    "radius": {
+                        "type": "number"
+                    }
+                },
+                "required": ["id", "time_gap", "tau", "v0", "radius"]
+            }
+        },
+        "way_points": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "coordinates": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                    },
+                    "distance": {
+                        "type": "number"
+                    }
+                },
+                "required": ["coordinates", "distance"]
+            }
+        },
+        "distribution_polygons": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number"
+                    },
+                    "vertices": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                        }
+                    }
+                },
+                "required": ["id", "vertices"]
+            }
+        }
+    },
+    "required": ["version", "fps", "time_step", "simulation_time", "accessible_areas", "destinations", "velocity_model_parameter_profiles", "way_points", "distribution_polygons"]
+}
