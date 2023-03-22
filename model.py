@@ -2,10 +2,15 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import json
 import pathlib
-from sys import argv
+from sys import argv, path
 
+path.append("./src")
 import py_jupedsim as jps
-from jupedsim.distributions import distribute_by_number
+from jupedsim.distributions import (
+    distribute_by_number,
+    distribute_by_percentage,
+    distribute_till_full,
+)
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
 from configs import init_logger, log_error, log_info
@@ -44,8 +49,6 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
     labels = ["exit", "other-label"]  # todo --> json file
     areas = build_areas(destinations, labels)
     parameter_profiles = parse_velocity_model_parameter_profiles(data)
-    print(parameter_profiles)
-    # way_points = [ ((19, 5), 0.5)]
     way_points = list(parse_way_points(data).values())
     model = build_velocity_model(
         a_ped=8,
@@ -65,14 +68,26 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
     )
     distribution_polygons = parse_distribution_polygons(data)
     positions = []
+    print("distribute")
     for s_polygon in distribution_polygons.values():
-        pos = distribute_by_number(
+        pos = distribute_by_percentage(
             polygon=s_polygon,
-            number_of_agents=50,
+            percent=20,
             distance_to_agents=0.30,
             distance_to_polygon=0.20,
             seed=45131502,
         )
+        # pos = distribute_till_full(polygon=s_polygon,
+        #     distance_to_agents=0.30,
+        #     distance_to_polygon=0.20,
+        #     seed=45131502,)
+        # pos = distribute_by_number(
+        #     polygon=s_polygon,
+        #     number_of_agents=75,
+        #     distance_to_agents=0.30,
+        #     distance_to_polygon=0.20,
+        #     seed=45131502,
+        # )
         positions += pos
 
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)

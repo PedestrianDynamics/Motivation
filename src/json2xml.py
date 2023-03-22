@@ -1,0 +1,80 @@
+import xml.etree.ElementTree as ET
+import json
+from sys import argv
+from shapely.ops import unary_union
+from shapely.geometry import MultiPolygon
+from shapely.geometry import Polygon
+
+
+def add_transitions(root, data):
+    transitions = ET.SubElement(root, "transitions")
+    destinations = data["destinations"].values()
+    for dest in destinations:
+        t = ET.SubElement(
+            transitions,
+            "transition",
+            {
+                "id": str(dest["id"]),
+                "caption": "",
+                "type": "emergency",
+                "room1_id": "1",
+                "subroom1_id": "0",
+                "room2_id": "-1",
+                "subroom2_id": "-1",
+            },
+        )
+        v1, v2 = dest["vertices"]
+        ET.SubElement(t, "vertex", {"px": str(v1[0]), "py": str(v1[1])})
+        ET.SubElement(t, "vertex", {"px": str(v2[0]), "py": str(v2[1])})
+
+
+def add_room(root, data):
+    rooms = ET.SubElement(root, "rooms")
+    polygons = [Polygon(p) for p in data["accessible_areas"].values()]
+    multi_poly = MultiPolygon(polygons)
+    merged_poly = unary_union(multi_poly)
+    room_id = 0
+    points = merged_poly.exterior.coords
+    room_id += 1
+    room = ET.SubElement(rooms, "room")
+    room.set("id", str(room_id))
+    room.set("caption", "room")
+
+    # create a sub-element for the subroom
+    subroom = ET.SubElement(room, "subroom")
+    subroom.set("id", "0")
+    subroom.set("caption", "subroom")
+    subroom.set("class", "subroom")
+
+    # create a polygon element for each set of points
+    polygon = ET.SubElement(subroom, "polygon")
+    polygon.set("caption", "wall")
+    polygon.set("type", "internal")
+
+    for _, point in enumerate(points):
+        vertex = ET.SubElement(polygon, "vertex")
+        vertex.set("px", str(point[0]))
+        vertex.set("py", str(point[1]))
+
+
+if __name__ == "__main__":
+    if len(argv) < 2:
+        exit(f"usage: {argv[0]} inifile.json")
+
+    json_file = argv[1]
+    print(f"<< {json_file}")
+    data = None
+    with open(json_file, "r") as f:
+        data = json.load(f)
+
+    root = ET.Element("geometry")
+    root.set("version", "0.8")
+    root.set("caption", "experiment")
+    root.set("unit", "m")
+    add_room(root, data)
+    add_transitions(root, data)
+    tree = ET.ElementTree(root)
+    # xml_file = json_file.split(".json")[0] + ".xml"
+    xml_file = "geometry.xml"
+    print(f">> {xml_file}")
+    tree.write(xml_file, encoding="utf-8", xml_declaration=True)

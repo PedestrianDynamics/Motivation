@@ -45,7 +45,7 @@ if [[ "$RUN_JPSVIS" -eq 1 ]]; then
     $CONVERTER "$OUTPUT_FILE"
     # create geometry.xml file
     echo "INFO: Running json2xml converter"
-    python json2xml.py "$INPUT_FILE"
+    python src/json2xml.py "$INPUT_FILE"
     echo "INFO : run jpsvis"
     $jpsvis jps_$OUTPUT_FILE
 
