@@ -43,6 +43,7 @@ for room_id, points in data["accessible_areas"].items():
     vertex.set("py", str(points[0][1]))
 
 tree = ET.ElementTree(root)
-xml_file = json_file.split(".json")[0] + ".xml"
+# xml_file = json_file.split(".json")[0] + ".xml"
+xml_file = "geometry.xml"
 print(f">> {xml_file}")
 tree.write(xml_file, encoding="utf-8", xml_declaration=True)
