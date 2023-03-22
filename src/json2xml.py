@@ -1,12 +1,21 @@
-import xml.etree.ElementTree as ET
 import json
+import xml.etree.ElementTree as ET
 from sys import argv
+
+from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
-from shapely.geometry import MultiPolygon
-from shapely.geometry import Polygon
 
 
-def add_transitions(root, data):
+def add_transitions(root: ET.Element, data: dict):
+    """Add transition to xml file
+
+    :param root:
+    :type root: ET.Element
+    :param data:
+    :type data: dict
+    :returns:
+
+    """
     transitions = ET.SubElement(root, "transitions")
     destinations = data["destinations"].values()
     for dest in destinations:
@@ -28,25 +37,31 @@ def add_transitions(root, data):
         ET.SubElement(t, "vertex", {"px": str(v2[0]), "py": str(v2[1])})
 
 
-def add_room(root, data):
+def add_room(root: ET.Element, data: dict):
+    """Add room to xml file.
+
+    :param root:
+    :type root: ET.Element
+    :param data:
+    :type data: dict
+    :returns:
+
+    """
     rooms = ET.SubElement(root, "rooms")
     polygons = [Polygon(p) for p in data["accessible_areas"].values()]
     multi_poly = MultiPolygon(polygons)
     merged_poly = unary_union(multi_poly)
-    room_id = 0
+    room_id = 1
     points = merged_poly.exterior.coords
-    room_id += 1
     room = ET.SubElement(rooms, "room")
     room.set("id", str(room_id))
     room.set("caption", "room")
 
-    # create a sub-element for the subroom
     subroom = ET.SubElement(room, "subroom")
     subroom.set("id", "0")
     subroom.set("caption", "subroom")
     subroom.set("class", "subroom")
 
-    # create a polygon element for each set of points
     polygon = ET.SubElement(subroom, "polygon")
     polygon.set("caption", "wall")
     polygon.set("type", "internal")
