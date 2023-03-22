@@ -17,7 +17,7 @@ def add_transitions(root: ET.Element, data: dict):
 
     """
     transitions = ET.SubElement(root, "transitions")
-    destinations = data["destinations"].values()
+    destinations = data["destinations"]
     for dest in destinations:
         t = ET.SubElement(
             transitions,
@@ -48,7 +48,7 @@ def add_room(root: ET.Element, data: dict):
 
     """
     rooms = ET.SubElement(root, "rooms")
-    polygons = [Polygon(p) for p in data["accessible_areas"].values()]
+    polygons = [Polygon(p["vertices"]) for p in data["accessible_areas"]]
     multi_poly = MultiPolygon(polygons)
     merged_poly = unary_union(multi_poly)
     room_id = 1

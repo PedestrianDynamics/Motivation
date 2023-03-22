@@ -19,7 +19,10 @@ def parse_destinations(json_data: dict) -> Dict[int, List[List[Tuple[float, floa
     """
 
     destinations = {}
-    for id_str, dest_list in json_data["destinations"].items():
+    print(json_data["destinations"])
+    for destination in json_data["destinations"]:
+        id_str = destination["id"]
+        dest_list = destination["vertices"]
         destinations[int(id_str)] = dest_list
 
     return destinations
@@ -38,8 +41,13 @@ def parse_velocity_model_parameter_profiles(json_data: dict) -> Dict[int, List[f
     """
 
     profiles = {}
-    for id_str, profile_list in json_data["velocity_model_parameter_profiles"].items():
-        profiles[int(id_str)] = profile_list
+    for profile in json_data["velocity_model_parameter_profiles"]:
+        id_str = profile["id"]
+        time_gap = profile["time_gap"]
+        tau = profile["tau"]
+        v0 = profile["v0"]
+        radius = profile["radius"]
+        profiles[int(id_str)] = [time_gap, tau, v0, radius]
     return profiles
 
 
@@ -59,8 +67,9 @@ def parse_way_points(
     """
 
     way_points = {}
-    for id_str, wp_list in json_data["way_points"].items():
-        way_points[int(id_str)] = wp_list
+    for wp_id, way_point in enumerate(json_data["way_points"]):
+        wp_list = [way_point["coordinates"], way_point["distance"]]
+        way_points[wp_id] = wp_list
 
     return way_points
 
@@ -79,7 +88,9 @@ def parse_distribution_polygons(
         ID (int) to lists of polygons, where each polygon is a list of (x, y) tuples.
     """
     distribution_polygons = {}
-    for id_str, polygon in json_data["distribution_polygons"].items():
+    for id_polygon in json_data["distribution_polygons"]:
+        id_str = id_polygon["id"]
+        polygon = id_polygon["vertices"]
         distribution_polygons[int(id_str)] = shapely.Polygon(polygon)
     return distribution_polygons
 
@@ -97,8 +108,9 @@ def parse_accessible_areas(json_data: dict) -> Dict[int, List[List[float]]]:
     areas_dict = json_data["accessible_areas"]
 
     # Iterate through the accessible areas dictionary and extract the coordinates for each area
-    for area_id, coordinates_list in areas_dict.items():
-        areas[int(area_id)] = coordinates_list
+    print(areas_dict)
+    for area_id, coordinates_list in enumerate(areas_dict):
+        areas[int(area_id)] = coordinates_list["vertices"]
 
     return areas
 
@@ -110,9 +122,16 @@ def parse_fps(json_data: dict) -> float | None:
     return None
 
 
-def parse_dt(json_data: dict) -> float | None:
-    if "dt" in json_data:
-        return json_data["dt"]
+def parse_time_step(json_data: dict) -> float | None:
+    if "time_step" in json_data:
+        return json_data["time_step"]
+
+    return None
+
+
+def parse_simulation_time(json_data: dict) -> float | None:
+    if "simulation_time" in json_data:
+        return json_data["simulation_time"]
 
     return None
 
@@ -137,10 +156,11 @@ if __name__ == "__main__":
         way_points = parse_way_points(data)
         profiles = parse_velocity_model_parameter_profiles(data)
         fps = parse_fps(data)
-        dt = parse_dt(data)
-
+        time_step = parse_time_step(data)
+        sim_time = parse_simulation_time(data)
         print(f"fps: {fps}")
-        print(f"dt: {dt}")
+        print(f"time_step: {time_step}")
+        print(f"simulation time: {sim_time}")
         Print(accessible_areas, "accessible area")
         Print(destinations, "destination")
         Print(distribution_polygons, "distribution polygon")
