@@ -32,7 +32,7 @@ fi
 
 echo "INFO: Running $PYTHON_SCRIPT with $INPUT_FILE $OUTPUT_FILE"
 
-PYTHONPATH=$python_path python "$PYTHON_SCRIPT" "$INPUT_FILE"
+PYTHONPATH=$python_path python "$PYTHON_SCRIPT" "$INPUT_FILE" "$OUTPUT_FILE"
 
 if [[ $? -ne 0 ]]; then
     echo "ERROR: Simulation errors!"
@@ -41,7 +41,10 @@ fi
 
 if [[ "$RUN_JPSVIS" -eq 1 ]]; then
     echo "INFO: Running petrack2jpsvis converter"
+    # create jps_output_file
     $CONVERTER "$OUTPUT_FILE"
+    # create geometry.xml file
+    echo "INFO: Running json2xml converter"
     python json2xml.py "$INPUT_FILE"
     echo "INFO : run jpsvis"
     $jpsvis jps_$OUTPUT_FILE

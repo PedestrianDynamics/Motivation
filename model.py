@@ -1,10 +1,23 @@
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
+import json
 import pathlib
 from sys import argv
+
 import py_jupedsim as jps
-from configs import init_logger, log_error, log_info
+from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
+
+from configs import init_logger, log_error, log_info
+from inifile_parser import (
+    parse_accessible_areas,
+    parse_destinations,
+    parse_distribution_polygons,
+    parse_dt,
+    parse_fps,
+    parse_velocity_model_parameter_profiles,
+    parse_way_points,
+)
 from utilities import (
     build_areas,
     build_geometry,
@@ -13,17 +26,6 @@ from utilities import (
     init_journey,
     init_velocity_agent_parameters,
 )
-
-from inifile_parser import (
-    parse_accessible_areas,
-    parse_destinations,
-    parse_fps,
-    parse_velocity_model_parameter_profiles,
-    parse_way_points,
-    parse_fps,
-    parse_dt,
-)
-import json
 
 
 def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
@@ -61,7 +63,18 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
     agent_parameters = init_velocity_agent_parameters(
         phi_x=1, phi_y=0, journey=journey_id, profile=1
     )
-    positions = [(7, 7), (1, 3), (1, 5), (1, 7), (2, 7)]
+    distribution_polygons = parse_distribution_polygons(data)
+    positions = []
+    for s_polygon in distribution_polygons.values():
+        pos = distribute_by_number(
+            polygon=s_polygon,
+            number_of_agents=50,
+            distance_to_agents=0.30,
+            distance_to_polygon=0.20,
+            seed=45131502,
+        )
+        positions += pos
+
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
     log_info(f"Running simulation for {len(ped_ids)} agents:")
     writer = JpsCoreStyleTrajectoryWriter(trajectory_path)
@@ -95,8 +108,8 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
 
 if __name__ == "__main__":
     init_logger()
-    if len(argv) < 2:
-        exit(f"usage: {argv[0]} inifile.json")
+    if len(argv) < 3:
+        exit(f"usage: {argv[0]} inifile.json trajectory.txt")
 
     f = open(argv[1], "r")
     json_str = f.read()
@@ -108,5 +121,5 @@ if __name__ == "__main__":
         fps=fps,
         dt=dt,
         data=data,
-        trajectory_path=pathlib.Path("out.txt"),
+        trajectory_path=pathlib.Path(argv[2]),
     )

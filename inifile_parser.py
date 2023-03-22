@@ -3,6 +3,7 @@ from sys import argv
 from typing import Dict, List, Tuple
 
 from typing import Dict, List, Tuple
+import shapely
 
 
 def parse_destinations(json_data: dict) -> Dict[int, List[List[Tuple[float, float]]]]:
@@ -77,10 +78,9 @@ def parse_distribution_polygons(
         A dictionary with the parsed 'distribution_polygons' object. The dictionary maps
         ID (int) to lists of polygons, where each polygon is a list of (x, y) tuples.
     """
-    data = json.loads(json_str)
     distribution_polygons = {}
-    for id_str, polygon in data["distribution_polygons"].items():
-        distribution_polygons[int(id_str)] = polygon
+    for id_str, polygon in json_data["distribution_polygons"].items():
+        distribution_polygons[int(id_str)] = shapely.Polygon(polygon)
     return distribution_polygons
 
 
