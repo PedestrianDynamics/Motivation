@@ -1,5 +1,5 @@
 import py_jupedsim as jps
-from configs import log_error, log_info
+from configs import log_info
 
 
 def build_geometry(accessible_areas) -> jps.GeometryBuilder:

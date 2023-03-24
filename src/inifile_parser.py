@@ -1,5 +1,5 @@
 import json
-from sys import argv
+import sys
 from typing import Dict, List, Optional, Tuple, TypeAlias
 
 import jsonschema  # type: ignore
@@ -160,23 +160,23 @@ def parse_simulation_time(json_data: dict) -> Optional[int]:
 
 def Print(obj: dict, name: str):
     print(f"{name}: ")
-    for id, poly in obj.items():
-        print(f"{id=}, {name=}: {poly=}")
+    for Id, poly in obj.items():
+        print(f"{Id=}, {name=}: {poly=}")
     print("-----------")
 
 
 if __name__ == "__main__":
-    if len(argv) < 3:
-        exit(f"usage: {argv[0]} inifile.json schema_file.json")
+    if len(sys.argv) < 3:
+        sys.exit(f"usage: {sys.argv[0]} inifile.json schema_file.json")
 
-    inifile = argv[1]
-    schema_file = argv[2]
+    inifile = sys.argv[1]
+    schema_file = sys.argv[2]
     schema = None
-    with open(schema_file, "r") as s:
+    with open(schema_file, "r", encoding="utf8") as s:
         schema_str = s.read()
         schema = json.loads(schema_str)
 
-    with open(inifile, "r") as f:
+    with open(inifile, "r", encoding="utf8") as f:
         json_str = f.read()
 
         try:

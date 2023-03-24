@@ -1,6 +1,6 @@
 import json
+import sys
 import xml.etree.ElementTree as ET
-from sys import argv
 
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
@@ -77,13 +77,13 @@ def add_room(root: ET.Element, data: dict) -> None:
 
 
 if __name__ == "__main__":
-    if len(argv) < 2:
-        exit(f"usage: {argv[0]} inifile.json")
+    if len(sys.argv) < 2:
+        sys.exit(f"usage: {sys.argv[0]} inifile.json")
 
-    json_file = argv[1]
+    json_file = sys.argv[1]
     print(f"<< {json_file}")
     data = None
-    with open(json_file, "r") as f:
+    with open(json_file, "r", encoding="utf8") as f:
         data = json.load(f)
 
     root = ET.Element("geometry")
