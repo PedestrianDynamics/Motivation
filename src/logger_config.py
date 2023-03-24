@@ -1,20 +1,28 @@
+"""
+Setup logger
+"""
 import logging
 import py_jupedsim as jps
 
 
 def log_debug(msg):
+    """debug messages"""
+
     logging.debug(msg)
 
 
 def log_info(msg):
+    """info messages"""
     logging.info(msg)
 
 
 def log_warn(msg):
+    """warning messages"""
     logging.warning(msg)
 
 
 def log_error(msg):
+    """error messages"""
     logging.error(msg)
 
 
