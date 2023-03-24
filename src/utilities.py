@@ -1,17 +1,21 @@
 import py_jupedsim as jps
-from configs import log_info
+from .logger_config import log_info
+from typing import Dict, List
 
 
-def build_geometry(accessible_areas) -> jps.GeometryBuilder:
+def build_geometry(
+    accessible_areas: Dict[int, List[List[float]]]
+) -> jps.GeometryBuilder:
     """build geometry object
 
     All points should be defined CCW
     :returns: a geometry builder
 
     """
-    log_info("Init geometry")
+    log_info("Build geometry")
     geo_builder = jps.GeometryBuilder()
-    for accessible_area in accessible_areas:
+    for accessible_area in accessible_areas.values():
+        log_info(f"> {accessible_area=}")
         geo_builder.add_accessible_area(accessible_area)
 
     geometry = geo_builder.build()
@@ -26,9 +30,10 @@ def build_areas(destinations: dict, labels: list) -> jps.AreasBuilder:
     :param polygon: list of (x, y)
 
     """
-    log_info("Init areas")
+    log_info("Build areas")
     areas_builder = jps.AreasBuilder()
     for destination_id, polygon in destinations.items():
+        log_info(f"> {destination_id=}, {polygon=}, {labels=}")
         areas_builder.add_area(
             id=destination_id,
             polygon=polygon,
@@ -134,7 +139,8 @@ def init_journey(simulation: jps.Simulation, way_points: list) -> int:
     :returns:
 
     """
-    log_info("Init journey")
+    log_info(f"Init journey")
+    log_info(f"> {way_points}")
     journey = jps.Journey.make_waypoint_journey(way_points)
     journey_id = simulation.add_journey(journey)
     return journey_id
@@ -204,8 +210,10 @@ def distribute_and_add_agents(
     :returns:
 
     """
+    log_info("Distribute and Add Agent")
     ped_ids = []
     for x, y in positions:
+        # log_info(f"> {x=}, {y=}")
         agent_parameters.position = (x, y)
         agent_parameters.orientation = (1, 0)  # TODO orientation as input
         ped_id = simulation.add_agent(agent_parameters)

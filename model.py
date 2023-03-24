@@ -2,18 +2,18 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import json
 import pathlib
-from sys import argv, path
+import sys
 from typing import Any
 
 import py_jupedsim as jps
 from jupedsim.distributions import (
     distribute_by_number,
-)  # distribute_by_percentage,; distribute_till_full,
+)
+
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
-path.append("./src")
-from configs import init_logger, log_error, log_info
-from inifile_parser import (
+from src.logger_config import init_logger, log_error, log_info
+from src.inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
@@ -22,7 +22,7 @@ from inifile_parser import (
     parse_velocity_model_parameter_profiles,
     parse_way_points,
 )
-from utilities import (
+from src.utilities import (
     build_areas,
     build_geometry,
     build_velocity_model,
@@ -150,10 +150,10 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
 
 if __name__ == "__main__":
     init_logger()
-    if len(argv) < 3:
-        exit(f"usage: {argv[0]} inifile.json trajectory.txt")
+    if len(sys.argv) < 3:
+        sys.exit(f"usage: {sys.argv[0]} inifile.json trajectory.txt")
 
-    with open(argv[1], "r") as f:
+    with open(sys.argv[1], "r", encoding="utf8") as f:
         json_str = f.read()
         data = json.loads(json_str)
         fps = parse_fps(data)
@@ -162,5 +162,5 @@ if __name__ == "__main__":
             fps=fps,
             dt=time_step,
             data=data,
-            trajectory_path=pathlib.Path(argv[2]),
+            trajectory_path=pathlib.Path(sys.argv[2]),
         )
