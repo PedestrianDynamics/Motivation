@@ -1,4 +1,5 @@
-# Motivation
+![build-badge](https://github.com/PedestrianDynamics/Motivation/actions/workflows/pylint.yml/badge.svg)
+# Motivation  
 
 ## Usage
 
