@@ -1,13 +1,14 @@
 import json
 from sys import argv
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, TypeAlias
 
-from typing import Dict, List, Tuple
-import shapely
-import jsonschema
+import jsonschema  # type: ignore
+import shapely  # type: ignore
+
+Point: TypeAlias = Tuple[float, float]
 
 
-def parse_destinations(json_data: dict) -> Dict[int, List[List[Tuple[float, float]]]]:
+def parse_destinations(json_data: dict) -> Dict[int, List[List[Point]]]:
     """
     Parses the 'destinations' object from a JSON string into a Python dictionary.
 
@@ -20,7 +21,6 @@ def parse_destinations(json_data: dict) -> Dict[int, List[List[Tuple[float, floa
     """
 
     destinations = {}
-    print(json_data["destinations"])
     for destination in json_data["destinations"]:
         id_str = destination["id"]
         dest_list = destination["vertices"]
@@ -54,7 +54,7 @@ def parse_velocity_model_parameter_profiles(json_data: dict) -> Dict[int, List[f
 
 def parse_way_points(
     json_data: dict,
-) -> Dict[int, List[Tuple[Tuple[float, float], float]]]:
+) -> Dict[int, List[Tuple[Point, float]]]:
     """
     Parses the 'way_points' object from a JSON string into a Python dictionary.
 
@@ -64,7 +64,7 @@ def parse_way_points(
     Returns:
         A dictionary with the parsed 'way_points' object. The dictionary maps
         ID (int) to lists of tuples, where each tuple contains a (x, y) point
-        and a floating-point number representing the point's time offset.
+        and a floating-point number representing a distance.
     """
 
     way_points = {}
@@ -77,7 +77,7 @@ def parse_way_points(
 
 def parse_distribution_polygons(
     json_data: dict,
-) -> Dict[int, List[List[Tuple[float, float]]]]:
+) -> Dict[int, shapely.Polygon]:
     """
     Parses the 'distribution_polygons' object from a JSON string into a Python dictionary.
 
@@ -93,6 +93,7 @@ def parse_distribution_polygons(
         id_str = id_polygon["id"]
         polygon = id_polygon["vertices"]
         distribution_polygons[int(id_str)] = shapely.Polygon(polygon)
+
     return distribution_polygons
 
 
@@ -109,37 +110,36 @@ def parse_accessible_areas(json_data: dict) -> Dict[int, List[List[float]]]:
     areas_dict = json_data["accessible_areas"]
 
     # Iterate through the accessible areas dictionary and extract the coordinates for each area
-    print(areas_dict)
     for area_id, coordinates_list in enumerate(areas_dict):
         areas[int(area_id)] = coordinates_list["vertices"]
 
     return areas
 
 
-def parse_fps(json_data: dict) -> float | None:
+def parse_fps(json_data: dict) -> Optional[int]:
     if "fps" in json_data:
-        return json_data["fps"]
+        return int(json_data["fps"])
 
     return None
 
 
-def parse_time_step(json_data: dict) -> float | None:
+def parse_time_step(json_data: dict) -> Optional[float]:
     if "time_step" in json_data:
-        return json_data["time_step"]
+        return float(json_data["time_step"])
 
     return None
 
 
-def parse_simulation_time(json_data: dict) -> float | None:
+def parse_simulation_time(json_data: dict) -> Optional[int]:
     if "simulation_time" in json_data:
-        return json_data["simulation_time"]
+        return int(json_data["simulation_time"])
 
     return None
 
 
 def Print(obj: dict, name: str):
     for id, poly in obj.items():
-        print(f"id: {id}, {name}: {poly}")
+        print(f"{id=}, {name=}: {poly=}")
     print("-----------")
 
 
@@ -159,18 +159,24 @@ if __name__ == "__main__":
 
         try:
             data = json.loads(json_str)
-            jsonschema.validate(instance=data, schema=schema)
+            if schema:
+                print("Validate json file ...\n-----------")
+                jsonschema.validate(instance=data, schema=schema)
+
             accessible_areas = parse_accessible_areas(data)
             destinations = parse_destinations(data)
             distribution_polygons = parse_distribution_polygons(data)
+
             way_points = parse_way_points(data)
             profiles = parse_velocity_model_parameter_profiles(data)
+            version = data["version"]
             fps = parse_fps(data)
             time_step = parse_time_step(data)
             sim_time = parse_simulation_time(data)
-            print(f"fps: {fps}")
-            print(f"time_step: {time_step}")
-            print(f"simulation time: {sim_time}")
+            print(f"{version=}")
+            print(f"{fps=}")
+            print(f"{time_step=}")
+            print(f"{sim_time=}")
             Print(accessible_areas, "accessible area")
             Print(destinations, "destination")
             Print(distribution_polygons, "distribution polygon")
