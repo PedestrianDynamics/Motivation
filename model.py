@@ -4,6 +4,8 @@ import json
 import pathlib
 from sys import argv, path
 
+from src.inifile_parser import parse_time_step
+
 path.append("./src")
 import py_jupedsim as jps
 from jupedsim.distributions import (
@@ -18,7 +20,7 @@ from inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
-    parse_dt,
+    parse_time_step,
     parse_fps,
     parse_velocity_model_parameter_profiles,
     parse_way_points,
@@ -44,9 +46,9 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
 
     """
     accessible_areas = parse_accessible_areas(data)
-    geometry = build_geometry(accessible_areas.values())
+    geometry = build_geometry(accessible_areas)
     destinations = parse_destinations(data)
-    labels = ["exit", "other-label"]  # todo --> json file
+    labels = ["exit"]  # todo --> json file
     areas = build_areas(destinations, labels)
     parameter_profiles = parse_velocity_model_parameter_profiles(data)
     way_points = list(parse_way_points(data).values())
@@ -61,33 +63,33 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
     log_info(f"Init simulation with dt={dt} [s] and fps={fps}")
     simulation = jps.Simulation(model=model, geometry=geometry, areas=areas, dt=dt)
     log_info("Init simulation done")
-
     journey_id = init_journey(simulation, way_points)
     agent_parameters = init_velocity_agent_parameters(
         phi_x=1, phi_y=0, journey=journey_id, profile=1
     )
     distribution_polygons = parse_distribution_polygons(data)
     positions = []
-    print("distribute")
+
     for s_polygon in distribution_polygons.values():
-        pos = distribute_by_percentage(
-            polygon=s_polygon,
-            percent=20,
-            distance_to_agents=0.30,
-            distance_to_polygon=0.20,
-            seed=45131502,
-        )
-        # pos = distribute_till_full(polygon=s_polygon,
-        #     distance_to_agents=0.30,
-        #     distance_to_polygon=0.20,
-        #     seed=45131502,)
-        # pos = distribute_by_number(
+        log_info(f"Distribute agents in {s_polygon}")
+        # pos = distribute_by_percentage(
         #     polygon=s_polygon,
-        #     number_of_agents=75,
+        #     percent=20,
         #     distance_to_agents=0.30,
         #     distance_to_polygon=0.20,
         #     seed=45131502,
         # )
+        # pos = distribute_till_full(polygon=s_polygon,
+        #     distance_to_agents=0.30,
+        #     distance_to_polygon=0.20,
+        #     seed=45131502,)
+        pos = distribute_by_number(
+            polygon=s_polygon,
+            number_of_agents=10,
+            distance_to_agents=0.30,
+            distance_to_polygon=0.20,
+            seed=45131502,
+        )
         positions += pos
 
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
@@ -131,10 +133,10 @@ if __name__ == "__main__":
     f.close()
     data = json.loads(json_str)
     fps = parse_fps(data)
-    dt = parse_dt(data)
+    time_step = parse_time_step(data)
     main(
         fps=fps,
-        dt=dt,
+        dt=time_step,
         data=data,
         trajectory_path=pathlib.Path(argv[2]),
     )

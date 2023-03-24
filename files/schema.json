@@ -51,6 +51,9 @@
                     "id": {
                         "type": "number"
                     },
+                    "label": {
+                        "type": "string"
+                    },
                     "vertices": {
                         "type": "array",
                         "items": {
@@ -63,7 +66,33 @@
                         }
                     }
                 },
-                "required": ["id", "vertices"]
+                "required": ["id", "vertices", "label"]
+            }
+        },
+        "jpsvis_doors": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "vertices": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                        }
+                    }
+                },
+                "required": ["id", "vertices", "label"]
             }
         },
         "velocity_model_parameter_profiles": {

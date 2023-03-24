@@ -6,7 +6,7 @@ from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 
-def add_transitions(root: ET.Element, data: dict):
+def add_transitions(root: ET.Element, data: dict) -> None:
     """Add transition to xml file
 
     :param root:
@@ -16,8 +16,12 @@ def add_transitions(root: ET.Element, data: dict):
     :returns:
 
     """
+    if not "jpsvis_doors" in data:
+        return
+
+    destinations = data["jpsvis_doors"]
     transitions = ET.SubElement(root, "transitions")
-    destinations = data["destinations"]
+
     for dest in destinations:
         t = ET.SubElement(
             transitions,
@@ -37,7 +41,7 @@ def add_transitions(root: ET.Element, data: dict):
         ET.SubElement(t, "vertex", {"px": str(v2[0]), "py": str(v2[1])})
 
 
-def add_room(root: ET.Element, data: dict):
+def add_room(root: ET.Element, data: dict) -> None:
     """Add room to xml file.
 
     :param root:
