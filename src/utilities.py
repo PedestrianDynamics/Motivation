@@ -1,6 +1,11 @@
-import py_jupedsim as jps
-from .logger_config import log_info
+"""
+Some functions to setup the simulation.
+"""
 from typing import Dict, List
+
+import py_jupedsim as jps
+
+from .logger_config import log_info
 
 
 def build_geometry(
@@ -45,30 +50,24 @@ def build_areas(destinations: dict, labels: list) -> jps.AreasBuilder:
 
 
 def build_gcfm_model(
-    nu_ped: float,
-    nu_wall: float,
-    dist_eff_ped: float,
-    dist_eff_wall: float,
-    intp_width_ped: float,
-    intp_width_wall: float,
-    maxf_ped: float,
-    maxf_wall: float,
+    init_parameters: dict,
     parameter_profiles: dict,
 ) -> jps.OperationalModel:
     """Initialize gcfm model with parameter values
 
-    :param nu_ped:
-    :param nu_wall:
-    :param dist_eff_ped:
-    :param dist_eff_wall:
-    :param intp_width_ped:
-    :param intp_width_wall:
-    :param maxf_ped:
-    :param maxf_wall:
+    :param init_parameters:
     :param parameter_profiles:
     :returns: gcfm model
 
     """
+    nu_ped = init_parameters["nu_ped"]
+    nu_wall = init_parameters["nu_wall"]
+    dist_eff_ped = init_parameters["dist_eff_ped"]
+    dist_eff_wall = init_parameters["dist_eff_wall"]
+    intp_width_ped = init_parameters["intp_width_ped"]
+    intp_width_wall = init_parameters["intp_width_wall"]
+    maxf_ped = init_parameters["maxf_ped"]
+    maxf_wall = init_parameters["maxf_wall"]
     log_info("Init gcfm model")
     model_builder = jps.GCFMModelBuilder(
         nu_ped=nu_ped,
@@ -98,10 +97,7 @@ def build_gcfm_model(
 
 
 def build_velocity_model(
-    a_ped: float,
-    d_ped: float,
-    a_wall: float,
-    d_wall: float,
+    init_parameters: dict,
     parameter_profiles: dict,
 ) -> jps.OperationalModel:
     """Initialize velocity model with parameter values
@@ -114,6 +110,10 @@ def build_velocity_model(
 
     """
     log_info(f"Init velocity model {parameter_profiles}")
+    a_ped = init_parameters["a_ped"]
+    d_ped = init_parameters["d_ped"]
+    a_wall = init_parameters["a_wall"]
+    d_wall = init_parameters["d_wall"]
     model_builder = jps.VelocityModelBuilder(
         a_ped=a_ped, d_ped=d_ped, a_wall=a_wall, d_wall=d_wall
     )
@@ -139,7 +139,7 @@ def init_journey(simulation: jps.Simulation, way_points: list) -> int:
     :returns:
 
     """
-    log_info(f"Init journey")
+    log_info("Init journey")
     log_info(f"> {way_points}")
     journey = jps.Journey.make_waypoint_journey(way_points)
     journey_id = simulation.add_journey(journey)
@@ -212,9 +212,8 @@ def distribute_and_add_agents(
     """
     log_info("Distribute and Add Agent")
     ped_ids = []
-    for x, y in positions:
-        # log_info(f"> {x=}, {y=}")
-        agent_parameters.position = (x, y)
+    for pos_x, pos_y in positions:
+        agent_parameters.position = (pos_x, pos_y)
         agent_parameters.orientation = (1, 0)  # TODO orientation as input
         ped_id = simulation.add_agent(agent_parameters)
         ped_ids.append(ped_id)
@@ -223,7 +222,7 @@ def distribute_and_add_agents(
 
 
 def create_velocity_model_profile(
-    pid: int, time_gap: float, tau: float, v0: float, radius: float
+    pid: int, time_gap: float, tau: float, v_0: float, radius: float
 ) -> dict:
     """create a new velocityModel profile
 
@@ -238,4 +237,4 @@ def create_velocity_model_profile(
     :returns:
 
     """
-    return {pid: [time_gap, tau, v0, radius]}
+    return {pid: [time_gap, tau, v_0, radius]}

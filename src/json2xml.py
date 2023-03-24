@@ -1,3 +1,12 @@
+"""
+Parse geometry infos from json file and create
+a <geometry.xml> file
+
+Looking in json for
+- jpsvis_doors
+- accessible_areas: Make a union on all walls to get a nice polygon
+
+ """
 import json
 import sys
 import xml.etree.ElementTree as ET
@@ -6,7 +15,7 @@ from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 
-def add_transitions(root: ET.Element, data: dict) -> None:
+def add_transitions(_root: ET.Element, _data: dict) -> None:
     """Add transition to xml file
 
     :param root:
@@ -16,14 +25,14 @@ def add_transitions(root: ET.Element, data: dict) -> None:
     :returns:
 
     """
-    if not "jpsvis_doors" in data:
+    if not "jpsvis_doors" in _data:
         return
 
-    destinations = data["jpsvis_doors"]
-    transitions = ET.SubElement(root, "transitions")
+    destinations = _data["jpsvis_doors"]
+    transitions = ET.SubElement(_root, "transitions")
 
     for dest in destinations:
-        t = ET.SubElement(
+        transition = ET.SubElement(
             transitions,
             "transition",
             {
@@ -36,12 +45,16 @@ def add_transitions(root: ET.Element, data: dict) -> None:
                 "subroom2_id": "-1",
             },
         )
-        v1, v2 = dest["vertices"]
-        ET.SubElement(t, "vertex", {"px": str(v1[0]), "py": str(v1[1])})
-        ET.SubElement(t, "vertex", {"px": str(v2[0]), "py": str(v2[1])})
+        vertice_1, vertice_2 = dest["vertices"]
+        ET.SubElement(
+            transition, "vertex", {"px": str(vertice_1[0]), "py": str(vertice_1[1])}
+        )
+        ET.SubElement(
+            transition, "vertex", {"px": str(vertice_2[0]), "py": str(vertice_2[1])}
+        )
 
 
-def add_room(root: ET.Element, data: dict) -> None:
+def add_room(_root: ET.Element, _data: dict) -> None:
     """Add room to xml file.
 
     :param root:
@@ -51,8 +64,8 @@ def add_room(root: ET.Element, data: dict) -> None:
     :returns:
 
     """
-    rooms = ET.SubElement(root, "rooms")
-    polygons = [Polygon(p["vertices"]) for p in data["accessible_areas"]]
+    rooms = ET.SubElement(_root, "rooms")
+    polygons = [Polygon(p["vertices"]) for p in _data["accessible_areas"]]
     multi_poly = MultiPolygon(polygons)
     merged_poly = unary_union(multi_poly)
     room_id = 1
@@ -80,20 +93,20 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit(f"usage: {sys.argv[0]} inifile.json")
 
-    json_file = sys.argv[1]
-    print(f"<< {json_file}")
-    data = None
-    with open(json_file, "r", encoding="utf8") as f:
-        data = json.load(f)
+    JSON_FILE = sys.argv[1]
+    print(f"<< {JSON_FILE}")
+    DATA = None
+    with open(JSON_FILE, "r", encoding="utf8") as f:
+        DATA = json.load(f)
 
     root = ET.Element("geometry")
     root.set("version", "0.8")
     root.set("caption", "experiment")
     root.set("unit", "m")
-    add_room(root, data)
-    add_transitions(root, data)
+    add_room(root, DATA)
+    add_transitions(root, DATA)
     tree = ET.ElementTree(root)
     # xml_file = json_file.split(".json")[0] + ".xml"
-    xml_file = "geometry.xml"
-    print(f">> {xml_file}")
-    tree.write(xml_file, encoding="utf-8", xml_declaration=True)
+    XML_FILE = "geometry.xml"
+    print(f">> {XML_FILE}")
+    tree.write(XML_FILE, encoding="utf-8", xml_declaration=True)

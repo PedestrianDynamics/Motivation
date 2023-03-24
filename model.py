@@ -1,3 +1,6 @@
+"""
+Simulation model using jpscore API
+"""
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import json
@@ -32,7 +35,7 @@ from src.utilities import (
 )
 
 
-def init_simulation(data: str, time_step: float) -> Any:
+def init_simulation(_data: dict, _time_step: float) -> Any:
     """Setup geometry and parameter profiles,
 
     :param data:
@@ -42,23 +45,21 @@ def init_simulation(data: str, time_step: float) -> Any:
     :returns:
 
     """
-    accessible_areas = parse_accessible_areas(data)
-    destinations = parse_destinations(data)
+    accessible_areas = parse_accessible_areas(_data)
+    destinations = parse_destinations(_data)
     labels = ["exit"]  # todo --> json file
-    parameter_profiles = parse_velocity_model_parameter_profiles(data)
+    parameter_profiles = parse_velocity_model_parameter_profiles(_data)
 
     geometry = build_geometry(accessible_areas)
     areas = build_areas(destinations, labels)
+    init_parameters = {"a_ped": 8, "d_ped": 0.1, "a_wall": 5, "d_wall": 0.02}
     model = build_velocity_model(
-        a_ped=8,
-        d_ped=0.1,
-        a_wall=5,
-        d_wall=0.02,
+        init_parameters,
         parameter_profiles=parameter_profiles,
     )
     # todo: here we already need to know the profiles, and can not calculate them on the fly.
     simulation = jps.Simulation(
-        model=model, geometry=geometry, areas=areas, dt=time_step
+        model=model, geometry=geometry, areas=areas, dt=_time_step
     )
     log_info("Init simulation done")
     return simulation
@@ -97,7 +98,9 @@ def run_simulation(
             simulation.switch_agent_profile(agent_id=test_id, profile_id=actual_profile)
         except RuntimeError:
             log_error(
-                f"Can not change Profile of Agent {test_id} to Profile={actual_profile} at Iteration={simulation.iteration_count()}."
+                f"""Can not change Profile of Agent
+                {test_id} to Profile={actual_profile} at
+                Iteration={simulation.iteration_count()}."""
             )
             # end the simulation
             break
@@ -106,7 +109,7 @@ def run_simulation(
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
 
 
-def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
+def main(_fps: int, _time_step: float, _data: dict, _trajectory_path: pathlib.Path):
     """Main simulation loop
 
     :param fps:
@@ -116,15 +119,15 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
     :returns:
 
     """
-    simulation = init_simulation(data, dt)
+    simulation = init_simulation(_data, _time_step)
 
-    way_points = list(parse_way_points(data).values())
+    way_points = list(parse_way_points(_data).values())
     journey_id = init_journey(simulation, way_points)
 
     agent_parameters = init_velocity_agent_parameters(
         phi_x=1, phi_y=0, journey=journey_id, profile=1
     )
-    distribution_polygons = parse_distribution_polygons(data)
+    distribution_polygons = parse_distribution_polygons(_data)
     positions = []
 
     for s_polygon in distribution_polygons.values():
@@ -141,11 +144,11 @@ def main(fps: int, dt: float, data: str, trajectory_path: pathlib.Path):
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
 
     log_info(f"Running simulation for {len(ped_ids)} agents:")
-    writer = JpsCoreStyleTrajectoryWriter(trajectory_path)
-    writer.begin_writing(fps)
+    writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
+    writer.begin_writing(_fps)
 
     run_simulation(simulation, writer, ped_ids)
-    log_info(f"Trajectory: {trajectory_path}")
+    log_info(f"Trajectory: {_trajectory_path}")
 
 
 if __name__ == "__main__":
@@ -158,9 +161,10 @@ if __name__ == "__main__":
         data = json.loads(json_str)
         fps = parse_fps(data)
         time_step = parse_time_step(data)
-        main(
-            fps=fps,
-            dt=time_step,
-            data=data,
-            trajectory_path=pathlib.Path(sys.argv[2]),
-        )
+        if fps and time_step:
+            main(
+                fps,
+                time_step,
+                data,
+                pathlib.Path(sys.argv[2]),
+            )

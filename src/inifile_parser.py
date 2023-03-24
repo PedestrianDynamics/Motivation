@@ -1,3 +1,8 @@
+"""
+Parse json file and extract configs
+Module is also used for testing
+"""
+
 import json
 import sys
 from typing import Dict, List, Optional, Tuple, TypeAlias
@@ -20,36 +25,38 @@ def parse_destinations(json_data: dict) -> Dict[int, List[List[Point]]]:
         IDs (int) to lists of polygons, where each polygon is a list of (x, y) tuples.
     """
 
-    destinations = {}
+    _destinations = {}
     for destination in json_data["destinations"]:
         id_str = destination["id"]
         dest_list = destination["vertices"]
-        destinations[int(id_str)] = dest_list
+        _destinations[int(id_str)] = dest_list
 
-    return destinations
+    return _destinations
 
 
 def parse_velocity_model_parameter_profiles(json_data: dict) -> Dict[int, List[float]]:
     """
-    Parses the 'velocity_model_parameter_profiles' object from a JSON string into a Python dictionary.
+    Parse the 'velocity_model_parameter_profiles' object
+    from a JSON string into a Python dictionary.
 
     Args:
-        json_data: A dict containing JSON data with a 'velocity_model_parameter_profiles' object.
+        json_data: A dict containing JSON data with a
+                   'velocity_model_parameter_profiles' object.
 
     Returns:
         A dictionary with the parsed 'velocity_model_parameter_profiles' object. The dictionary maps
         ID (int) to lists of floating-point numbers.
     """
 
-    profiles = {}
+    _profiles: Dict[int, List[float]] = {}
     for profile in json_data["velocity_model_parameter_profiles"]:
         id_str = profile["id"]
         time_gap = profile["time_gap"]
         tau = profile["tau"]
-        v0 = profile["v0"]
+        v_0 = profile["v0"]
         radius = profile["radius"]
-        profiles[int(id_str)] = [time_gap, tau, v0, radius]
-    return profiles
+        _profiles[int(id_str)] = [time_gap, tau, v_0, radius]
+    return _profiles
 
 
 def parse_way_points(
@@ -67,12 +74,12 @@ def parse_way_points(
         and a floating-point number representing a distance.
     """
 
-    way_points = {}
+    _way_points: Dict[int, List[Tuple[Point, float]]] = {}
     for wp_id, way_point in enumerate(json_data["way_points"]):
         wp_list = [way_point["coordinates"], way_point["distance"]]
-        way_points[wp_id] = wp_list
+        _way_points[wp_id] = wp_list
 
-    return way_points
+    return _way_points
 
 
 def parse_distribution_polygons(
@@ -88,13 +95,13 @@ def parse_distribution_polygons(
         A dictionary with the parsed 'distribution_polygons' object. The dictionary maps
         ID (int) to lists of polygons, where each polygon is a list of (x, y) tuples.
     """
-    distribution_polygons = {}
+    _distribution_polygons: Dict[int, shapely.Polygon] = {}
     for id_polygon in json_data["distribution_polygons"]:
         id_str = id_polygon["id"]
         polygon = id_polygon["vertices"]
-        distribution_polygons[int(id_str)] = shapely.Polygon(polygon)
+        _distribution_polygons[int(id_str)] = shapely.Polygon(polygon)
 
-    return distribution_polygons
+    return _distribution_polygons
 
 
 def parse_jpsvis_doors(json_data: dict) -> Dict[int, List[List[float]]]:
@@ -106,16 +113,16 @@ def parse_jpsvis_doors(json_data: dict) -> Dict[int, List[List[float]]]:
     :return: A dictionary mapping area IDs to a list of coordinates that define the doors.
     """
 
-    doors: Dict[int, List[List[float]]] = {}
+    _doors: Dict[int, List[List[float]]] = {}
 
     if "jpsvis_doors" in json_data:
         doors_dict = json_data["jpsvis_doors"]
 
         # Iterate through the accessible areas dictionary and extract the coordinates for each area
         for area_id, coordinates_list in enumerate(doors_dict):
-            doors[int(area_id)] = coordinates_list["vertices"]
+            _doors[int(area_id)] = coordinates_list["vertices"]
 
-    return doors
+    return _doors
 
 
 def parse_accessible_areas(json_data: dict) -> Dict[int, List[List[float]]]:
@@ -126,18 +133,20 @@ def parse_accessible_areas(json_data: dict) -> Dict[int, List[List[float]]]:
     :param json_str: A JSON string containing information about accessible areas.
     :return: A dictionary mapping area IDs to a list of coordinates that define the area.
     """
-    areas = {}
 
+    _areas = {}
     areas_dict = json_data["accessible_areas"]
 
     # Iterate through the accessible areas dictionary and extract the coordinates for each area
     for area_id, coordinates_list in enumerate(areas_dict):
-        areas[int(area_id)] = coordinates_list["vertices"]
+        _areas[int(area_id)] = coordinates_list["vertices"]
 
-    return areas
+    return _areas
 
 
 def parse_fps(json_data: dict) -> Optional[int]:
+    """Get fps if found in file, otherwise None"""
+
     if "fps" in json_data:
         return int(json_data["fps"])
 
@@ -145,6 +154,8 @@ def parse_fps(json_data: dict) -> Optional[int]:
 
 
 def parse_time_step(json_data: dict) -> Optional[float]:
+    """Get time_step if found, otherwise None"""
+
     if "time_step" in json_data:
         return float(json_data["time_step"])
 
@@ -152,16 +163,20 @@ def parse_time_step(json_data: dict) -> Optional[float]:
 
 
 def parse_simulation_time(json_data: dict) -> Optional[int]:
+    """Get simulation if found, otherwise None"""
+
     if "simulation_time" in json_data:
         return int(json_data["simulation_time"])
 
     return None
 
 
-def Print(obj: dict, name: str):
+def print_obj(obj: dict, name: str):
+    """Debug plots"""
+
     print(f"{name}: ")
-    for Id, poly in obj.items():
-        print(f"{Id=}, {name=}: {poly=}")
+    for _id, poly in obj.items():
+        print(f"{_id=}, {name=}: {poly=}")
     print("-----------")
 
 
@@ -169,21 +184,21 @@ if __name__ == "__main__":
     if len(sys.argv) < 3:
         sys.exit(f"usage: {sys.argv[0]} inifile.json schema_file.json")
 
-    inifile = sys.argv[1]
-    schema_file = sys.argv[2]
-    schema = None
-    with open(schema_file, "r", encoding="utf8") as s:
+    INIFILE = sys.argv[1]
+    SCHEMA_FILE = sys.argv[2]
+    SCHEMA = None
+    with open(SCHEMA_FILE, "r", encoding="utf8") as s:
         schema_str = s.read()
-        schema = json.loads(schema_str)
+        SCHEMA = json.loads(schema_str)
 
-    with open(inifile, "r", encoding="utf8") as f:
+    with open(INIFILE, "r", encoding="utf8") as f:
         json_str = f.read()
 
         try:
             data = json.loads(json_str)
-            if schema:
+            if SCHEMA:
                 print("Validate json file ...\n-----------")
-                jsonschema.validate(instance=data, schema=schema)
+                jsonschema.validate(instance=data, schema=SCHEMA)
 
             accessible_areas = parse_accessible_areas(data)
             destinations = parse_destinations(data)
@@ -200,12 +215,12 @@ if __name__ == "__main__":
             print(f"{fps=}")
             print(f"{time_step=}")
             print(f"{sim_time=}")
-            Print(accessible_areas, "accessible area")
-            Print(destinations, "destination")
-            Print(jpsvis_doors, "jpsvis_doors")
-            Print(distribution_polygons, "distribution polygon")
-            Print(profiles, "profile")
-            Print(way_points, "way_point")
+            print_obj(accessible_areas, "accessible area")
+            print_obj(destinations, "destination")
+            print_obj(jpsvis_doors, "jpsvis_doors")
+            print_obj(distribution_polygons, "distribution polygon")
+            print_obj(profiles, "profile")
+            print_obj(way_points, "way_point")
 
         except jsonschema.exceptions.ValidationError as e:
             print("Invalid JSON:", e)
