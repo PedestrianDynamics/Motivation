@@ -1,7 +1,7 @@
 """
 Some functions to setup the simulation.
 """
-from typing import Dict, List, Tuple, Any, TypeAlias
+from typing import Dict, List, Tuple, TypeAlias
 
 import py_jupedsim as jps
 
