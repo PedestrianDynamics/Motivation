@@ -1,0 +1,11 @@
+name: Check Commands
+
+on: [push]
+
+jobs:
+  check-commands:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run script
+      run: bash run_all_tests.sh
