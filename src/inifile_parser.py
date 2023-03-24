@@ -5,15 +5,15 @@ Module is also used for testing
 
 import json
 import sys
-from typing import Dict, List, Optional, Tuple, TypeAlias
+from typing import Dict, List, Optional, Tuple, TypeAlias, Any
 
-import jsonschema  # type: ignore
-import shapely  # type: ignore
+import jsonschema
+import shapely
 
 Point: TypeAlias = Tuple[float, float]
 
 
-def parse_destinations(json_data: dict) -> Dict[int, List[List[Point]]]:
+def parse_destinations(json_data: Dict[str, Any]) -> Dict[int, List[List[Point]]]:
     """
     Parses the 'destinations' object from a JSON string into a Python dictionary.
 
@@ -34,7 +34,9 @@ def parse_destinations(json_data: dict) -> Dict[int, List[List[Point]]]:
     return _destinations
 
 
-def parse_velocity_model_parameter_profiles(json_data: dict) -> Dict[int, List[float]]:
+def parse_velocity_model_parameter_profiles(
+    json_data: Dict[str, Any]
+) -> Dict[int, List[float]]:
     """
     Parse the 'velocity_model_parameter_profiles' object
     from a JSON string into a Python dictionary.
@@ -60,8 +62,8 @@ def parse_velocity_model_parameter_profiles(json_data: dict) -> Dict[int, List[f
 
 
 def parse_way_points(
-    json_data: dict,
-) -> Dict[int, List[Tuple[Point, float]]]:
+    json_data: Dict[str, Any],
+) -> List[Tuple[Point, float]]:
     """
     Parses the 'way_points' object from a JSON string into a Python dictionary.
 
@@ -74,16 +76,20 @@ def parse_way_points(
         and a floating-point number representing a distance.
     """
 
-    _way_points: Dict[int, List[Tuple[Point, float]]] = {}
+    _way_points_dict: Dict[int, List[Tuple[Point, float]]] = {}
+    _way_points: List[Any] = []
     for wp_id, way_point in enumerate(json_data["way_points"]):
-        wp_list = [way_point["coordinates"], way_point["distance"]]
-        _way_points[wp_id] = wp_list
-
+        wp_list = [
+            way_point["coordinates"],
+            way_point["distance"],
+        ]
+        _way_points_dict[wp_id] = wp_list
+        _way_points.append(wp_list)
     return _way_points
 
 
 def parse_distribution_polygons(
-    json_data: dict,
+    json_data: Dict[str, Any],
 ) -> Dict[int, shapely.Polygon]:
     """
     Parses the 'distribution_polygons' object from a JSON string into a Python dictionary.
@@ -104,7 +110,7 @@ def parse_distribution_polygons(
     return _distribution_polygons
 
 
-def parse_jpsvis_doors(json_data: dict) -> Dict[int, List[List[float]]]:
+def parse_jpsvis_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
     """
     Parses a JSON string containing information about jpsvis doors and returns a dictionary
     mapping area IDs to a list of coordinates that define the doros.
@@ -125,7 +131,7 @@ def parse_jpsvis_doors(json_data: dict) -> Dict[int, List[List[float]]]:
     return _doors
 
 
-def parse_accessible_areas(json_data: dict) -> Dict[int, List[List[float]]]:
+def parse_accessible_areas(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
     """
     Parses a JSON string containing information about accessible areas and returns a dictionary
     mapping area IDs to a list of coordinates that define the area.
@@ -144,7 +150,7 @@ def parse_accessible_areas(json_data: dict) -> Dict[int, List[List[float]]]:
     return _areas
 
 
-def parse_fps(json_data: dict) -> Optional[int]:
+def parse_fps(json_data: Dict[str, Any]) -> Optional[int]:
     """Get fps if found in file, otherwise None"""
 
     if "fps" in json_data:
@@ -153,7 +159,7 @@ def parse_fps(json_data: dict) -> Optional[int]:
     return None
 
 
-def parse_time_step(json_data: dict) -> Optional[float]:
+def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:
     """Get time_step if found, otherwise None"""
 
     if "time_step" in json_data:
@@ -162,7 +168,7 @@ def parse_time_step(json_data: dict) -> Optional[float]:
     return None
 
 
-def parse_simulation_time(json_data: dict) -> Optional[int]:
+def parse_simulation_time(json_data: Dict[str, Any]) -> Optional[int]:
     """Get simulation if found, otherwise None"""
 
     if "simulation_time" in json_data:
@@ -171,7 +177,7 @@ def parse_simulation_time(json_data: dict) -> Optional[int]:
     return None
 
 
-def print_obj(obj: dict, name: str):
+def print_obj(obj: Dict[int, Any], name: str) -> None:
     """Debug plots"""
 
     print(f"{name}: ")
@@ -196,6 +202,7 @@ if __name__ == "__main__":
 
         try:
             data = json.loads(json_str)
+
             if SCHEMA:
                 print("Validate json file ...\n-----------")
                 jsonschema.validate(instance=data, schema=SCHEMA)
@@ -220,7 +227,7 @@ if __name__ == "__main__":
             print_obj(jpsvis_doors, "jpsvis_doors")
             print_obj(distribution_polygons, "distribution polygon")
             print_obj(profiles, "profile")
-            print_obj(way_points, "way_point")
+            print(f"{way_points=}")
 
         except jsonschema.exceptions.ValidationError as e:
             print("Invalid JSON:", e)

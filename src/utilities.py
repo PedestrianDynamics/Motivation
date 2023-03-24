@@ -1,11 +1,13 @@
 """
 Some functions to setup the simulation.
 """
-from typing import Dict, List
+from typing import Dict, List, Tuple, Any, TypeAlias
 
 import py_jupedsim as jps
 
 from .logger_config import log_info
+
+Point: TypeAlias = Tuple[float, float]
 
 
 def build_geometry(
@@ -27,7 +29,9 @@ def build_geometry(
     return geometry
 
 
-def build_areas(destinations: dict, labels: list) -> jps.AreasBuilder:
+def build_areas(
+    destinations: Dict[int, List[List[Point]]], labels: List[str]
+) -> jps.AreasBuilder:
     """Build destination areas with CCW-Polygon
 
     :returns: Area builder
@@ -50,8 +54,8 @@ def build_areas(destinations: dict, labels: list) -> jps.AreasBuilder:
 
 
 def build_gcfm_model(
-    init_parameters: dict,
-    parameter_profiles: dict,
+    init_parameters: Dict[str, float],
+    parameter_profiles: Dict[int, List[float]],
 ) -> jps.OperationalModel:
     """Initialize gcfm model with parameter values
 
@@ -97,8 +101,8 @@ def build_gcfm_model(
 
 
 def build_velocity_model(
-    init_parameters: dict,
-    parameter_profiles: dict,
+    init_parameters: Dict[str, float],
+    parameter_profiles: Dict[int, List[float]],
 ) -> jps.OperationalModel:
     """Initialize velocity model with parameter values
 
@@ -131,7 +135,9 @@ def build_velocity_model(
     return model
 
 
-def init_journey(simulation: jps.Simulation, way_points: list) -> int:
+def init_journey(
+    simulation: jps.Simulation, way_points: List[Tuple[Point, float]]
+) -> int:
     """Init goals of agents to follow
 
     :param simulation:
@@ -142,7 +148,7 @@ def init_journey(simulation: jps.Simulation, way_points: list) -> int:
     log_info("Init journey")
     log_info(f"> {way_points}")
     journey = jps.Journey.make_waypoint_journey(way_points)
-    journey_id = simulation.add_journey(journey)
+    journey_id = int(simulation.add_journey(journey))
     return journey_id
 
 
@@ -200,8 +206,8 @@ def init_velocity_agent_parameters(
 def distribute_and_add_agents(
     simulation: jps.Simulation,
     agent_parameters: jps.VelocityModelAgentParameters,
-    positions: list,
-) -> list:
+    positions: List[Point],
+) -> List[int]:
     """Initialize positions of agents and insert them into the simulation
 
     :param simulation:
@@ -212,7 +218,7 @@ def distribute_and_add_agents(
     """
     log_info("Distribute and Add Agent")
     ped_ids = []
-    for pos_x, pos_y in positions:
+    for (pos_x, pos_y) in positions:
         agent_parameters.position = (pos_x, pos_y)
         agent_parameters.orientation = (1, 0)  # TODO orientation as input
         ped_id = simulation.add_agent(agent_parameters)
@@ -223,7 +229,7 @@ def distribute_and_add_agents(
 
 def create_velocity_model_profile(
     pid: int, time_gap: float, tau: float, v_0: float, radius: float
-) -> dict:
+) -> Dict[int, List[float]]:
     """create a new velocityModel profile
 
     :param time_gap:

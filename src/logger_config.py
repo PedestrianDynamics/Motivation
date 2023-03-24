@@ -5,23 +5,23 @@ import logging
 import py_jupedsim as jps
 
 
-def log_debug(msg):
+def log_debug(msg: str) -> None:
     """debug messages"""
 
     logging.debug(msg)
 
 
-def log_info(msg):
+def log_info(msg: str) -> None:
     """info messages"""
     logging.info(msg)
 
 
-def log_warn(msg):
+def log_warn(msg: str) -> None:
     """warning messages"""
     logging.warning(msg)
 
 
-def log_error(msg):
+def log_error(msg: str) -> None:
     """error messages"""
     logging.error(msg)
 
@@ -29,7 +29,7 @@ def log_error(msg):
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s : %(message)s")
 
 
-def init_logger():
+def init_logger() -> None:
     """init logger"""
 
     # jps.set_debug_callback(log_debug)

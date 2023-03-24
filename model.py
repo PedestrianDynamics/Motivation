@@ -6,7 +6,7 @@ Simulation model using jpscore API
 import json
 import pathlib
 import sys
-from typing import Any
+from typing import Dict, List, Any
 
 import py_jupedsim as jps
 from jupedsim.distributions import (
@@ -35,7 +35,7 @@ from src.utilities import (
 )
 
 
-def init_simulation(_data: dict, _time_step: float) -> Any:
+def init_simulation(_data: Dict[str, Any], _time_step: float) -> Any:
     """Setup geometry and parameter profiles,
 
     :param data:
@@ -66,10 +66,10 @@ def init_simulation(_data: dict, _time_step: float) -> Any:
 
 
 def run_simulation(
-    simulation,
-    writer,
-    ped_ids,
-):
+    simulation: Any,
+    writer: Any,
+    ped_ids: List[int],
+) -> None:
     """Run simulation logic
 
     :param simulation:
@@ -109,7 +109,9 @@ def run_simulation(
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
 
 
-def main(_fps: int, _time_step: float, _data: dict, _trajectory_path: pathlib.Path):
+def main(
+    _fps: int, _time_step: float, _data: Dict[str, Any], _trajectory_path: pathlib.Path
+) -> None:
     """Main simulation loop
 
     :param fps:
@@ -120,8 +122,9 @@ def main(_fps: int, _time_step: float, _data: dict, _trajectory_path: pathlib.Pa
 
     """
     simulation = init_simulation(_data, _time_step)
-
-    way_points = list(parse_way_points(_data).values())
+    print(f"{parse_way_points(_data)=}")
+    way_points = parse_way_points(_data)
+    print(f"{way_points=}")
     journey_id = init_journey(simulation, way_points)
 
     agent_parameters = init_velocity_agent_parameters(
