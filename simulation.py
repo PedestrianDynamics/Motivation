@@ -82,28 +82,33 @@ def run_simulation(
 
     """
     test_id = ped_ids[0]
+    print(test_id)
     actual_profile = 1
     while simulation.agent_count() > 0:
         simulation.iterate()
         if simulation.iteration_count() % fps == 0:
             writer.write_iteration_state(simulation)
 
-        if simulation.iteration_count() > 0 and simulation.iteration_count() < 500:
+        if (
+            simulation.iteration_count() > 0
+            and simulation.iteration_count() > 200
+            and actual_profile == 1
+        ):
             actual_profile = 2
 
-        if simulation.iteration_count() > 500 and simulation.iteration_count() < 700:
-            actual_profile = 1
+        # if simulation.iteration_count() > 500 and simulation.iteration_count() < 700:
+        #     actual_profile = 1
 
         try:
             simulation.switch_agent_profile(agent_id=test_id, profile_id=actual_profile)
         except RuntimeError:
             log_error(
-                f"""Can not change Profile of Agent
-                {test_id} to Profile={actual_profile} at
+                f"""Can not change Profile of Agent {test_id} 
+                to Profile={actual_profile} at
                 Iteration={simulation.iteration_count()}."""
             )
-            # end the simulation
-            break
+        #     # end the simulation
+        #     break
 
     writer.end_writing()
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
