@@ -77,5 +77,5 @@ class ParameterGrid:
         grid = list(product(array_v_0, array_time_gap))
         closest_point = min(
             grid, key=lambda p: abs(p[0] - v_0_i) + abs(p[1] - time_gap_i)
-        )
+        )  # type: ignore
         return int(grid.index(closest_point))
