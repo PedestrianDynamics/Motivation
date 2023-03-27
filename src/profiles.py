@@ -9,7 +9,7 @@ With the profile id we can select a profile that contains
 
 from dataclasses import dataclass, field
 from itertools import product
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -75,7 +75,11 @@ class ParameterGrid:
         array_v_0 = self.get_v_0_range()
         array_time_gap = self.get_time_gap_range()
         grid = list(product(array_v_0, array_time_gap))
-        closest_point = min(
-            grid, key=lambda p: abs(p[0] - v_0_i) + abs(p[1] - time_gap_i)
-        )  # type: ignore
+
+        def manhattan_distance(point: Tuple[int, int]) -> int:
+            """Manhattan distance"""
+
+            return abs(point[0] - v_0_i) + abs(point[1] - time_gap_i)
+
+        closest_point = min(grid, key=manhattan_distance)
         return int(grid.index(closest_point))
