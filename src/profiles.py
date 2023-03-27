@@ -1,55 +1,66 @@
 from dataclasses import dataclass, field
+from itertools import product
 from typing import List
+
 import numpy as np
+import numpy.typing as npt
 
 
 @dataclass
 class ParameterProfile:
-    v0: float
-    T: float
+    time_gap: float
+    v_0: float
+    tau: float
+    radius: float
     number: int
 
 
 @dataclass
 class ParameterGrid:
-    min_v0: float
-    max_v0: float
-    v0_step: float
-    min_T: float
-    max_T: float
-    T_step: float
+    min_v_0: float
+    max_v_0: float
+    v_0_step: float
+    min_time_gap: float
+    max_time_gap: float
+    time_gap_step: float
     profiles: List[ParameterProfile] = field(init=False)
 
     def __post_init__(self):
         self.profiles = []
         profile_number = 0
-        for v0 in self.get_v0_range():
-            for T in self.get_T_range():
+        for v_0 in self.get_v_0_range():
+            for time_gap in self.get_time_gap_range():
                 self.profiles.append(
-                    ParameterProfile(v0=v0, T=T, number=profile_number)
+                    ParameterProfile(
+                        time_gap=time_gap,
+                        v_0=v_0,
+                        tau=0.5,
+                        radius=0.2,
+                        number=profile_number,
+                    )
                 )
                 profile_number += 1
 
-    def get_v0_range(self):
-        return [i for i in np.arange(self.min_v0, self.max_v0 + 1, self.v0_step)]
+    def get_v_0_range(self) -> npt.NDArray[np.float32]:
+        """distretise v0 in interval"""
+        return np.arange(self.min_v_0, self.max_v_0 + self.v_0_step, self.v_0_step)
 
-    def get_T_range(self):
-        return [i for i in np.arange(self.min_T, self.max_T + 1, self.T_step)]
+    def get_time_gap_range(self) -> npt.NDArray[np.float32]:
+        """discretize time_gap in interval"""
 
-    def get_profile_number(self, v0_i, T_i):
-        v0_index = int((v0_i - self.min_v0) / self.v0_step)
-        T_index = int((T_i - self.min_T) / self.T_step)
-        return T_index * len(self.get_v0_range()) + v0_index
+        return np.arange(
+            self.min_time_gap,
+            self.max_time_gap + self.time_gap_step,
+            self.time_gap_step,
+        )
 
+    def get_profile_number(self, v_0_i, time_gap_i) -> int:
+        """Return profile number of tuple of variables"""
 
-if __name__ == "__main__":
-    grid = ParameterGrid(min_v0=0, max_v0=1, v0_step=0.5, min_T=0, max_T=1, T_step=0.5)
-    print(grid.profiles)
-
-    print(grid.get_profile_number(v0_i=0, T_i=0.5))
-
-    print(grid.get_profile_number(v0_i=0.5, T_i=0))
-
-    print(grid.profiles[1].number)
-
-    print(grid.profiles[2].v0, grid.profiles[2].T)
+        array_v_0 = self.get_v_0_range()
+        array_time_gap = self.get_time_gap_range()
+        grid = list(product(array_v_0, array_time_gap))
+        closest_point = min(
+            grid, key=lambda p: abs(p[0] - v_0_i) + abs(p[1] - time_gap_i)
+        )
+        return grid.index(closest_point)

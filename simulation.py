@@ -49,7 +49,7 @@ def init_simulation(_data: Dict[str, Any], _time_step: float) -> Any:
     destinations = parse_destinations(_data)
     labels = ["exit"]  # todo --> json file
     parameter_profiles = parse_velocity_model_parameter_profiles(_data)
-
+    print(f"{parameter_profiles=}")
     geometry = build_geometry(accessible_areas)
     areas = build_areas(destinations, labels)
     init_parameters = {"a_ped": 8, "d_ped": 0.1, "a_wall": 5, "d_wall": 0.02}
