@@ -103,7 +103,7 @@ def run_simulation(
             simulation.switch_agent_profile(agent_id=test_id, profile_id=actual_profile)
         except RuntimeError:
             log_error(
-                f"""Can not change Profile of Agent {test_id} 
+                f"""Can not change Profile of Agent {test_id}
                 to Profile={actual_profile} at
                 Iteration={simulation.iteration_count()}."""
             )

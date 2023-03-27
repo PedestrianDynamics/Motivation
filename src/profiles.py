@@ -3,7 +3,8 @@ Define velocityModel parameter profiles and fonctionalities, especially
 returning a profile id for given (v0, T)
 This is necessary, since we need to create a grid of parameter values beforehands and pass it to
 the simulation module.
-With the profile id we can select a profile that contains approaximately the same parameter values as (v0, T)
+With the profile id we can select a profile that contains
+*approaximately* the same parameter values as (v0, T)
 """
 
 from dataclasses import dataclass, field
@@ -15,7 +16,9 @@ import numpy.typing as npt
 
 
 @dataclass
-class ParameterProfile:
+class VelocityModelParameterProfile:
+    """Parameter profile definition"""
+
     time_gap: float
     v_0: float
     tau: float
@@ -25,13 +28,15 @@ class ParameterProfile:
 
 @dataclass
 class ParameterGrid:
+    """Grid of parameter profiles"""
+
     min_v_0: float
     max_v_0: float
     v_0_step: float
     min_time_gap: float
     max_time_gap: float
     time_gap_step: float
-    profiles: List[ParameterProfile] = field(init=False)
+    profiles: List[VelocityModelParameterProfile] = field(init=False)
 
     def __post_init__(self):
         self.profiles = []
@@ -39,7 +44,7 @@ class ParameterGrid:
         for v_0 in self.get_v_0_range():
             for time_gap in self.get_time_gap_range():
                 self.profiles.append(
-                    ParameterProfile(
+                    VelocityModelParameterProfile(
                         time_gap=time_gap,
                         v_0=v_0,
                         tau=0.5,
