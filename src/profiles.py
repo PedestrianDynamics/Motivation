@@ -1,3 +1,11 @@
+"""
+Define velocityModel parameter profiles and fonctionalities, especially
+returning a profile id for given (v0, T)
+This is necessary, since we need to create a grid of parameter values beforehands and pass it to
+the simulation module.
+With the profile id we can select a profile that contains approaximately the same parameter values as (v0, T)
+"""
+
 from dataclasses import dataclass, field
 from itertools import product
 from typing import List
