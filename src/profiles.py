@@ -38,7 +38,9 @@ class ParameterGrid:
     time_gap_step: float
     profiles: List[VelocityModelParameterProfile] = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        """Init profile list and profiles numbers"""
+
         self.profiles = []
         profile_number = 0
         for v_0 in self.get_v_0_range():
@@ -67,7 +69,7 @@ class ParameterGrid:
             self.time_gap_step,
         )
 
-    def get_profile_number(self, v_0_i, time_gap_i) -> int:
+    def get_profile_number(self, v_0_i: float, time_gap_i: float) -> int:
         """Return profile number of tuple of variables"""
 
         array_v_0 = self.get_v_0_range()
@@ -76,4 +78,4 @@ class ParameterGrid:
         closest_point = min(
             grid, key=lambda p: abs(p[0] - v_0_i) + abs(p[1] - time_gap_i)
         )
-        return grid.index(closest_point)
+        return int(grid.index(closest_point))
