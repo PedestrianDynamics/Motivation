@@ -36,16 +36,16 @@ class ParameterGrid:
     min_time_gap: float
     max_time_gap: float
     time_gap_step: float
-    profiles: List[VelocityModelParameterProfile] = field(init=False)
+    velocity_profiles: List[VelocityModelParameterProfile] = field(init=False)
 
     def __post_init__(self) -> None:
         """Init profile list and profiles numbers"""
 
-        self.profiles = []
+        self.velocity_profiles = []
         profile_number = 0
         for v_0 in self.get_v_0_range():
             for time_gap in self.get_time_gap_range():
-                self.profiles.append(
+                self.velocity_profiles.append(
                     VelocityModelParameterProfile(
                         time_gap=time_gap,
                         v_0=v_0,

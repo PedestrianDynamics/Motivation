@@ -6,25 +6,24 @@ Simulation model using jpscore API
 import json
 import pathlib
 import sys
-from typing import Dict, List, Any
+from typing import Any, Dict, List, Tuple, TypeAlias
+import src.profiles as pp
 
 import py_jupedsim as jps
-from jupedsim.distributions import (
-    distribute_by_number,
-)
-
+from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
-from src.logger_config import init_logger, log_error, log_info
+import src.motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
     parse_fps,
     parse_time_step,
-    parse_velocity_model_parameter_profiles,
+    #parse_velocity_model_parameter_profiles,
     parse_way_points,
 )
+from src.logger_config import init_logger, log_error, log_info
 from src.utilities import (
     build_areas,
     build_geometry,
@@ -34,8 +33,10 @@ from src.utilities import (
     init_velocity_agent_parameters,
 )
 
+Point: TypeAlias = Tuple[float, float]
 
-def init_simulation(_data: Dict[str, Any], _time_step: float) -> Any:
+
+def init_simulation(_data: Dict[str, Any], _time_step: float) -> Tuple[Any, pp.ParameterGrid]:
     """Setup geometry and parameter profiles,
 
     :param data:
@@ -48,7 +49,25 @@ def init_simulation(_data: Dict[str, Any], _time_step: float) -> Any:
     accessible_areas = parse_accessible_areas(_data)
     destinations = parse_destinations(_data)
     labels = ["exit"]  # todo --> json file
-    parameter_profiles = parse_velocity_model_parameter_profiles(_data)
+    #parameter_profiles = parse_velocity_model_parameter_profiles(_data)
+    grid = pp.ParameterGrid(
+        min_v_0=1.0,
+        max_v_0=2.0,
+        v_0_step=0.1,
+        min_time_gap=0.1,
+        max_time_gap=1,
+        time_gap_step=0.1,
+    )
+    velocity_profiles = grid.velocity_profiles
+    parameter_profiles: Dict[int, List[float]] = {}    
+    for velocity_profile in velocity_profiles:     
+        parameter_profiles[velocity_profile.number] = [
+            velocity_profile.time_gap,
+            velocity_profile.tau,
+            velocity_profile.v_0,
+            velocity_profile.radius,
+        ]
+
     print(f"{parameter_profiles=}")
     geometry = build_geometry(accessible_areas)
     areas = build_areas(destinations, labels)
@@ -62,13 +81,28 @@ def init_simulation(_data: Dict[str, Any], _time_step: float) -> Any:
         model=model, geometry=geometry, areas=areas, dt=_time_step
     )
     log_info("Init simulation done")
-    return simulation
+    return simulation, grid
+
+
+def update_profiles(
+        simulation: Any, peds_ids: List[int], positions: List[Point], grid:pp.ParameterGrid
+) -> None:
+    """Switch profile of pedestrian depending on its motivation"""
+
+    for ped_id, position in zip(peds_ids, positions):
+        actual_profile = mm.get_profile_number(position, grid)
+        try:
+            simulation.switch_agent_profile(agent_id=ped_id, profile_id=actual_profile)
+        except RuntimeError:
+            log_error(
+                f"""Can not change Profile of Agent {ped_id}
+                to Profile={actual_profile} at
+                Iteration={simulation.iteration_count()}."""
+            )
 
 
 def run_simulation(
-    simulation: Any,
-    writer: Any,
-    ped_ids: List[int],
+        simulation: Any, writer: Any, ped_ids: List[int], positions: List[Point], grid:pp.ParameterGrid
 ) -> None:
     """Run simulation logic
 
@@ -81,34 +115,10 @@ def run_simulation(
     :returns:
 
     """
-    test_id = ped_ids[0]
-    print(test_id)
-    actual_profile = 1
     while simulation.agent_count() > 0:
         simulation.iterate()
-        if simulation.iteration_count() % fps == 0:
-            writer.write_iteration_state(simulation)
-
-        if (
-            simulation.iteration_count() > 0
-            and simulation.iteration_count() > 200
-            and actual_profile == 1
-        ):
-            actual_profile = 2
-
-        # if simulation.iteration_count() > 500 and simulation.iteration_count() < 700:
-        #     actual_profile = 1
-
-        try:
-            simulation.switch_agent_profile(agent_id=test_id, profile_id=actual_profile)
-        except RuntimeError:
-            log_error(
-                f"""Can not change Profile of Agent {test_id}
-                to Profile={actual_profile} at
-                Iteration={simulation.iteration_count()}."""
-            )
-        #     # end the simulation
-        #     break
+        # TODO: maybe not every time step
+        update_profiles(simulation, ped_ids, positions, grid)
 
     writer.end_writing()
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
@@ -126,7 +136,7 @@ def main(
     :returns:
 
     """
-    simulation = init_simulation(_data, _time_step)
+    simulation, grid = init_simulation(_data, _time_step)
     print(f"{parse_way_points(_data)=}")
     way_points = parse_way_points(_data)
     print(f"{way_points=}")
@@ -155,7 +165,7 @@ def main(
     writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
     writer.begin_writing(_fps)
 
-    run_simulation(simulation, writer, ped_ids)
+    run_simulation(simulation, writer, ped_ids, positions, grid)
     log_info(f"Trajectory: {_trajectory_path}")
 
 
