@@ -7,20 +7,19 @@ import json
 import pathlib
 import sys
 from typing import Any, Dict, List, Tuple, TypeAlias
-import src.profiles as pp
 
 import py_jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
-import src.motivation_model as mm
-from src.inifile_parser import (
+from src import motivation_model as mm, profiles as pp
+
+from src.inifile_parser import (  # parse_velocity_model_parameter_profiles,
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
     parse_fps,
     parse_time_step,
-    #parse_velocity_model_parameter_profiles,
     parse_way_points,
 )
 from src.logger_config import init_logger, log_error, log_info
@@ -36,7 +35,9 @@ from src.utilities import (
 Point: TypeAlias = Tuple[float, float]
 
 
-def init_simulation(_data: Dict[str, Any], _time_step: float) -> Tuple[Any, pp.ParameterGrid]:
+def init_simulation(
+    _data: Dict[str, Any], _time_step: float
+) -> Tuple[Any, pp.ParameterGrid]:
     """Setup geometry and parameter profiles,
 
     :param data:
@@ -49,7 +50,7 @@ def init_simulation(_data: Dict[str, Any], _time_step: float) -> Tuple[Any, pp.P
     accessible_areas = parse_accessible_areas(_data)
     destinations = parse_destinations(_data)
     labels = ["exit"]  # todo --> json file
-    #parameter_profiles = parse_velocity_model_parameter_profiles(_data)
+    # parameter_profiles = parse_velocity_model_parameter_profiles(_data)
     grid = pp.ParameterGrid(
         min_v_0=1.0,
         max_v_0=2.0,
@@ -59,8 +60,8 @@ def init_simulation(_data: Dict[str, Any], _time_step: float) -> Tuple[Any, pp.P
         time_gap_step=0.1,
     )
     velocity_profiles = grid.velocity_profiles
-    parameter_profiles: Dict[int, List[float]] = {}    
-    for velocity_profile in velocity_profiles:     
+    parameter_profiles: Dict[int, List[float]] = {}
+    for velocity_profile in velocity_profiles:
         parameter_profiles[velocity_profile.number] = [
             velocity_profile.time_gap,
             velocity_profile.tau,
@@ -85,7 +86,7 @@ def init_simulation(_data: Dict[str, Any], _time_step: float) -> Tuple[Any, pp.P
 
 
 def update_profiles(
-        simulation: Any, peds_ids: List[int], positions: List[Point], grid:pp.ParameterGrid
+    simulation: Any, peds_ids: List[int], positions: List[Point], grid: pp.ParameterGrid
 ) -> None:
     """Switch profile of pedestrian depending on its motivation"""
 
@@ -102,7 +103,11 @@ def update_profiles(
 
 
 def run_simulation(
-        simulation: Any, writer: Any, ped_ids: List[int], positions: List[Point], grid:pp.ParameterGrid
+    simulation: Any,
+    writer: Any,
+    ped_ids: List[int],
+    positions: List[Point],
+    grid: pp.ParameterGrid,
 ) -> None:
     """Run simulation logic
 
