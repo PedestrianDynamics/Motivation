@@ -77,7 +77,7 @@ def init_simulation(
         init_parameters,
         parameter_profiles=parameter_profiles,
     )
-    # todo: here we already need to know the profiles, and can not calculate them on the fly.
+
     simulation = jps.Simulation(
         model=model, geometry=geometry, areas=areas, dt=_time_step
     )
