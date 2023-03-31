@@ -21,15 +21,15 @@ def motivation(distance: float, _width: float, _height: float) -> float:
     return motivation_y
 
 
-def calculate_motivation_state(motivation: float) -> Tuple[float, float]:
+def calculate_motivation_state(motivation_i: float) -> Tuple[float, float]:
     """return v0, T tuples depending on Motivation"""
 
     v_0 = 1.2
     time_gap = 1
-    v_0_tilde = (1 + motivation) * v_0
-    T_tilde = time_gap / (1 + motivation)
+    v_0_new = (1 + motivation_i) * v_0
+    time_gap_new = time_gap / (1 + motivation_i)
 
-    return v_0_tilde, T_tilde
+    return v_0_new, time_gap_new
 
 
 # def motivation_trying(x: float, slope: float, start: float, end: float) -> float:
