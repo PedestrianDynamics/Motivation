@@ -91,7 +91,7 @@ def get_profile_number(position: Point, grid: ParameterGrid) -> int:
     distance = ((position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2) ** 0.5
     motivation_i = motivation(distance, center, width)
     v_0, time_gap = calculate_motivation_state(motivation_i)
-    number = grid.get_profile_number(v_0_i=v_0, time_gap_i=time_gap)
+    number = int(grid.get_profile_number(v_0_i=v_0, time_gap_i=time_gap))
     return number
 
 

@@ -76,7 +76,7 @@ class ParameterGrid:
         array_time_gap = self.get_time_gap_range()
         grid = list(product(array_v_0, array_time_gap))
 
-        def manhattan_distance(point: Tuple[int, int]) -> int:
+        def manhattan_distance(point: Tuple[int, int]) -> float:
             """Manhattan distance"""
 
             return abs(point[0] - v_0_i) + abs(point[1] - time_gap_i)
