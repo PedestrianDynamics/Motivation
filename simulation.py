@@ -21,10 +21,10 @@ from src.inifile_parser import (  # parse_velocity_model_parameter_profiles,
     parse_fps,
     parse_time_step,
     parse_way_points,
+    parse_number_agents,
 )
 from src.logger_config import init_logger, log_error, log_info
 from src.utilities import (
-    build_areas,
     build_geometry,
     build_velocity_model,
     distribute_and_add_agents,
@@ -48,7 +48,6 @@ def init_simulation(
 
     """
     accessible_areas = parse_accessible_areas(_data)
-    destinations = parse_destinations(_data)
     labels = ["exit"]  # todo --> json file
     # parameter_profiles = parse_velocity_model_parameter_profiles(_data)
     grid = pp.ParameterGrid(
@@ -69,18 +68,16 @@ def init_simulation(
             velocity_profile.radius,
         ]
 
-    print(f"{parameter_profiles=}")
+    # print(f"{parameter_profiles=}")
     geometry = build_geometry(accessible_areas)
-    areas = build_areas(destinations, labels)
+    # areas = build_areas(destinations, labels)
     init_parameters = {"a_ped": 8, "d_ped": 0.1, "a_wall": 5, "d_wall": 0.02}
     model = build_velocity_model(
         init_parameters,
         parameter_profiles=parameter_profiles,
     )
 
-    simulation = jps.Simulation(
-        model=model, geometry=geometry, areas=areas, dt=_time_step
-    )
+    simulation = jps.Simulation(model=model, geometry=geometry, dt=_time_step)
     log_info("Init simulation done")
     return simulation, grid
 
@@ -91,10 +88,13 @@ def update_profiles(
     """Switch profile of pedestrian depending on its motivation"""
 
     for ped_id, position in zip(peds_ids, positions):
+
         actual_profile = mm.get_profile_number(position, grid)
+        # print(f"{ped_id=}, {position=}, {actual_profile=}")
         try:
             simulation.switch_agent_profile(agent_id=ped_id, profile_id=actual_profile)
         except RuntimeError:
+            # pass
             log_error(
                 f"""Can not change Profile of Agent {ped_id}
                 to Profile={actual_profile} at
@@ -123,14 +123,18 @@ def run_simulation(
     while simulation.agent_count() > 0:
         simulation.iterate()
         # TODO: maybe not every time step
-        update_profiles(simulation, ped_ids, positions, grid)
+        # update_profiles(simulation, ped_ids, positions, grid)
 
     writer.end_writing()
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
 
 
 def main(
-    _fps: int, _time_step: float, _data: Dict[str, Any], _trajectory_path: pathlib.Path
+    _number_Agents,
+    _fps: int,
+    _time_step: float,
+    _data: Dict[str, Any],
+    _trajectory_path: pathlib.Path,
 ) -> None:
     """Main simulation loop
 
@@ -144,8 +148,9 @@ def main(
     simulation, grid = init_simulation(_data, _time_step)
     print(f"{parse_way_points(_data)=}")
     way_points = parse_way_points(_data)
-    print(f"{way_points=}")
-    journey_id = init_journey(simulation, way_points)
+    destinations = parse_destinations(_data)
+    destinations = list(destinations.values())
+    journey_id = init_journey(simulation, way_points, destinations[0])
 
     agent_parameters = init_velocity_agent_parameters(
         phi_x=1, phi_y=0, journey=journey_id, profile=1
@@ -153,15 +158,17 @@ def main(
     distribution_polygons = parse_distribution_polygons(_data)
     positions = []
 
+    total_agents = _number_Agents
     for s_polygon in distribution_polygons.values():
         log_info(f"Distribute agents in {s_polygon}")
         pos = distribute_by_number(
             polygon=s_polygon,
-            number_of_agents=10,
+            number_of_agents=total_agents,
             distance_to_agents=0.30,
             distance_to_polygon=0.20,
             seed=45131502,
         )
+        total_agents -= _number_Agents
         positions += pos
 
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
@@ -184,8 +191,10 @@ if __name__ == "__main__":
         data = json.loads(json_str)
         fps = parse_fps(data)
         time_step = parse_time_step(data)
+        number_agents = parse_number_agents(data)
         if fps and time_step:
             main(
+                number_agents,
                 fps,
                 time_step,
                 data,

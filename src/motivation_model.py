@@ -1,14 +1,15 @@
 """
 Draft for a motivational model
 """
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from typing import Tuple, TypeAlias
 
 import numpy as np
 
 Point: TypeAlias = Tuple[float, float]
 
-from profiles import ParameterGrid
+# from . import profiles
+from .profiles import ParameterGrid
 
 
 def motivation(distance: float, _width: float, _height: float) -> float:
@@ -83,13 +84,13 @@ def calculate_motivation_state(motivation_i: float) -> Tuple[float, float]:
 def get_profile_number(position: Point, grid: ParameterGrid) -> int:
     """Calculate the profile number from grid based on motivation related (v0,T)"""
 
-    center = 2
-    width = 0.5
+    height = 1
+    width = 1
     # [60, 102.6],
     # [60, 101.4]
     door = [62, (102.6 + 101.4) / 2]  # TODO: parse from json
     distance = ((position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2) ** 0.5
-    motivation_i = motivation(distance, center, width)
+    motivation_i = motivation(distance, width, height)
     v_0, time_gap = calculate_motivation_state(motivation_i)
     number = int(grid.get_profile_number(v_0_i=v_0, time_gap_i=time_gap))
     return number
@@ -98,24 +99,31 @@ def get_profile_number(position: Point, grid: ParameterGrid) -> int:
 if "__main__" == __name__:
     pass
     # Parameters
-    # m = 1
-    # a = 1
-    # b = 3
-    # n_p = a + b
+    m = 1
+    a = 1
+    b = 3
+    n_p = a + b
 
     # Generate x and y values
-    # x = np.linspace(0, b + a + 1, 100)
+    x = np.linspace(0, b + a + 1, 100)
 
-    # fig, ax = plt.subplots(2, 2)
-    # fig.tight_layout()
-    # center = 2
-    # x2 = np.linspace(0, 10, 1000)
-    # for width in [0.5, 1]:
-    #     y = motivation(x2, center, width)
-    #     plt.plot(x2, y, label=f"{width=}")
-    #     plt.ylabel("M")
-    #     plt.grid(alpha=0.3)
-    #     plt.legend()
+    fig, ax = plt.subplots(1, 1)
+    fig.tight_layout()
+    width = 2
+    x2 = np.linspace(0, 5, 1000)
+
+    for height in [0.5, 1, 2]:
+        y = []
+        for value in x2:
+            y.append(motivation(value, width, height))
+
+        plt.plot(x2, y, label=f"{width=}")
+        plt.ylabel("M")
+        plt.grid(alpha=0.3)
+        plt.legend()
+
+    print("plot2.png")
+    plt.savefig("plot2.png")
 
     # for m in [1, 2, 3]:
     #     y = np.array([motivation_trying(xi, m, a, b) for xi in x])
@@ -148,5 +156,3 @@ if "__main__" == __name__:
     # #     ax[1][1].plot(x, E * C)
     # #     ax[1][1].grid(alpha=0.3)
     # #     ax[1][1].set_ylabel("E.C")
-
-    # plt.savefig("plot2.png")

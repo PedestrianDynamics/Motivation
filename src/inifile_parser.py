@@ -79,10 +79,10 @@ def parse_way_points(
     _way_points_dict: Dict[int, List[Tuple[Point, float]]] = {}
     _way_points: List[Any] = []
     for wp_id, way_point in enumerate(json_data["way_points"]):
-        wp_list = [
-            way_point["coordinates"],
+        wp_list = (
+            tuple(way_point["coordinates"]),
             way_point["distance"],
-        ]
+        )
         _way_points_dict[wp_id] = wp_list
         _way_points.append(wp_list)
     return _way_points
@@ -157,6 +157,15 @@ def parse_fps(json_data: Dict[str, Any]) -> Optional[int]:
         return int(json_data["fps"])
 
     return None
+
+
+def parse_number_agents(json_data: Dict[str, Any]) -> Optional[int]:
+    """Get number_agents if found in file, otherwise 1"""
+
+    if "number_agents" in json_data:
+        return int(json_data["number_agents"])
+
+    return 1
 
 
 def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:

@@ -29,30 +29,6 @@ def build_geometry(
     return geometry
 
 
-def build_areas(
-    destinations: Dict[int, List[List[Point]]], labels: List[str]
-) -> jps.AreasBuilder:
-    """Build destination areas with CCW-Polygon
-
-    :returns: Area builder
-
-    :param polygon: list of (x, y)
-
-    """
-    log_info("Build areas")
-    areas_builder = jps.AreasBuilder()
-    for destination_id, polygon in destinations.items():
-        log_info(f"> {destination_id=}, {polygon=}, {labels=}")
-        areas_builder.add_area(
-            id=destination_id,
-            polygon=polygon,
-            labels=labels,
-        )
-
-    areas = areas_builder.build()
-    return areas
-
-
 def build_gcfm_model(
     init_parameters: Dict[str, float],
     parameter_profiles: Dict[int, List[float]],
@@ -113,7 +89,7 @@ def build_velocity_model(
     :returns: velocity model
 
     """
-    log_info(f"Init velocity model {parameter_profiles}")
+    # log_info(f"Init velocity model {parameter_profiles}")
     a_ped = init_parameters["a_ped"]
     d_ped = init_parameters["d_ped"]
     a_wall = init_parameters["a_wall"]
@@ -136,18 +112,29 @@ def build_velocity_model(
 
 
 def init_journey(
-    simulation: jps.Simulation, way_points: List[Tuple[Point, float]]
+    simulation: jps.Simulation,
+    way_points: List[Tuple[Point, float]],
+    exits: List[List[Point]],
 ) -> int:
     """Init goals of agents to follow
+
+    Add waypoints and exits to journey. Then register journey in simultion
 
     :param simulation:
     :param way_points: defined as a list of (point, distance)
     :returns:
 
     """
-    log_info("Init journey")
-    log_info(f"> {way_points}")
-    journey = jps.Journey.make_waypoint_journey(way_points)
+    log_info("Init journey with: ")
+    log_info(f"{way_points=}")
+    log_info(f"{exits=}")
+    journey = jps.JourneyDescription()
+    for way_point in way_points:
+        log_info(f"add way_point: {way_point}")
+        journey.add_waypoint(way_point[0], way_point[1])
+
+    journey.add_exit(exits)
+
     journey_id = int(simulation.add_journey(journey))
     return journey_id
 
@@ -155,7 +142,7 @@ def init_journey(
 def init_gcfm_agent_parameters(
     phi_x: float,
     phi_y: float,
-    journey: jps.Journey,
+    journey: int,
     profile: int,
 ) -> jps.GCFMModelAgentParameters:
     """Init agent shape and parameters
@@ -180,7 +167,7 @@ def init_gcfm_agent_parameters(
 def init_velocity_agent_parameters(
     phi_x: float,
     phi_y: float,
-    journey: jps.Journey,
+    journey: int,
     profile: int,
 ) -> jps.VelocityModelAgentParameters:
     """Init agent shape and parameters
