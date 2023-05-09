@@ -48,7 +48,6 @@ def init_simulation(
 
     """
     accessible_areas = parse_accessible_areas(_data)
-    labels = ["exit"]  # todo --> json file
     # parameter_profiles = parse_velocity_model_parameter_profiles(_data)
     grid = pp.ParameterGrid(
         min_v_0=1.0,
@@ -68,7 +67,6 @@ def init_simulation(
             velocity_profile.radius,
         ]
 
-    # print(f"{parameter_profiles=}")
     geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     init_parameters = {"a_ped": 8, "d_ped": 0.1, "a_wall": 5, "d_wall": 0.02}
@@ -90,7 +88,7 @@ def update_profiles(
     for ped_id, position in zip(peds_ids, positions):
 
         actual_profile = mm.get_profile_number(position, grid)
-        # print(f"{ped_id=}, {position=}, {actual_profile=}")
+        print(f"{ped_id=}, {position=}, {actual_profile=}")
         try:
             simulation.switch_agent_profile(agent_id=ped_id, profile_id=actual_profile)
         except RuntimeError:
@@ -122,8 +120,11 @@ def run_simulation(
     """
     while simulation.agent_count() > 0:
         simulation.iterate()
-        # TODO: maybe not every time step
-        # update_profiles(simulation, ped_ids, positions, grid)
+        if simulation.iteration_count() % 10 == 0:
+            update_profiles(simulation, ped_ids, positions, grid)
+
+        if simulation.iteration_count() % 10 == 0:
+            writer.write_iteration_state(simulation)
 
     writer.end_writing()
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
@@ -146,7 +147,6 @@ def main(
 
     """
     simulation, grid = init_simulation(_data, _time_step)
-    print(f"{parse_way_points(_data)=}")
     way_points = parse_way_points(_data)
     destinations = parse_destinations(_data)
     destinations = list(destinations.values())

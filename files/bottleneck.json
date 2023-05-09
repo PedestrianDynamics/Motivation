@@ -6,7 +6,7 @@
     "version": 0.1,
     "fps": 10,
     "time_step": 0.01,
-    "number_agents": 10,
+    "number_agents": 1,
     "simulation_time": 10,
     "accessible_areas": [
         {

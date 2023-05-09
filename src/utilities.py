@@ -207,7 +207,6 @@ def distribute_and_add_agents(
     ped_ids = []
     for (pos_x, pos_y) in positions:
         agent_parameters.position = (pos_x, pos_y)
-        agent_parameters.orientation = (1, 0)  # TODO orientation as input
         ped_id = simulation.add_agent(agent_parameters)
         ped_ids.append(ped_id)
 
