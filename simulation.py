@@ -81,16 +81,22 @@ def init_simulation(
 
 
 def update_profiles(
-    simulation: Any, peds_ids: List[int], positions: List[Point], grid: pp.ParameterGrid
+    simulation: Any, peds_ids: List[int], grid: pp.ParameterGrid
 ) -> None:
     """Switch profile of pedestrian depending on its motivation"""
 
-    for ped_id, position in zip(peds_ids, positions):
-
-        actual_profile = mm.get_profile_number(position, grid)
-        print(f"{ped_id=}, {position=}, {actual_profile=}")
+    # TODO get neighbors
+    # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
+    for ped_id in peds_ids:
+        agent = simulation.read_agent(ped_id)
+        position = agent.position
+        actual_profile = agent.profile_id
+        new_profile, motivation_i = mm.get_profile_number(position, grid)
         try:
-            simulation.switch_agent_profile(agent_id=ped_id, profile_id=actual_profile)
+            simulation.switch_agent_profile(agent_id=ped_id, profile_id=new_profile)
+            print(
+                f"{ped_id}, {position}, {new_profile=}, {actual_profile=}, {motivation_i=}"
+            )
         except RuntimeError:
             # pass
             log_error(
@@ -104,7 +110,6 @@ def run_simulation(
     simulation: Any,
     writer: Any,
     ped_ids: List[int],
-    positions: List[Point],
     grid: pp.ParameterGrid,
 ) -> None:
     """Run simulation logic
@@ -121,13 +126,13 @@ def run_simulation(
     while simulation.agent_count() > 0:
         simulation.iterate()
         if simulation.iteration_count() % 10 == 0:
-            update_profiles(simulation, ped_ids, positions, grid)
-
+            # TODO get ids of pedestrian that left the simulation
+            # JUPEDSIM_API size_t JPS_Simulation_RemovedAgents(JPS_Simulation handle, const JPS_AgentId** data);
+            # oder ped_ids Ueber Sim.agents() rechnen
+            update_profiles(simulation, ped_ids, grid)
+            pass
         if simulation.iteration_count() % 10 == 0:
             writer.write_iteration_state(simulation)
-
-    writer.end_writing()
-    log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
 
 
 def main(
@@ -176,9 +181,13 @@ def main(
     log_info(f"Running simulation for {len(ped_ids)} agents:")
     writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
     writer.begin_writing(_fps)
-
-    run_simulation(simulation, writer, ped_ids, positions, grid)
-    log_info(f"Trajectory: {_trajectory_path}")
+    run_simulation(simulation, writer, ped_ids, grid)
+    writer.end_writing()
+    log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
+    log_info(
+        f"{time_step}, {simulation.iteration_count()},  {simulation.iteration_count()*time_step}"
+    )
+    # log_info(f"Trajectory: {_trajectory_path}")
 
 
 if __name__ == "__main__":

@@ -81,7 +81,7 @@ def calculate_motivation_state(motivation_i: float) -> Tuple[float, float]:
 #     return c
 
 
-def get_profile_number(position: Point, grid: ParameterGrid) -> int:
+def get_profile_number(position: Point, grid: ParameterGrid) -> Tuple[int, float]:
     """Calculate the profile number from grid based on motivation related (v0,T)"""
 
     height = 1
@@ -93,7 +93,7 @@ def get_profile_number(position: Point, grid: ParameterGrid) -> int:
     motivation_i = motivation(distance, width, height)
     v_0, time_gap = calculate_motivation_state(motivation_i)
     number = int(grid.get_profile_number(v_0_i=v_0, time_gap_i=time_gap))
-    return number
+    return number, motivation_i
 
 
 if "__main__" == __name__:
