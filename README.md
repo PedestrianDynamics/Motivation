@@ -3,6 +3,15 @@
 
 ## Usage
 
+### Setup virtual env
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+```
+
+### Scripts
+
 ```bash
 ./run.sh <python-script> <input-file> <output-file.txt> <run-jpsvis>
 ```
@@ -13,3 +22,5 @@
 - `run-jpsvis (1|0)`: to visualize the trajectories with jpsvis
 
 `run.sh` has three hard-coded values for other jpscore-related scripts.
+
+
