@@ -89,10 +89,12 @@ def update_profiles(simulation: Any, grid: pp.ParameterGrid) -> None:
     for agent in agents:
         position = agent.position
         actual_profile = agent.profile_id
-        new_profile, motivation_i, v_0, time_gap, distance = mm.get_profile_number(position, grid)
+        new_profile, motivation_i, v_0, time_gap, distance = mm.get_profile_number(
+            position, grid
+        )
         try:
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
-            
+
             print(
                 f"{agent.id}, {position}, {distance=:.2f}, {new_profile=}, {actual_profile=}, {motivation_i=:.2}, {v_0=:.2}, {time_gap=:.2}"
             )
@@ -129,7 +131,7 @@ def run_simulation(
 
 
 def main(
-    _number_Agents,
+    _number_agents,
     _fps: int,
     _time_step: float,
     _data: Dict[str, Any],
@@ -156,7 +158,7 @@ def main(
     distribution_polygons = parse_distribution_polygons(_data)
     positions = []
 
-    total_agents = _number_Agents
+    total_agents = _number_agents
     for s_polygon in distribution_polygons.values():
         log_info(f"Distribute agents in {s_polygon}")
         pos = distribute_by_number(
@@ -166,7 +168,7 @@ def main(
             distance_to_polygon=0.20,
             seed=45131502,
         )
-        total_agents -= _number_Agents
+        total_agents -= _number_agents
         positions += pos
 
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)

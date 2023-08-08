@@ -1,2 +1,2 @@
 [MASTER]
-disable=W0511,E0401
+disable=W0511,E0401,W0621

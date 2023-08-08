@@ -16,7 +16,7 @@ def log_info(msg: str) -> None:
     logging.info(msg)
 
 
-def log_warn(msg: str) -> None:
+def log_warning(msg: str) -> None:
     """warning messages"""
     logging.warning(msg)
 
@@ -34,5 +34,5 @@ def init_logger() -> None:
 
     # jps.set_debug_callback(log_debug)
     jps.set_info_callback(log_info)
-    jps.set_warning_callback(log_warn)
+    jps.set_warning_callback(log_warning)
     jps.set_error_callback(log_error)

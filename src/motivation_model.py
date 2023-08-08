@@ -1,7 +1,6 @@
 """
 Module for motivational model
 """
-import matplotlib.pyplot as plt
 from typing import Tuple, TypeAlias
 import numpy as np
 from .profiles import ParameterGrid
@@ -78,7 +77,9 @@ def calculate_motivation_state(motivation_i: float) -> Tuple[float, float]:
 #     return c
 
 
-def get_profile_number(position: Point, grid: ParameterGrid) -> Tuple[int, float]:
+def get_profile_number(
+    position: Point, grid: ParameterGrid
+) -> Tuple[int, float, float, float, float]:
     """Calculate the profile num from grid based on motivation related (v0,T)"""
 
     height = 1
@@ -95,61 +96,3 @@ def get_profile_number(position: Point, grid: ParameterGrid) -> Tuple[int, float
 
 if "__main__" == __name__:
     pass
-    # Parameters
-    m = 1
-    a = 1
-    b = 3
-    n_p = a + b
-
-    # Generate x and y values
-    x = np.linspace(0, b + a + 1, 100)
-
-    fig, ax = plt.subplots(1, 1)
-    fig.tight_layout()
-    width = 2
-    x2 = np.linspace(0, 5, 1000)
-
-    for height in [0.5, 1, 2]:
-        y = []
-        for value in x2:
-            y.append(motivation(value, width, height))
-
-        plt.plot(x2, y, label=f"{width=}")
-        plt.ylabel("M")
-        plt.grid(alpha=0.3)
-        plt.legend()
-
-    print("plot2.png")
-    plt.savefig("plot2.png")
-
-    # for m in [1, 2, 3]:
-    #     y = np.array([motivation_trying(xi, m, a, b) for xi in x])
-    #     ax[0][0].plot(x, y, label=f"{m=}")
-    #     ax[0][0].set_ylabel("M")
-    #     ax[0][0].grid(alpha=0.3)
-    #     ax[0][0].legend()
-
-    # x2 = np.linspace(0, 10, 100)
-
-    # plt.subplot(2, 2, 3)
-    # F = np.array([f(gi, m, a, b) for gi in x])
-    # E = np.array([15 + -expectancy(xi, m, a, b) for xi in x])  # F / (C + 1)
-    # ax[1][0].plot(x, E)
-    # ax[1][0].grid(alpha=0.3)
-    # ax[1][0].set_ylabel("C2")
-
-    # E2 = np.array([expectancy(xi, m, a, b) for xi in x])
-    # ax[1][1].plot(x, E2)
-    # ax[1][1].grid(alpha=0.3)
-    # ax[1][1].set_ylabel("E2")
-
-    # C = np.array([competition(gi, n_p) for gi in x])
-    # ax[0][1].plot(x, C)
-    # ax[0][1].grid(alpha=0.3)
-    # ax[0][1].set_ylabel("C*E")
-
-    # # for m in [1, 2, 3]:
-    # #     M = np.array([motivation_trying(xi, m, a, b) for xi in x])
-    # #     ax[1][1].plot(x, E * C)
-    # #     ax[1][1].grid(alpha=0.3)
-    # #     ax[1][1].set_ylabel("E.C")
