@@ -86,12 +86,11 @@ def update_profiles(simulation: Any, grid: pp.ParameterGrid) -> None:
     # TODO get neighbors
     # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
     agents = simulation.agents()
+    motivation_model = mm.MotivationModel(door_point1=(58,101), door_point2=(58,102),normal_v_0=1.2, normal_time_gap=1.0)
     for agent in agents:
         position = agent.position
         actual_profile = agent.profile_id
-        new_profile, motivation_i, v_0, time_gap, distance = mm.get_profile_number(
-            position, grid
-        )
+        new_profile, motivation_i, v_0, time_gap, distance = motivation_model.get_profile_number(position, grid)
         try:
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
 
