@@ -2,12 +2,12 @@
 Module for motivational model
 """
 from typing import Tuple, TypeAlias
+from dataclasses import dataclass
 import numpy as np
+
 from .profiles import ParameterGrid
 
 Point: TypeAlias = Tuple[float, float]
-
-from dataclasses import dataclass
 
 
 @dataclass
@@ -47,15 +47,17 @@ class MotivationModel:
 
         return v_0_new, time_gap_new
 
-    def expectancy(self, x: float, slope: float, start: float, end: float) -> float:
-        """pieacwise constant to start, then linearly decreasing to end. Then 0 else"""
+    def expectancy(
+        self, position: float, slope: float, start: float, end: float
+    ) -> float:
+        """pieacwise constant to start, then linearly decreasing to end."""
 
-        if x <= start:
+        if position <= start:
             return slope * (end - start)
-        elif x <= end:
-            return slope * (-x + end)
-        else:
-            return 0
+        if position <= end:
+            return slope * (-position + end)
+
+        return 0
 
     def competition(self, got_reward: int, max_reward: int) -> float:
         """Competition
@@ -64,10 +66,11 @@ class MotivationModel:
         max_reward: hom many max can get reward
         """
         if got_reward <= max_reward:
-            c = 1 - got_reward / max_reward
+            comp = 1 - got_reward / max_reward
         else:
-            c = 0
-        return c
+            comp = 0
+
+        return comp
 
     def get_profile_number(
         self, position: Point, grid: ParameterGrid

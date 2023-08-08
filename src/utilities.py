@@ -6,8 +6,8 @@ from typing import Dict, List, Tuple, TypeAlias
 import jupedsim as jps
 from jupedsim.util import build_jps_geometry
 from shapely import GeometryCollection, Polygon
-from shapely.ops import cascaded_union
-from .logger_config import log_info, log_warning
+from shapely.ops import unary_union
+from .logger_config import log_info
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -28,7 +28,7 @@ def build_geometry(
         polygons.append(Polygon(accessible_area))
 
     # Combine polygons into a single geometry
-    combined_area = GeometryCollection(cascaded_union(polygons))
+    combined_area = GeometryCollection(unary_union(polygons))
     return build_jps_geometry(combined_area)
 
 

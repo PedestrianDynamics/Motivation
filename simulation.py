@@ -51,7 +51,7 @@ def init_simulation(
 
     """
     accessible_areas = parse_accessible_areas(_data)
-    # parameter_profiles = parse_velocity_model_parameter_profiles(_data)
+    # TODO: Parse
     grid = pp.ParameterGrid(
         min_v_0=1.0,
         max_v_0=2.0,
@@ -84,12 +84,13 @@ def init_simulation(
     motivation_doors = parse_motivation_doors(_data)
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
-        
-    print(f"{motivation_doors[0]=}")
-        
+
+    print(f"door_point1: {(motivation_doors[0][0][0], motivation_doors[0][0][1])}")
+    print(f"door_point2: {(motivation_doors[0][1][0], motivation_doors[0][1][1])}")
+
     motivation_model = mm.MotivationModel(
-        door_point1= motivation_doors[0][0],
-        door_point2=motivation_doors[0][1],
+        door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
+        door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
         normal_v_0=normal_v_0,
         normal_time_gap=normal_time_gap,
     )
