@@ -10,10 +10,16 @@ python3.10 -m venv .venv
 source .venv/bin/activate
 ```
 
-### Scripts
+### Install requirements
 
 ```bash
-./run.sh <python-script> <input-file> <output-file.txt> <run-jpsvis>
+pip install -r requirements.txt
+```
+
+### Run simulation
+
+```bash
+./run.sh simulation.py <input-file> <output-file.txt> <run-jpsvis>
 ```
 
 - `python-script.py`: Model logic.
@@ -21,6 +27,5 @@ source .venv/bin/activate
 - `output_file.txt`: a successful simulation creates a trajectory file.
 - `run-jpsvis (1|0)`: to visualize the trajectories with jpsvis
 
-`run.sh` has three hard-coded values for other jpscore-related scripts.
 
 

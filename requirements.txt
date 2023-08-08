@@ -1,2 +1,4 @@
 shapely
 jsonschema
+numpy
+jupedsim
