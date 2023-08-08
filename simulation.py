@@ -22,6 +22,9 @@ from src.inifile_parser import (  # parse_velocity_model_parameter_profiles,
     parse_time_step,
     parse_way_points,
     parse_number_agents,
+    parse_normal_v_0,
+    parse_normal_time_gap,
+    parse_motivation_doors,
 )
 from src.logger_config import init_logger, log_error, log_info
 from src.utilities import (
@@ -37,7 +40,7 @@ Point: TypeAlias = Tuple[float, float]
 
 def init_simulation(
     _data: Dict[str, Any], _time_step: float
-) -> Tuple[Any, pp.ParameterGrid]:
+) -> Tuple[Any, pp.ParameterGrid, mm.MotivationModel]:
     """Setup geometry and parameter profiles,
 
     :param data:
@@ -76,21 +79,43 @@ def init_simulation(
         parameter_profiles=parameter_profiles,
     )
     simulation = jps.Simulation(model=model, geometry=geometry, dt=_time_step)
+    normal_v_0 = parse_normal_v_0(_data)
+    normal_time_gap = parse_normal_time_gap(_data)
+    motivation_doors = parse_motivation_doors(_data)
+    if not motivation_doors:
+        log_error("json file does not contain any motivation door")
+        
+    print(f"{motivation_doors[0]=}")
+        
+    motivation_model = mm.MotivationModel(
+        door_point1= motivation_doors[0][0],
+        door_point2=motivation_doors[0][1],
+        normal_v_0=normal_v_0,
+        normal_time_gap=normal_time_gap,
+    )
     log_info("Init simulation done")
-    return simulation, grid
+    return simulation, grid, motivation_model
 
 
-def update_profiles(simulation: Any, grid: pp.ParameterGrid) -> None:
+def update_profiles(
+    simulation: Any, grid: pp.ParameterGrid, motivation_model: mm.MotivationModel
+) -> None:
     """Switch profile of pedestrian depending on its motivation"""
 
     # TODO get neighbors
     # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
     agents = simulation.agents()
-    motivation_model = mm.MotivationModel(door_point1=(58,101), door_point2=(58,102),normal_v_0=1.2, normal_time_gap=1.0)
+
     for agent in agents:
         position = agent.position
         actual_profile = agent.profile_id
-        new_profile, motivation_i, v_0, time_gap, distance = motivation_model.get_profile_number(position, grid)
+        (
+            new_profile,
+            motivation_i,
+            v_0,
+            time_gap,
+            distance,
+        ) = motivation_model.get_profile_number(position, grid)
         try:
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
 
@@ -110,6 +135,7 @@ def run_simulation(
     simulation: Any,
     writer: Any,
     grid: pp.ParameterGrid,
+    motivation_model: mm.MotivationModel,
 ) -> None:
     """Run simulation logic
 
@@ -123,7 +149,7 @@ def run_simulation(
     while simulation.agent_count() > 0:
         simulation.iterate()
         if simulation.iteration_count() % 10 == 0:
-            update_profiles(simulation, grid)
+            update_profiles(simulation, grid, motivation_model)
 
         if simulation.iteration_count() % 10 == 0:
             writer.write_iteration_state(simulation)
@@ -145,7 +171,7 @@ def main(
     :returns:
 
     """
-    simulation, grid = init_simulation(_data, _time_step)
+    simulation, grid, motivation_model = init_simulation(_data, _time_step)
     way_points = parse_way_points(_data)
     destinations = parse_destinations(_data)
     destinations = list(destinations.values())
@@ -175,7 +201,7 @@ def main(
     log_info(f"Running simulation for {len(ped_ids)} agents:")
     writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
     writer.begin_writing(_fps)
-    run_simulation(simulation, writer, grid)
+    run_simulation(simulation, writer, grid, motivation_model)
     writer.end_writing()
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
     log_info(

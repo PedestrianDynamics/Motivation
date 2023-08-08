@@ -110,10 +110,10 @@ def parse_distribution_polygons(
     return _distribution_polygons
 
 
-def parse_jpsvis_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
+def parse_motivation_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
     """
-    Parses a JSON string containing information about jpsvis doors and returns a dictionary
-    mapping area IDs to a list of coordinates that define the doros.
+    Parses a JSON string containing information about doors, around which people get motivated. Returns a dictionary
+    mapping area IDs to a list of coordinates that define the doors.
 
     :param json_str: A JSON string containing information about accessible areas.
     :return: A dictionary mapping area IDs to a list of coordinates that define the doors.
@@ -121,10 +121,9 @@ def parse_jpsvis_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]
 
     _doors: Dict[int, List[List[float]]] = {}
 
-    if "jpsvis_doors" in json_data:
-        doors_dict = json_data["jpsvis_doors"]
+    if "motivation_doors" in json_data:
+        doors_dict = json_data["motivation_doors"]
 
-        # Iterate through the accessible areas dictionary and extract the coordinates for each area
         for area_id, coordinates_list in enumerate(doors_dict):
             _doors[int(area_id)] = coordinates_list["vertices"]
 
@@ -186,6 +185,24 @@ def parse_simulation_time(json_data: Dict[str, Any]) -> Optional[int]:
     return None
 
 
+def parse_normal_v_0(json_data: Dict[str, Any]) -> float:
+    """Get normal v0 value for walking without motivation"""
+
+    if "normal_v_0" in json_data:
+        return float(json_data["normal_v_0"])
+
+    return 1.2
+
+
+def parse_normal_time_gap(json_data: Dict[str, Any]) -> float:
+    """Get normal time_gap value for walking without motivation"""
+
+    if "normal_time_gap" in json_data:
+        return float(json_data["normal_time_gap"])
+
+    return 1.0
+
+
 def print_obj(obj: Dict[int, Any], name: str) -> None:
     """Debug plots"""
 
@@ -218,22 +235,25 @@ if __name__ == "__main__":
 
             accessible_areas = parse_accessible_areas(data)
             destinations = parse_destinations(data)
-            jpsvis_doors = parse_jpsvis_doors(data)
             distribution_polygons = parse_distribution_polygons(data)
-
             way_points = parse_way_points(data)
             profiles = parse_velocity_model_parameter_profiles(data)
             version = data["version"]
             fps = parse_fps(data)
             time_step = parse_time_step(data)
             sim_time = parse_simulation_time(data)
+            normal_v_0 = parse_normal_v_0(data)
+            normal_time_gap = parse_normal_time_gap(data)
+            motivation_doors = parse_motivation_doors(data)
             print(f"{version=}")
             print(f"{fps=}")
             print(f"{time_step=}")
             print(f"{sim_time=}")
+            print(f"{normal_v_0=}")
+            print(f"{normal_time_gap=}")
             print_obj(accessible_areas, "accessible area")
             print_obj(destinations, "destination")
-            print_obj(jpsvis_doors, "jpsvis_doors")
+            print_obj(motivation_doors, "motivation_doors")
             print_obj(distribution_polygons, "distribution polygon")
             print_obj(profiles, "profile")
             print(f"{way_points=}")

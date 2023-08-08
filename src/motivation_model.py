@@ -19,6 +19,13 @@ class MotivationModel:
     normal_v_0: float = 1.2
     normal_time_gap: float = 1
 
+    def __post_init__(self):
+        if self.normal_v_0 is None:
+            self.normal_v_0 = 1.2  # Default value if parsing returns None
+
+        if self.normal_time_gap is None:
+            self.normal_time_gap = 1  # Default value if parsing returns None
+
     def motivation(self, _distance: float, _width: float, _height: float) -> float:
         """Exponential motivation with compact support depending on distance"""
 

@@ -20,6 +20,12 @@
         "simulation_time": {
             "type": "number"
         },
+        "normal_v_0": {
+            "type": "number"
+        },
+        "normal_time_gap": {
+            "type": "number"
+        },
         "accessible_areas": {
             "type": "array",
             "items": {
@@ -69,7 +75,7 @@
                 "required": ["id", "vertices", "label"]
             }
         },
-        "jpsvis_doors": {
+        "motivation_doors": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -89,11 +95,15 @@
                             },
                             "minItems": 2,
                             "maxItems": 2
-                        }
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
                     }
                 },
                 "required": ["id", "vertices", "label"]
-            }
+            },
+            "minItems": 1,
+            "maxItems": 1
         },
         "velocity_model_parameter_profiles": {
             "type": "array",

@@ -8,6 +8,8 @@
     "time_step": 0.01,
     "number_agents": 1,
     "simulation_time": 10,
+    "normal_v_0": 1.2,
+    "normal_time_gap": 1,
     "accessible_areas": [
         {
         "id": 1,
@@ -49,7 +51,7 @@
         ]
     } 
     ],
-    "jpsvis_doorsss": [
+    "motivation_doors": [
         { 
         "id": 1,
         "label": "door",
@@ -57,15 +59,7 @@
             [60, 102.6],
             [60, 101.4]
         ]
-    },
-        {
-        "id": 2,
-        "label": "door",
-        "vertices": [        
-            [62, 101.4],
-            [62, 102.6]
-        ]
-    }
+        }
     ],
     "velocity_model_parameter_profiles": [
         {
