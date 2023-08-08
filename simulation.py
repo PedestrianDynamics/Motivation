@@ -14,7 +14,7 @@ from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
 from src import motivation_model as mm, profiles as pp
 
-from src.inifile_parser import (  # parse_velocity_model_parameter_profiles,
+from src.inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
@@ -25,6 +25,13 @@ from src.inifile_parser import (  # parse_velocity_model_parameter_profiles,
     parse_normal_v_0,
     parse_normal_time_gap,
     parse_motivation_doors,
+    parse_grid_time_gap_step,
+    parse_grid_max_time_gap,
+    parse_grid_min_time_gap,
+    parse_grid_min_v0,
+    parse_grid_max_v0,
+    parse_grid_step_v0,
+    is_motivation_active,
 )
 from src.logger_config import init_logger, log_error, log_info
 from src.utilities import (
@@ -51,14 +58,14 @@ def init_simulation(
 
     """
     accessible_areas = parse_accessible_areas(_data)
-    # TODO: Parse
+
     grid = pp.ParameterGrid(
-        min_v_0=1.0,
-        max_v_0=2.0,
-        v_0_step=0.1,
-        min_time_gap=0.1,
-        max_time_gap=1,
-        time_gap_step=0.1,
+        min_v_0=parse_grid_min_v0(_data),
+        max_v_0=parse_grid_max_v0(_data),
+        v_0_step=parse_grid_step_v0(_data),
+        min_time_gap=parse_grid_min_time_gap(_data),
+        max_time_gap=parse_grid_max_time_gap(_data),
+        time_gap_step=parse_grid_time_gap_step(_data),
     )
 
     velocity_profiles = grid.velocity_profiles
@@ -85,15 +92,14 @@ def init_simulation(
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
 
-    print(f"door_point1: {(motivation_doors[0][0][0], motivation_doors[0][0][1])}")
-    print(f"door_point2: {(motivation_doors[0][1][0], motivation_doors[0][1][1])}")
-
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
         door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
         normal_v_0=normal_v_0,
         normal_time_gap=normal_time_gap,
+        active=is_motivation_active(_data),
     )
+    motivation_model.print_details()
     log_info("Init simulation done")
     return simulation, grid, motivation_model
 
@@ -118,6 +124,8 @@ def update_profiles(
             distance,
         ) = motivation_model.get_profile_number(position, grid)
         try:
+            # TODO is motivation is active
+
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
 
             print(
@@ -147,9 +155,10 @@ def run_simulation(
     :returns:
 
     """
+    print(">>>> ", mm.MotivationModel.active)
     while simulation.agent_count() > 0:
         simulation.iterate()
-        if simulation.iteration_count() % 10 == 0:
+        if motivation_model.active and simulation.iteration_count() % 10 == 0:
             update_profiles(simulation, grid, motivation_model)
 
         if simulation.iteration_count() % 10 == 0:

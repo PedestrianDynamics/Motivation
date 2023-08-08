@@ -121,8 +121,11 @@ def parse_motivation_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[flo
 
     _doors: Dict[int, List[List[float]]] = {}
 
-    if "motivation_doors" in json_data:
-        doors_dict = json_data["motivation_doors"]
+    if (
+        "motivation_parameters" in json_data
+        and "motivation_doors" in json_data["motivation_parameters"]
+    ):
+        doors_dict = json_data["motivation_parameters"]["motivation_doors"]
 
         for area_id, coordinates_list in enumerate(doors_dict):
             _doors[int(area_id)] = coordinates_list["vertices"]
@@ -152,17 +155,86 @@ def parse_accessible_areas(json_data: Dict[str, Any]) -> Dict[int, List[List[flo
 def parse_fps(json_data: Dict[str, Any]) -> Optional[int]:
     """Get fps if found in file, otherwise None"""
 
-    if "fps" in json_data:
-        return int(json_data["fps"])
+    if (
+        "simulation_parameters" in json_data
+        and "fps" in json_data["simulation_parameters"]
+    ):
+        return int(json_data["simulation_parameters"]["fps"])
 
     return None
+
+
+def parse_grid_min_v0(json_data: Dict[str, Any]) -> float:
+    """Get min v0 for grid"""
+
+    if "grid_parameters" in json_data and "min_v_0" in json_data["grid_parameters"]:
+        return float(json_data["grid_parameters"]["min_v_0"])
+
+    return 1
+
+
+def parse_grid_max_v0(json_data: Dict[str, Any]) -> float:
+    """Get max v0 for grid"""
+
+    if "grid_parameters" in json_data and "max_v_0" in json_data["grid_parameters"]:
+        return float(json_data["grid_parameters"]["max_v_0"])
+
+    return 2
+
+
+def parse_grid_step_v0(json_data: Dict[str, Any]) -> float:
+    """Get step for v0  grid"""
+
+    if "grid_parameters" in json_data and "v_0_step" in json_data["grid_parameters"]:
+        return float(json_data["grid_parameters"]["v_0_step"])
+
+    return 2
+
+
+def parse_grid_min_time_gap(json_data: Dict[str, Any]) -> float:
+    """Get min time_gap for grid"""
+
+    if (
+        "grid_parameters" in json_data
+        and "min_time_gap" in json_data["grid_parameters"]
+    ):
+        return float(json_data["grid_parameters"]["min_time_gap"])
+
+    return 1
+
+
+def parse_grid_max_time_gap(json_data: Dict[str, Any]) -> float:
+    """Get max time_gap for grid"""
+
+    if (
+        "grid_parameters" in json_data
+        and "max_time_gap" in json_data["grid_parameters"]
+    ):
+        return float(json_data["grid_parameters"]["max_time_gap"])
+
+    return 2
+
+
+def parse_grid_time_gap_step(json_data: Dict[str, Any]) -> float:
+    """Get step for time_gap  grid"""
+
+    if (
+        "grid_parameters" in json_data
+        and "time_gap_step" in json_data["grid_parameters"]
+    ):
+        return float(json_data["grid_parameters"]["time_gap_step"])
+
+    return 0.1
 
 
 def parse_number_agents(json_data: Dict[str, Any]) -> Optional[int]:
     """Get number_agents if found in file, otherwise 1"""
 
-    if "number_agents" in json_data:
-        return int(json_data["number_agents"])
+    if (
+        "simulation_parameters" in json_data
+        and "number_agents" in json_data["simulation_parameters"]
+    ):
+        return int(json_data["simulation_parameters"]["number_agents"])
 
     return 1
 
@@ -170,8 +242,11 @@ def parse_number_agents(json_data: Dict[str, Any]) -> Optional[int]:
 def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:
     """Get time_step if found, otherwise None"""
 
-    if "time_step" in json_data:
-        return float(json_data["time_step"])
+    if (
+        "simulation_parameters" in json_data
+        and "time_step" in json_data["simulation_parameters"]
+    ):
+        return float(json_data["simulation_parameters"]["time_step"])
 
     return None
 
@@ -179,17 +254,34 @@ def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:
 def parse_simulation_time(json_data: Dict[str, Any]) -> Optional[int]:
     """Get simulation if found, otherwise None"""
 
-    if "simulation_time" in json_data:
-        return int(json_data["simulation_time"])
+    if (
+        "simulation_parameters" in json_data
+        and "simulation_time" in json_data["simulation_parameters"]
+    ):
+        return int(json_data["simulation_parameters"]["simulation_time"])
 
     return None
+
+
+def is_motivation_active(json_data: Dict[str, Any]) -> int:
+    """Get status of motivation if activated"""
+    if (
+        "motivation_parameters" in json_data
+        and "active" in json_data["motivation_parameters"]
+    ):
+        return int(json_data["motivation_parameters"]["active"])
+
+    return 0
 
 
 def parse_normal_v_0(json_data: Dict[str, Any]) -> float:
     """Get normal v0 value for walking without motivation"""
 
-    if "normal_v_0" in json_data:
-        return float(json_data["normal_v_0"])
+    if (
+        "motivation_parameters" in json_data
+        and "normal_v_0" in json_data["motivation_parameters"]
+    ):
+        return float(json_data["motivation_parameters"]["normal_v_0"])
 
     return 1.2
 
@@ -197,8 +289,11 @@ def parse_normal_v_0(json_data: Dict[str, Any]) -> float:
 def parse_normal_time_gap(json_data: Dict[str, Any]) -> float:
     """Get normal time_gap value for walking without motivation"""
 
-    if "normal_time_gap" in json_data:
-        return float(json_data["normal_time_gap"])
+    if (
+        "motivation_parameters" in json_data
+        and "normal_time_gap" in json_data["motivation_parameters"]
+    ):
+        return float(json_data["motivation_parameters"]["normal_time_gap"])
 
     return 1.0
 
@@ -245,12 +340,26 @@ if __name__ == "__main__":
             normal_v_0 = parse_normal_v_0(data)
             normal_time_gap = parse_normal_time_gap(data)
             motivation_doors = parse_motivation_doors(data)
+            #
+            grid_v0_min = parse_grid_min_v0(data)
+            grid_v0_max = parse_grid_max_v0(data)
+            grid_v0_step = parse_grid_step_v0(data)
+            grid_time_gap_min = parse_grid_min_time_gap(data)
+            grid_time_gap_max = parse_grid_max_time_gap(data)
+            grid_time_gap_step = parse_grid_time_gap_step(data)
+
             print(f"{version=}")
             print(f"{fps=}")
             print(f"{time_step=}")
             print(f"{sim_time=}")
             print(f"{normal_v_0=}")
             print(f"{normal_time_gap=}")
+            print(f"{grid_v0_min=}")
+            print(f"{grid_v0_max=}")
+            print(f"{grid_v0_step=}")
+            print(f"{grid_time_gap_min=}")
+            print(f"{grid_time_gap_max=}")
+            print(f"{grid_time_gap_step=}")
             print_obj(accessible_areas, "accessible area")
             print_obj(destinations, "destination")
             print_obj(motivation_doors, "motivation_doors")

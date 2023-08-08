@@ -18,6 +18,15 @@ class MotivationModel:
     door_point2: Point = (60, 102)
     normal_v_0: float = 1.2
     normal_time_gap: float = 1
+    active: int = 1
+
+    def print_details(self):
+        print(f"Motivation Model:")
+        print(f"  Door Point 1: {self.door_point1}")
+        print(f"  Door Point 2: {self.door_point2}")
+        print(f"  Normal Velocity 0: {self.normal_v_0}")
+        print(f"  Normal Time Gap: {self.normal_time_gap}")
+        print(f"  Active: {self.active}")
 
     def __post_init__(self):
         if self.normal_v_0 is None:

@@ -11,20 +11,89 @@
         "version": {
             "type": "number"
         },
-        "fps": {
-            "type": "number"
+        "simulation_parameters": {
+            "type": "object",
+            "properties": {
+                "fps": {
+                    "type": "number"
+                },
+                "time_step": {
+                    "type": "number"
+                },
+                "number_agents": {
+                    "type": "number"
+                },
+                "simulation_time": {
+                    "type": "number"
+                }
+            },
+            "required": ["fps", "time_step", "number_agents", "simulation_time"]
         },
-        "time_step": {
-            "type": "number"
+        "motivation_parameters": {
+            "type": "object",
+            "properties": {
+                "normal_v_0": {
+                    "type": "number"
+                },
+                "normal_time_gap": {
+                    "type": "number"
+                }
+            },
+            "motivation_doors": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "number"
+                        },
+                        "label": {
+                            "type": "string"
+                        },
+                        "vertices": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                        }
+                    },
+                    "required": ["id", "vertices", "label"]
+                },
+                "minItems": 1,
+                "maxItems": 1
+            },
+            "required": ["normal_v_0", "normal_time_gap", "motivation_doors"]
         },
-        "simulation_time": {
-            "type": "number"
-        },
-        "normal_v_0": {
-            "type": "number"
-        },
-        "normal_time_gap": {
-            "type": "number"
+        "grid_parameters": {
+            "type": "object",
+            "properties": {
+                "min_v_0": {
+                    "type": "number"
+                },
+                "max_v_0": {
+                    "type": "number"
+                },
+                "v_0_step": {
+                    "type": "number"
+                },
+                "min_time_gap": {
+                    "type": "number"
+                },
+                "max_time_gap": {
+                    "type": "number"
+                },
+                "time_gap_step": {
+                    "type": "number"
+                }
+            },
+            "required": ["min_v_0", "max_v_0", "v_0_step", "min_time_gap", "max_time_gap", "time_gap_step"]
         },
         "accessible_areas": {
             "type": "array",
@@ -74,37 +143,7 @@
                 },
                 "required": ["id", "vertices", "label"]
             }
-        },
-        "motivation_doors": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "number"
-                    },
-                    "label": {
-                        "type": "string"
-                    },
-                    "vertices": {
-                        "type": "array",
-                        "items": {
-                            "type": "array",
-                            "items": {
-                                "type": "number"
-                            },
-                            "minItems": 2,
-                            "maxItems": 2
-                        },
-                        "minItems": 2,
-                        "maxItems": 2
-                    }
-                },
-                "required": ["id", "vertices", "label"]
-            },
-            "minItems": 1,
-            "maxItems": 1
-        },
+        },   
         "velocity_model_parameter_profiles": {
             "type": "array",
             "items": {
@@ -173,5 +212,5 @@
             }
         }
     },
-    "required": ["version", "fps", "time_step", "simulation_time", "accessible_areas", "destinations", "velocity_model_parameter_profiles", "way_points", "distribution_polygons"]
+    "required": ["version", "simulation_parameters", "accessible_areas", "destinations", "velocity_model_parameter_profiles", "way_points", "distribution_polygons"]
 }
