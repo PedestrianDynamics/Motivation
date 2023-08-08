@@ -4,8 +4,10 @@ Some functions to setup the simulation.
 from typing import Dict, List, Tuple, TypeAlias
 
 import jupedsim as jps
-
-from .logger_config import log_info
+from jupedsim.util import build_jps_geometry
+from shapely import GeometryCollection, Polygon
+from shapely.ops import cascaded_union
+from .logger_config import log_info, log_warning
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -20,13 +22,14 @@ def build_geometry(
 
     """
     log_info("Build geometry")
-    geo_builder = jps.GeometryBuilder()
+    polygons = []
     for accessible_area in accessible_areas.values():
         log_info(f"> {accessible_area=}")
-        geo_builder.add_accessible_area(accessible_area)
+        polygons.append(Polygon(accessible_area))
 
-    geometry = geo_builder.build()
-    return geometry
+    # Combine polygons into a single geometry
+    combined_area = GeometryCollection(cascaded_union(polygons))
+    return build_jps_geometry(combined_area)
 
 
 def build_gcfm_model(
