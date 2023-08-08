@@ -1,15 +1,12 @@
 """
-Draft for a motivational model
+Module for motivational model
 """
 import matplotlib.pyplot as plt
 from typing import Tuple, TypeAlias
-
 import numpy as np
+from .profiles import ParameterGrid
 
 Point: TypeAlias = Tuple[float, float]
-
-# from . import profiles
-from .profiles import ParameterGrid
 
 
 def motivation(distance: float, _width: float, _height: float) -> float:
@@ -23,7 +20,7 @@ def motivation(distance: float, _width: float, _height: float) -> float:
 
 
 def calculate_motivation_state(motivation_i: float) -> Tuple[float, float]:
-    """return v0, T tuples depending on Motivation"""
+    """return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)"""
 
     v_0 = 1.2
     time_gap = 1
@@ -82,7 +79,7 @@ def calculate_motivation_state(motivation_i: float) -> Tuple[float, float]:
 
 
 def get_profile_number(position: Point, grid: ParameterGrid) -> Tuple[int, float]:
-    """Calculate the profile number from grid based on motivation related (v0,T)"""
+    """Calculate the profile num from grid based on motivation related (v0,T)"""
 
     height = 1
     width = 1
@@ -93,7 +90,7 @@ def get_profile_number(position: Point, grid: ParameterGrid) -> Tuple[int, float
     motivation_i = motivation(distance, width, height)
     v_0, time_gap = calculate_motivation_state(motivation_i)
     number = int(grid.get_profile_number(v_0_i=v_0, time_gap_i=time_gap))
-    return number, motivation_i
+    return number, motivation_i, v_0, time_gap, distance
 
 
 if "__main__" == __name__:

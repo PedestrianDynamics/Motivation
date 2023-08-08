@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #=======================
-jpsvis=~/workspace/jupedsim/jpscore/build/bin/jpsvis.app/Contents/MacOS/jpsvis
+jpsvis=/Applications/jpsvis.app/Contents/MacOS/jpsvis
 CONVERTER=~/workspace/jupedsim/jpscore/scripts/petrack2jpsvis.py
-python_path=~/workspace/jupedsim/jpscore/build/lib:~/workspace/jupedsim/jpscore/python_modules/jupedsim/
+#python_path=~/workspace/jupedsim/jpscore/build/lib:~/workspace/jupedsim/jpscore/python_modules/jupedsim/
 #=======================
 
 EXPECTED_ARGS=4
@@ -32,7 +32,8 @@ fi
 
 echo "INFO: Running $PYTHON_SCRIPT with $INPUT_FILE $OUTPUT_FILE"
 
-PYTHONPATH=$python_path python "$PYTHON_SCRIPT" "$INPUT_FILE" "$OUTPUT_FILE"
+#PYTHONPATH=$python_path python "$PYTHON_SCRIPT" "$INPUT_FILE" "$OUTPUT_FILE"
+python "$PYTHON_SCRIPT" "$INPUT_FILE" "$OUTPUT_FILE"
 
 if [[ $? -ne 0 ]]; then
     echo "ERROR: Simulation errors!"

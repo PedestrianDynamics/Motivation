@@ -8,7 +8,7 @@ import pathlib
 import sys
 from typing import Any, Dict, List, Tuple, TypeAlias
 
-import py_jupedsim as jps
+import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
@@ -57,6 +57,7 @@ def init_simulation(
         max_time_gap=1,
         time_gap_step=0.1,
     )
+
     velocity_profiles = grid.velocity_profiles
     parameter_profiles: Dict[int, List[float]] = {}
     for velocity_profile in velocity_profiles:
@@ -74,33 +75,31 @@ def init_simulation(
         init_parameters,
         parameter_profiles=parameter_profiles,
     )
-
     simulation = jps.Simulation(model=model, geometry=geometry, dt=_time_step)
     log_info("Init simulation done")
     return simulation, grid
 
 
-def update_profiles(
-    simulation: Any, peds_ids: List[int], grid: pp.ParameterGrid
-) -> None:
+def update_profiles(simulation: Any, grid: pp.ParameterGrid) -> None:
     """Switch profile of pedestrian depending on its motivation"""
 
     # TODO get neighbors
     # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
-    for ped_id in peds_ids:
-        agent = simulation.read_agent(ped_id)
+    agents = simulation.agents()
+    for agent in agents:
         position = agent.position
         actual_profile = agent.profile_id
-        new_profile, motivation_i = mm.get_profile_number(position, grid)
+        new_profile, motivation_i, v_0, time_gap, distance = mm.get_profile_number(position, grid)
         try:
-            simulation.switch_agent_profile(agent_id=ped_id, profile_id=new_profile)
+            simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
+            
             print(
-                f"{ped_id}, {position}, {new_profile=}, {actual_profile=}, {motivation_i=}"
+                f"{agent.id}, {position}, {distance=:.2f}, {new_profile=}, {actual_profile=}, {motivation_i=:.2}, {v_0=:.2}, {time_gap=:.2}"
             )
         except RuntimeError:
             # pass
             log_error(
-                f"""Can not change Profile of Agent {ped_id}
+                f"""Can not change Profile of Agent {agent.id}
                 to Profile={actual_profile} at
                 Iteration={simulation.iteration_count()}."""
             )
@@ -109,7 +108,6 @@ def update_profiles(
 def run_simulation(
     simulation: Any,
     writer: Any,
-    ped_ids: List[int],
     grid: pp.ParameterGrid,
 ) -> None:
     """Run simulation logic
@@ -118,19 +116,14 @@ def run_simulation(
     :type simulation:
     :param writer:
     :type writer:
-    :param ped_ids:
-    :type ped_ids:
     :returns:
 
     """
     while simulation.agent_count() > 0:
         simulation.iterate()
         if simulation.iteration_count() % 10 == 0:
-            # TODO get ids of pedestrian that left the simulation
-            # JUPEDSIM_API size_t JPS_Simulation_RemovedAgents(JPS_Simulation handle, const JPS_AgentId** data);
-            # oder ped_ids Ueber Sim.agents() rechnen
-            update_profiles(simulation, ped_ids, grid)
-            pass
+            update_profiles(simulation, grid)
+
         if simulation.iteration_count() % 10 == 0:
             writer.write_iteration_state(simulation)
 
@@ -181,7 +174,7 @@ def main(
     log_info(f"Running simulation for {len(ped_ids)} agents:")
     writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
     writer.begin_writing(_fps)
-    run_simulation(simulation, writer, ped_ids, grid)
+    run_simulation(simulation, writer, grid)
     writer.end_writing()
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
     log_info(

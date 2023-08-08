@@ -3,7 +3,7 @@ Some functions to setup the simulation.
 """
 from typing import Dict, List, Tuple, TypeAlias
 
-import py_jupedsim as jps
+import jupedsim as jps
 
 from .logger_config import log_info
 
@@ -205,7 +205,7 @@ def distribute_and_add_agents(
     """
     log_info("Distribute and Add Agent")
     ped_ids = []
-    for (pos_x, pos_y) in positions:
+    for pos_x, pos_y in positions:
         agent_parameters.position = (pos_x, pos_y)
         ped_id = simulation.add_agent(agent_parameters)
         ped_ids.append(ped_id)

@@ -2,7 +2,7 @@
 Setup logger
 """
 import logging
-import py_jupedsim as jps
+import jupedsim as jps
 
 
 def log_debug(msg: str) -> None:
