@@ -76,14 +76,19 @@ def parse_way_points(
         and a floating-point number representing a distance.
     """
 
-    _way_points_dict: Dict[int, List[Tuple[Point, float]]] = {}
-    _way_points: List[Any] = []
-    for wp_id, way_point in enumerate(json_data["way_points"]):
-        wp_list = (
-            tuple(way_point["coordinates"]),
-            way_point["distance"],
-        )
-        _way_points_dict[wp_id] = wp_list
+    _way_points: List[Tuple[Point, float]] = []
+    for _, way_point in enumerate(json_data["way_points"]):
+        coordinates = way_point["coordinates"]
+        if len(coordinates) != 2:
+            raise ValueError(f"Invalid coordinates: {coordinates}")
+
+        point: Point = (float(coordinates[0]), float(coordinates[1]))
+        distance = float(way_point["distance"])
+        wp_list = (point, distance)
+        # wp_list = (
+        #     tuple(way_point["coordinates"]),
+        #     way_point["distance"],
+        # )
         _way_points.append(wp_list)
     return _way_points
 
@@ -227,7 +232,7 @@ def parse_grid_time_gap_step(json_data: Dict[str, Any]) -> float:
     return 0.1
 
 
-def parse_number_agents(json_data: Dict[str, Any]) -> Optional[int]:
+def parse_number_agents(json_data: Dict[str, Any]) -> int:
     """Get number_agents if found in file, otherwise 1"""
 
     if (
@@ -236,7 +241,7 @@ def parse_number_agents(json_data: Dict[str, Any]) -> Optional[int]:
     ):
         return int(json_data["simulation_parameters"]["number_agents"])
 
-    return 1
+    return 0
 
 
 def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:

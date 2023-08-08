@@ -20,7 +20,7 @@ class MotivationModel:
     normal_time_gap: float = 1
     active: int = 1
 
-    def print_details(self):
+    def print_details(self) -> None:
         """Print member variables for debugging"""
 
         print("Motivation Model:")
@@ -30,7 +30,7 @@ class MotivationModel:
         print(f">>  Normal Time Gap: {self.normal_time_gap}")
         print(f">>  Active: {self.active}")
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.normal_v_0 is None:
             self.normal_v_0 = 1.2  # Default value if parsing returns None
 

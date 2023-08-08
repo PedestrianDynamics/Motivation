@@ -166,7 +166,7 @@ def run_simulation(
 
 
 def main(
-    _number_agents,
+    _number_agents: int,
     _fps: int,
     _time_step: float,
     _data: Dict[str, Any],
@@ -183,8 +183,8 @@ def main(
     """
     simulation, grid, motivation_model = init_simulation(_data, _time_step)
     way_points = parse_way_points(_data)
-    destinations = parse_destinations(_data)
-    destinations = list(destinations.values())
+    destinations_dict = parse_destinations(_data)
+    destinations = list(destinations_dict.values())
     journey_id = init_journey(simulation, way_points, destinations[0])
 
     agent_parameters = init_velocity_agent_parameters(
