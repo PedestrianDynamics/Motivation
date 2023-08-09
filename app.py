@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 import subprocess
-from typing import Dict, Any
+from typing import Dict, List, Any
 import pathlib as p
 
 
@@ -110,42 +110,63 @@ def ui_grid_parameters(data: Dict[str, Any]) -> None:
 
 
 if __name__ == "__main__":
+    if "data" not in st.session_state:
+        st.session_state.data = {}
+
+    if "all_files" not in st.session_state:
+        st.session_state.all_files = []
+        # User will select from these files to do simulations
+
     tab1, tab2 = st.tabs(["Initialisation", "Simulation"])
+
     with tab1:
         c1, c2 = st.columns((1, 1))
-        file_name = c1.text_input("Config file: ", value="files/bottleneck.json")
+        file_name = c1.text_input("Load config file: ", value="files/bottleneck.json")
         json_file = p.Path(file_name)
-        # Save Button (optional)
-        new_json_name = "new_config.json"
-        new_json_path = p.Path(new_json_name)
+        data = {}
         if not json_file.exists():
             st.error(f"file: {file_name} does not exist!")
             st.stop()
 
-        data = load_json(p.Path(json_file))
+        if c1.button(
+            "Load config",
+            help=f"Load config file ({file_name})",
+        ):
+            data = load_json(json_file)
+            ui_simulation_parameters(data)
+            ui_motivation_parameters(data)
+            ui_grid_parameters(data)
+            st.session_state.data = data
+            st.session_state.all_files.append(file_name)
+
+        # Save Button (optional)
+        new_json_name = c2.text_input(
+            "Save config file: ", value="files/bottleneck.json"
+        )
+        new_json_file = p.Path(new_json_name)
+
         if c2.button(
             "Save config",
             help=f"After changing the values, you can save the configs in a separate file ({new_json_name})",
         ):
-            save_json(new_json_path, data)
+            save_json(new_json_file, data)
             c1.info(f"Saved file as {new_json_name}")
-
-        ui_simulation_parameters(data)
-        ui_motivation_parameters(data)
-        ui_grid_parameters(data)
+            st.session_state.all_files.append(new_json_name)
 
     # Run Simulation
     with tab2:
         output_file = st.text_input("Result: ", value="files/trajectory.txt")
+        config_file = st.selectbox("Select config file", st.session_state.all_files)
         if st.button("Run Simulation"):
             # Modify the command as needed
-            command = f"python simulation.py {file_name} {output_file}"
+
+            command = f"python simulation.py {config_file} {output_file}"
             process = subprocess.Popen(
                 command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             stdout, stderr = process.communicate()
             info_output = stdout.decode().replace("\n", "  \n")
-            st.info(info_output)
+
             warnings = stderr.decode().replace("\n", "  \n")
             if warnings:
                 st.warning(warnings)
