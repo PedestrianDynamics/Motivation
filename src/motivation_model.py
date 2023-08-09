@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .profiles import ParameterGrid
+from .logger_config import log_debug
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -23,12 +24,12 @@ class MotivationModel:
     def print_details(self) -> None:
         """Print member variables for debugging"""
 
-        print("Motivation Model:")
-        print(f">>  Door Point 1: {self.door_point1}")
-        print(f">>  Door Point 2: {self.door_point2}")
-        print(f">  Normal Velocity 0: {self.normal_v_0}")
-        print(f">>  Normal Time Gap: {self.normal_time_gap}")
-        print(f">>  Active: {self.active}")
+        log_debug("Motivation Model:")
+        log_debug(f">>  Door Point 1: {self.door_point1}")
+        log_debug(f">>  Door Point 2: {self.door_point2}")
+        log_debug(f">  Normal Velocity 0: {self.normal_v_0}")
+        log_debug(f">>  Normal Time Gap: {self.normal_time_gap}")
+        log_debug(f">>  Active: {self.active}")
 
     def __post_init__(self) -> None:
         if self.normal_v_0 is None:

@@ -33,7 +33,7 @@ from src.inifile_parser import (
     parse_grid_step_v0,
     is_motivation_active,
 )
-from src.logger_config import init_logger, log_error, log_info
+from src.logger_config import init_logger, log_error, log_info, log_debug
 from src.utilities import (
     build_geometry,
     build_velocity_model,
@@ -128,9 +128,9 @@ def update_profiles(
 
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
 
-            print(
-                f"{agent.id}, {position}, {distance=:.2f}, {new_profile=}, {actual_profile=}, {motivation_i=:.2}, {v_0=:.2}, {time_gap=:.2}"
-            )
+            # log_error(
+            #     f"{agent.id}, {position}, {distance=:.2f}, {new_profile=}, {actual_profile=}, {motivation_i=:.2}, {v_0=:.2}, {time_gap=:.2}"
+            # )
         except RuntimeError:
             # pass
             log_error(
@@ -155,7 +155,6 @@ def run_simulation(
     :returns:
 
     """
-    print(">>>> ", mm.MotivationModel.active)
     while simulation.agent_count() > 0:
         simulation.iterate()
         if motivation_model.active and simulation.iteration_count() % 10 == 0:
