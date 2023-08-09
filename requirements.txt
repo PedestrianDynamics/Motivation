@@ -2,3 +2,4 @@ shapely
 jsonschema
 numpy
 jupedsim
+streamlit

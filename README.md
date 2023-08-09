@@ -19,6 +19,12 @@ pip install -r requirements.txt
 ### Run simulation
 
 ```bash
+streamlit run app.py
+```
+
+or in a terminal:
+
+```bash
 ./run.sh simulation.py <input-file> <output-file.txt> <run-jpsvis>
 ```
 
