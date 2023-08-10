@@ -25,7 +25,6 @@ def moving_trajectories(config_file, output_file):
         comment="#",
         names=["ID", "FR", "X", "Y", "Z", "A", "B", "P", "PP"],
     )
-    st.dataframe(data_df)
 
     if "SPEED" in data_df.columns:
         color = "SPEED"
@@ -353,6 +352,7 @@ if __name__ == "__main__":
                 if warnings:
                     st.error(warnings)
 
+        if p.Path(output_file).exists():
             moving_trajectories(config_file, output_file)
 
         if p.Path("values.txt").exists():
