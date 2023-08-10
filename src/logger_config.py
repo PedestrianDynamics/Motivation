@@ -3,30 +3,50 @@ Setup logger
 """
 import logging
 import jupedsim as jps
+import sys
 
 
+# Create a handler that writes INFO and DEBUG messages to stdout
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setLevel(logging.DEBUG)
+
+# Create a handler that writes WARNING, ERROR, and CRITICAL messages to stderr
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setLevel(logging.WARNING)
+
+# Create a formatter and set it for both handlers
+formatter = logging.Formatter("%(levelname)s : %(message)s")
+stdout_handler.setFormatter(formatter)
+stderr_handler.setFormatter(formatter)
+
+# Get the root logger
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)  # Set the lowest level to log for the root logger
+
+# Add both handlers to the logger
+logger.addHandler(stdout_handler)
+logger.addHandler(stderr_handler)
+
+
+# Custom log functions
 def log_debug(msg: str) -> None:
     """debug messages"""
-
-    logging.debug(msg)
+    logger.debug(msg)
 
 
 def log_info(msg: str) -> None:
     """info messages"""
-    logging.info(msg)
+    logger.info(msg)
 
 
 def log_warning(msg: str) -> None:
     """warning messages"""
-    logging.warning(msg)
+    logger.warning(msg)
 
 
 def log_error(msg: str) -> None:
-    """error messages"""
-    logging.error(msg)
-
-
-logging.basicConfig(level=logging.DEBUG, format="%(levelname)s : %(message)s")
+    """errror messages"""
+    logger.error(msg)
 
 
 def init_logger() -> None:

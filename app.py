@@ -1,8 +1,106 @@
-import streamlit as st
 import json
-import subprocess
-from typing import Dict, List, Any
 import pathlib as p
+import subprocess
+from typing import Any, Dict, List
+
+import numpy as np
+import numpy.typing as npt
+import plotly.express as px
+import streamlit as st
+from scipy.interpolate import griddata
+import plotly.graph_objects as go
+from src import inifile_parser as parser
+from scipy import spatial, stats
+
+
+def heatmap(
+    config_file, position_x: npt.NDArray, position_y: npt.NDArray, value: npt.NDArray
+) -> None:
+    # Create grid
+    grid_x, grid_y = np.mgrid[
+        min(position_x) : max(position_x) : 100j,
+        min(position_y) : max(position_y) : 100j,
+    ]
+    grid_z = griddata((position_x, position_y), value, (grid_x, grid_y), method="cubic")
+
+    # # Create Plotly figure
+    # fig = px.imshow(
+    #     grid_z.T,
+    #     color_continuous_scale="viridis",
+    #     labels={"x": "Position X", "y": "Position Y", "color": "Value"},
+    # )
+    # TODO: parse the geometry from json file: Accessible areas.
+    with open(config_file, "r", encoding="utf8") as f:
+        json_str = f.read()
+        data = json.loads(json_str)
+        polygons = parser.parse_accessible_areas(data)
+        fig = go.Figure(go.Scatter(x=[], y=[], mode="markers", marker=dict(size=0)))
+        geominX = min([point[0] for polygon in polygons.values() for point in polygon])
+        geomaxX = max([point[0] for polygon in polygons.values() for point in polygon])
+        geominY = min([point[1] for polygon in polygons.values() for point in polygon])
+        geomaxY = max([point[1] for polygon in polygons.values() for point in polygon])
+
+        fig.update_xaxes(
+            range=[
+                geominX,
+                geomaxX,
+            ]
+        )
+        fig.update_yaxes(
+            range=[
+                geominY,
+                geomaxY,
+            ]
+        )
+
+        dx = st.slider(label="grid size", min_value=0.1, max_value=1.0, step=0.1)
+        dy = dx
+        xbins = np.arange(geominX, geomaxX + dx, dx)
+        ybins = np.arange(geominY, geomaxY + dy, dy)
+        area = dx * dy
+        ret = stats.binned_statistic_2d(
+            position_x,
+            position_y,
+            value,
+            "mean",
+            bins=[xbins, ybins],
+        )
+        zz = np.array(np.nan_to_num(ret.statistic.T)) / area
+
+        fig.add_trace(
+            go.Heatmap(
+                x=xbins,
+                y=ybins,
+                z=zz,
+                zmin=0,
+                zmax=0.5,
+                connectgaps=False,
+                zsmooth="best",
+                colorscale="Jet",
+                colorbar=dict(title="Motivation"),
+            )
+        )
+
+    # Add polygons to the plot
+    for polygon in polygons.values():
+        x_values = [point[0] for point in polygon] + [
+            polygon[0][0]
+        ]  # Add the first point again to close the polygon
+        y_values = [point[1] for point in polygon] + [polygon[0][1]]
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                mode="lines",
+                # fill="toself",
+                line=dict(color="white"),
+            )
+        )
+
+    fig.update_layout(title="Heatmap", showlegend=False)
+
+    # Display in Streamlit
+    st.plotly_chart(fig)
 
 
 def load_json(filename: p.Path):
@@ -42,9 +140,7 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section"""
     with st.expander("Motivation Parameters"):
-        motivation_activated = False
-        if data["motivation_parameters"]["active"]:
-            motivation_activated = st.checkbox("Activate motivation")
+        motivation_activated = st.checkbox("Activate motivation")
 
         if motivation_activated:
             data["motivation_parameters"]["active"] = 1
@@ -128,10 +224,7 @@ if __name__ == "__main__":
             st.error(f"file: {file_name} does not exist!")
             st.stop()
 
-        if c1.button(
-            "Load config",
-            help=f"Load config file ({file_name})",
-        ):
+        with c1:
             data = load_json(json_file)
             ui_simulation_parameters(data)
             ui_motivation_parameters(data)
@@ -161,12 +254,19 @@ if __name__ == "__main__":
             # Modify the command as needed
 
             command = f"python simulation.py {config_file} {output_file}"
-            process = subprocess.Popen(
-                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-            stdout, stderr = process.communicate()
-            info_output = stdout.decode().replace("\n", "  \n")
+            n_agents = st.session_state.data["simulation_parameters"]["number_agents"]
+            with st.spinner(f"Simulating with {n_agents}"):
+                process = subprocess.Popen(
+                    command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+                stdout, stderr = process.communicate()
+                info_output = stdout.decode().replace("\n", "  \n")
+                warnings = stderr.decode().replace("\n", "  \n")
+                st.info(info_output)
+                if warnings:
+                    st.error(warnings)
 
-            warnings = stderr.decode().replace("\n", "  \n")
-            if warnings:
-                st.warning(warnings)
+        if p.Path("values.txt").exists():
+            values = np.loadtxt("values.txt")
+            if values.any():
+                heatmap(config_file, values[:, 0], values[:, 1], values[:, 2])

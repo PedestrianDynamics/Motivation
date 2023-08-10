@@ -45,6 +45,10 @@ from src.utilities import (
 Point: TypeAlias = Tuple[float, float]
 
 
+def write_value_to_file(file_handle, value):
+    file_handle.write(str(value) + "\n")
+
+
 def init_simulation(
     _data: Dict[str, Any], _time_step: float
 ) -> Tuple[Any, pp.ParameterGrid, mm.MotivationModel]:
@@ -105,7 +109,10 @@ def init_simulation(
 
 
 def update_profiles(
-    simulation: Any, grid: pp.ParameterGrid, motivation_model: mm.MotivationModel
+    simulation: Any,
+    grid: pp.ParameterGrid,
+    motivation_model: mm.MotivationModel,
+    file_handle,
 ) -> None:
     """Switch profile of pedestrian depending on its motivation"""
 
@@ -131,6 +138,9 @@ def update_profiles(
             # log_error(
             #     f"{agent.id}, {position}, {distance=:.2f}, {new_profile=}, {actual_profile=}, {motivation_i=:.2}, {v_0=:.2}, {time_gap=:.2}"
             # )
+            write_value_to_file(
+                file_handle, f"{position[0]} {position[1]} {motivation_i}"
+            )
         except RuntimeError:
             # pass
             log_error(
@@ -155,13 +165,14 @@ def run_simulation(
     :returns:
 
     """
-    while simulation.agent_count() > 0:
-        simulation.iterate()
-        if motivation_model.active and simulation.iteration_count() % 10 == 0:
-            update_profiles(simulation, grid, motivation_model)
+    with open("values.txt", "w") as file_handle:
+        while simulation.agent_count() > 0:
+            simulation.iterate()
+            if motivation_model.active and simulation.iteration_count() % 100 == 0:
+                update_profiles(simulation, grid, motivation_model, file_handle)
 
-        if simulation.iteration_count() % 10 == 0:
-            writer.write_iteration_state(simulation)
+            if simulation.iteration_count() % 10 == 0:
+                writer.write_iteration_state(simulation)
 
 
 def main(
@@ -194,16 +205,18 @@ def main(
 
     total_agents = _number_agents
     for s_polygon in distribution_polygons.values():
-        log_info(f"Distribute agents in {s_polygon}")
+        log_info(f"Distribute {total_agents} agents in {s_polygon}")
         pos = distribute_by_number(
             polygon=s_polygon,
             number_of_agents=total_agents,
-            distance_to_agents=0.30,
-            distance_to_polygon=0.20,
+            distance_to_agents=0.4,
+            distance_to_polygon=0.2,
             seed=45131502,
         )
         total_agents -= _number_agents
         positions += pos
+        if not total_agents:
+            break
 
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
 

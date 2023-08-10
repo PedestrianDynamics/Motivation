@@ -40,12 +40,15 @@ class MotivationModel:
 
     def motivation(self, _distance: float, _width: float, _height: float) -> float:
         """Exponential motivation with compact support depending on distance"""
-
-        motivation_y = float(
-            np.exp(1 / ((_distance / _width) ** 2 - 1)) * np.e * _height
-        )
         if _distance >= _width:
             motivation_y = 0.0
+            return motivation_y
+
+        expr = 1 / ((_distance / _width) ** 2 - 1)
+        if np.isinf(expr):
+            motivation_y = 0
+        else:
+            motivation_y = float(np.exp(expr) * np.e * _height)
 
         return motivation_y
 
