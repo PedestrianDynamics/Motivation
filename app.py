@@ -11,6 +11,93 @@ from scipy.interpolate import griddata
 import plotly.graph_objects as go
 from src import inifile_parser as parser
 from scipy import spatial, stats
+import pandas as pd
+
+
+# pd.DataFrame(data, columns=header)
+
+
+def moving_trajectories(config_file, output_file):
+    data_df = pd.read_csv(
+        output_file,
+        sep=r"\s+",
+        dtype=np.float64,
+        comment="#",
+        names=["ID", "FR", "X", "Y", "Z", "A", "B", "P", "PP"],
+    )
+    st.dataframe(data_df)
+
+    if "SPEED" in data_df.columns:
+        color = "SPEED"
+        range_color = [0, max(data_df["SPEED"])]
+    elif "COLOR" in data_df.columns:
+        color = "COLOR"
+        range_color = [0, 255]
+    else:
+        data_df["COLOR"] = 125
+        color = "COLOR"
+        range_color = [0, 125]
+
+    if "A" in data_df.columns:
+        data_df["A"] /= 2
+    else:
+        data_df["A"] = 0.2
+
+    fig = px.scatter(
+        data_df,
+        x="X",
+        y="Y",
+        animation_frame="FR",
+        animation_group="ID",
+        color=color,
+        size="A",
+        range_color=range_color,
+        color_continuous_scale=px.colors.diverging.RdBu_r[::-1],
+    )
+
+    with open(config_file, "r", encoding="utf8") as f:
+        json_str = f.read()
+        data = json.loads(json_str)
+        polygons = parser.parse_accessible_areas(data)
+        geominX = min([point[0] for polygon in polygons.values() for point in polygon])
+        geomaxX = max([point[0] for polygon in polygons.values() for point in polygon])
+        geominY = min([point[1] for polygon in polygons.values() for point in polygon])
+        geomaxY = max([point[1] for polygon in polygons.values() for point in polygon])
+
+    fig.update_xaxes(
+        range=[
+            geominX,
+            geomaxX,
+        ]
+    )
+    fig.update_yaxes(
+        range=[
+            geominY,
+            geomaxY,
+        ]
+    )
+    for polygon in polygons.values():
+        x_values = [point[0] for point in polygon] + [
+            polygon[0][0]
+        ]  # Add the first point again to close the polygon
+        y_values = [point[1] for point in polygon] + [polygon[0][1]]
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                mode="lines",
+                # fill="toself",
+                line=dict(color="grey"),
+            )
+        )
+
+    fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 30
+    fig.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 5
+    fig.update_geos(projection_type="equirectangular", visible=True, resolution=110)
+    fig.update_traces(marker=dict(line=dict(width=0.5, color="Gray")))
+    fig.update_geos(projection_type="equirectangular", visible=True, resolution=110)
+    fig.update_layout(title="Visualisation", showlegend=False)
+    st.plotly_chart(fig)
 
 
 def heatmap(
@@ -265,6 +352,8 @@ if __name__ == "__main__":
                 st.info(info_output)
                 if warnings:
                     st.error(warnings)
+
+            moving_trajectories(config_file, output_file)
 
         if p.Path("values.txt").exists():
             values = np.loadtxt("values.txt")
