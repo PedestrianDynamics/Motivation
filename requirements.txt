@@ -3,3 +3,4 @@ jsonschema
 numpy
 jupedsim
 streamlit
+plotly
