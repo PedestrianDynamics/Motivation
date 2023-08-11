@@ -192,9 +192,13 @@ def heatmap(
 def load_json(filename: p.Path):
     """load json file"""
 
-    with open(filename, "r") as file:
-        data = json.load(file)
-    return data
+    try:
+        with open(filename, "r") as file:
+            data = json.load(file)
+        return data
+    except Exception as e:
+        st.error(f"Error loading JSON file: {e}")
+        return {}
 
 
 def save_json(output: p.Path, data: Dict[str, Any]):
