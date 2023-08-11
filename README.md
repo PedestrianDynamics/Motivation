@@ -16,13 +16,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Run simulation in the browser
+### Run simulation in a browser
 
 ```bash
 streamlit run app.py
 ```
 
-### Run simuulation in a terminal:
+### Run simulation in a terminal:
 
 ```bash
 ./run.sh simulation.py <input-file> <output-file.txt> <run-jpsvis>
