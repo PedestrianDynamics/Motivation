@@ -1,39 +1,47 @@
 """
 Simulation model using jpscore API
 """
+import contextlib
+
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import json
 import pathlib
 import sys
+import time
 from typing import Any, Dict, List, Tuple, TypeAlias
 
 import jupedsim as jps
+
+# import cProfile
+# import pstats
+
 from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
-from src import motivation_model as mm, profiles as pp
-
+from src import motivation_model as mm
+from src import profiles as pp
 from src.inifile_parser import (
+    is_motivation_active,
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
     parse_fps,
-    parse_time_step,
-    parse_way_points,
-    parse_number_agents,
-    parse_normal_v_0,
-    parse_normal_time_gap,
-    parse_motivation_doors,
-    parse_grid_time_gap_step,
     parse_grid_max_time_gap,
+    parse_grid_max_v0,
     parse_grid_min_time_gap,
     parse_grid_min_v0,
-    parse_grid_max_v0,
     parse_grid_step_v0,
-    is_motivation_active,
+    parse_grid_time_gap_step,
+    parse_motivation_doors,
+    parse_normal_time_gap,
+    parse_normal_v_0,
+    parse_number_agents,
+    parse_simulation_time,
+    parse_time_step,
+    parse_way_points,
 )
-from src.logger_config import init_logger, log_error, log_info, log_debug
+from src.logger_config import init_logger, log_debug, log_error, log_info
 from src.utilities import (
     build_geometry,
     build_velocity_model,
@@ -47,6 +55,14 @@ Point: TypeAlias = Tuple[float, float]
 
 def write_value_to_file(file_handle, value):
     file_handle.write(str(value) + "\n")
+
+
+@contextlib.contextmanager
+def profile_function(name: str):
+    start_time = time.perf_counter_ns()
+    yield  # <-- your code will execute here
+    total_time = time.perf_counter_ns() - start_time
+    log_debug(f"{name}: {total_time / 1000000.0:.4f} ms")
 
 
 def init_simulation(
@@ -119,7 +135,6 @@ def update_profiles(
     # TODO get neighbors
     # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
     agents = simulation.agents()
-
     for agent in agents:
         position = agent.position
         actual_profile = agent.profile_id
@@ -131,13 +146,7 @@ def update_profiles(
             distance,
         ) = motivation_model.get_profile_number(position, grid)
         try:
-            # TODO is motivation is active
-
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
-
-            # log_error(
-            #     f"{agent.id}, {position}, {distance=:.2f}, {new_profile=}, {actual_profile=}, {motivation_i=:.2}, {v_0=:.2}, {time_gap=:.2}"
-            # )
             write_value_to_file(
                 file_handle, f"{position[0]} {position[1]} {motivation_i}"
             )
@@ -165,20 +174,97 @@ def run_simulation(
     :returns:
 
     """
+
+    def update_profiles(
+        simulation: Any,
+        grid: pp.ParameterGrid,
+        motivation_model: mm.MotivationModel,
+        file_handle,
+    ) -> None:
+        """Switch profile of pedestrian depending on its motivation"""
+
+        # TODO get neighbors
+        # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
+        agents = simulation.agents()
+        for agent in agents:
+            position = agent.position
+            actual_profile = agent.profile_id
+            (
+                new_profile,
+                motivation_i,
+                v_0,
+                time_gap,
+                distance,
+            ) = motivation_model.get_profile_number(position, grid)
+            try:
+                simulation.switch_agent_profile(
+                    agent_id=agent.id, profile_id=new_profile
+                )
+                write_value_to_file(
+                    file_handle, f"{position[0]} {position[1]} {motivation_i}"
+                )
+            except RuntimeError:
+                # pass
+                log_error(
+                    f"""Can not change Profile of Agent {agent.id}
+                    to Profile={actual_profile} at
+                    Iteration={simulation.iteration_count()}."""
+                )
+
+
+def run_simulation(
+    simulation: Any,
+    writer: Any,
+    grid: pp.ParameterGrid,
+    motivation_model: mm.MotivationModel,
+    _simulation_time: float,
+) -> None:
+    """Run simulation logic
+
+    :param simulation:
+    :type simulation:
+    :param writer:
+    :type writer:
+    :returns:
+
+    """
+    # profiler = cProfile.Profile()
+    # profiler.enable()
+    # deltas = []
     with open("values.txt", "w") as file_handle:
-        while simulation.agent_count() > 0:
+        while (
+            simulation.agent_count() > 0 and simulation.elapsed_time() < simulation_time
+        ):
             simulation.iterate()
+
             if motivation_model.active and simulation.iteration_count() % 100 == 0:
-                update_profiles(simulation, grid, motivation_model, file_handle)
+                with profile_function("update profiles"):
+                    # time_1 = time.perf_counter_ns()
+                    update_profiles(simulation, grid, motivation_model, file_handle)
+                    # time_2 = time.perf_counter_ns()
+                    # delta = time_2 - time_1
+                    # deltas.append(delta / 1000000)
+                    # print(
+                    #    f"{simulation.agent_count()}: {simulation.iteration_count()}: {delta=}"
+                    # )
 
             if simulation.iteration_count() % 10 == 0:
                 writer.write_iteration_state(simulation)
+
+    # profiler.disable()
+    # stats = pstats.Stats(profiler)
+    # stats.dump_stats("profile_stats.prof")  # Save to file
+    # if deltas:
+    #     print(
+    #         f"{np.min(deltas)=}, {np.max(deltas)=}, {np.mean(deltas)=}, {np.median(deltas)=}"
+    #     )
 
 
 def main(
     _number_agents: int,
     _fps: int,
     _time_step: float,
+    _simulation_time: float,
     _data: Dict[str, Any],
     _trajectory_path: pathlib.Path,
 ) -> None:
@@ -223,11 +309,11 @@ def main(
     log_info(f"Running simulation for {len(ped_ids)} agents:")
     writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
     writer.begin_writing(_fps)
-    run_simulation(simulation, writer, grid, motivation_model)
+    run_simulation(simulation, writer, grid, motivation_model, _simulation_time)
     writer.end_writing()
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
     log_info(
-        f"{time_step}, {simulation.iteration_count()},  {simulation.iteration_count()*time_step}"
+        f"{time_step}, {simulation.iteration_count()=},  simulation time: {simulation.iteration_count()*time_step} [s]"
     )
     # log_info(f"Trajectory: {_trajectory_path}")
 
@@ -243,11 +329,13 @@ if __name__ == "__main__":
         fps = parse_fps(data)
         time_step = parse_time_step(data)
         number_agents = parse_number_agents(data)
+        simulation_time = parse_simulation_time(data)
         if fps and time_step:
             main(
                 number_agents,
                 fps,
                 time_step,
+                simulation_time,
                 data,
                 pathlib.Path(sys.argv[2]),
             )
