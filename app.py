@@ -485,14 +485,14 @@ if __name__ == "__main__":
 
     # Run Simulation
     with tab2:
-        output_file = st.text_input("Result: ", value="files/trajectory.txt")
-        config_file = str(
+        OUTPUT_FILE = st.text_input("Result: ", value="files/trajectory.txt")
+        CONFIG_FILE = str(
             st.selectbox("Select config file", st.session_state.all_files)
         )
         if st.button("Run Simulation"):
             # Modify the command as needed
 
-            command = f"python simulation.py {config_file} {output_file}"
+            command = f"python simulation.py {CONFIG_FILE} {OUTPUT_FILE}"
             n_agents = st.session_state.data["simulation_parameters"]["number_agents"]
             with st.spinner(f"Simulating with {n_agents}"):
                 with subprocess.Popen(
@@ -505,10 +505,10 @@ if __name__ == "__main__":
                 if WARNINGS:
                     st.error(WARNINGS)
 
-        if p.Path(output_file).exists():
-            moving_trajectories(config_file, output_file)
+        if p.Path(OUTPUT_FILE).exists():
+            moving_trajectories(CONFIG_FILE, OUTPUT_FILE)
 
         if p.Path("values.txt").exists():
             values = np.loadtxt("values.txt")
             if values.any():
-                generate_heatmap(config_file, values[:, 0], values[:, 1], values[:, 2])
+                generate_heatmap(CONFIG_FILE, values[:, 0], values[:, 1], values[:, 2])
