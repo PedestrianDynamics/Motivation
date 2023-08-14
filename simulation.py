@@ -9,13 +9,10 @@ import json
 import pathlib
 import sys
 import time
-from typing import Any, Dict, List, Tuple, TypeAlias
+from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
 
+import _io
 import jupedsim as jps
-
-# import cProfile
-# import pstats
-
 from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
@@ -50,16 +47,20 @@ from src.utilities import (
     init_velocity_agent_parameters,
 )
 
+# import cProfile
+# import pstats
+
+
 Point: TypeAlias = Tuple[float, float]
 
 
-def write_value_to_file(file_handle, value: str) -> None:
+def write_value_to_file(file_handle: _io.TextIOWrapper, value: str) -> None:
     """write motivation information for ploting as heatmap"""
     file_handle.write(value + "\n")
 
 
 @contextlib.contextmanager
-def profile_function(name: str):
+def profile_function(name: str) -> Iterator[None]:
     """utility function to profile. use with <with> and name it <name>"""
     start_time = time.perf_counter_ns()
     yield  # <-- your code will execute here
@@ -130,7 +131,7 @@ def update_profiles(
     simulation: Any,
     grid: pp.ParameterGrid,
     motivation_model: mm.MotivationModel,
-    file_handle,
+    file_handle: _io.TextIOWrapper,
 ) -> None:
     """Switch profile of pedestrian depending on its motivation"""
 

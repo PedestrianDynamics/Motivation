@@ -1,5 +1,5 @@
 """
-Module Name: Jupedsim 
+Module Name: Jupedsim
 Description: This module contains functions for visualizing and simulating data.
 Author: Mohcine Chraibi
 Date: August 11, 2023
@@ -8,22 +8,21 @@ Date: August 11, 2023
 import json
 import pathlib as p
 import subprocess
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-import pandas as pd
+from plotly.graph_objs import Figure
 from scipy import stats
+
 from src import inifile_parser as parser
 
 
-# pd.DataFrame(data, columns=header)
-
-
-def read_data(output_file):
+def read_data(output_file: str) -> pd.DataFrame:
     """reading data from csv file
 
     Args:
@@ -41,7 +40,8 @@ def read_data(output_file):
     )
     return data_df
 
-def set_color_and_size(data_df):
+
+def set_color_and_size(data_df: pd.DataFrame) -> Tuple[str, List[float]]:
     """setting color and size with help of trajectory data
 
     Args:
@@ -68,8 +68,11 @@ def set_color_and_size(data_df):
 
     return color, range_color
 
-def update_fig_layout(fig, geo_min_x, geo_max_x, geo_min_y, geo_max_y):
-    """ Update figure layout to adjust axes ranges
+
+def update_fig_layout(
+    fig: Figure, geo_min_x: float, geo_max_x: float, geo_min_y: float, geo_max_y: float
+) -> None:
+    """Update figure layout to adjust axes ranges
 
     Args:
         fig (_type_): Plotly figure
@@ -81,7 +84,8 @@ def update_fig_layout(fig, geo_min_x, geo_max_x, geo_min_y, geo_max_y):
     fig.update_xaxes(range=[geo_min_x, geo_max_x])
     fig.update_yaxes(range=[geo_min_y, geo_max_y])
 
-def add_polygons_to_fig(fig, polygons):
+
+def add_polygons_to_fig(fig: Figure, polygons: Dict[int, List[List[float]]]) -> None:
     """adding polygons to figure
 
     Args:
@@ -93,10 +97,15 @@ def add_polygons_to_fig(fig, polygons):
         y_values = [point[1] for point in polygon] + [polygon[0][1]]
         fig.add_trace(
             go.Scatter(
-                x=x_values, y=y_values, mode="lines", line={"color": 'grey'},)
+                x=x_values,
+                y=y_values,
+                mode="lines",
+                line={"color": "grey"},
+            )
         )
 
-def customize_fig(fig):
+
+def customize_fig(fig: Figure) -> None:
     """Customize the appearance and layout of the Plotly figure
 
     Args:
@@ -109,7 +118,8 @@ def customize_fig(fig):
     fig.update_geos(projection_type="equirectangular", visible=True, resolution=110)
     fig.update_layout(title="Visualisation", showlegend=False)
 
-def moving_trajectories(config_file, output_file):
+
+def moving_trajectories(config_file: str, output_file: str) -> None:
     """Generate moving trajectories based on simulation
 
     Args:
@@ -130,7 +140,7 @@ def moving_trajectories(config_file, output_file):
         color_continuous_scale=px.colors.diverging.RdBu_r[::-1],
     )
 
-    with open(config_file, "r", encoding="utf-8-sig") as fig1:
+    with open(config_file, "r", encoding="utf-8") as fig1:
         json_str = fig1.read()
         data = json.loads(json_str)
         polygons = parser.parse_accessible_areas(data)
@@ -146,7 +156,12 @@ def moving_trajectories(config_file, output_file):
     st.plotly_chart(fig)
 
 
-def generate_heatmap(config_file, position_x: npt.NDArray, position_y: npt.NDArray, value: npt.NDArray) -> None:
+def generate_heatmap(
+    config_file: str,
+    position_x: npt.NDArray[Any],
+    position_y: npt.NDArray[Any],
+    value: npt.NDArray[Any],
+) -> None:
     """
     Generate and display a heatmap plot based on provided data.
 
@@ -162,7 +177,9 @@ def generate_heatmap(config_file, position_x: npt.NDArray, position_y: npt.NDArr
     fig = create_empty_figure()
     update_figure_layout(fig, polygons)
 
-    heatmap_values, xbins, ybins = calculate_heatmap_values(position_x, position_y, value, polygons)
+    heatmap_values, xbins, ybins = calculate_heatmap_values(
+        position_x, position_y, value, polygons
+    )
 
     add_heatmap_trace(fig, xbins, ybins, heatmap_values)
 
@@ -173,7 +190,7 @@ def generate_heatmap(config_file, position_x: npt.NDArray, position_y: npt.NDArr
     st.plotly_chart(fig)
 
 
-def parse_geometry(config_file):
+def parse_geometry(config_file: str) -> Dict[int, List[List[float]]]:
     """
     Parse accessible areas from a JSON configuration file.
 
@@ -189,7 +206,7 @@ def parse_geometry(config_file):
         return parser.parse_accessible_areas(data)
 
 
-def create_empty_figure():
+def create_empty_figure() -> Figure:
     """
     Create an empty Plotly figure.
 
@@ -199,8 +216,7 @@ def create_empty_figure():
     return go.Figure(go.Scatter(x=[], y=[], mode="markers", marker={"size": 0}))
 
 
-
-def update_figure_layout(fig, polygons):
+def update_figure_layout(fig: Figure, polygons: Dict[int, List[List[float]]]) -> None:
     """
     Update the layout of the Plotly figure based on polygon boundaries.
 
@@ -216,7 +232,13 @@ def update_figure_layout(fig, polygons):
     fig.update_xaxes(range=[geo_min_x, geo_max_x])
     fig.update_yaxes(range=[geo_min_y, geo_max_y])
 
-def calculate_heatmap_values( position_x, position_y, value, polygons,):
+
+def calculate_heatmap_values(
+    position_x: npt.NDArray[Any],
+    position_y: npt.NDArray[Any],
+    value: npt.NDArray[Any],
+    polygons: Dict[int, List[List[float]]],
+) -> Tuple[npt.NDArray[Any], npt.NDArray[Any], npt.NDArray[Any]]:
     """
     Calculate heatmap values using statistical binning
 
@@ -247,7 +269,12 @@ def calculate_heatmap_values( position_x, position_y, value, polygons,):
     return heatmap_values, xbins, ybins
 
 
-def add_heatmap_trace(fig, xbins, ybins, heatmap_values):
+def add_heatmap_trace(
+    fig: Figure,
+    xbins: npt.NDArray[Any],
+    ybins: npt.NDArray[Any],
+    heatmap_values: npt.NDArray[Any],
+) -> None:
     """
     Add a heatmap trace to the Plotly figure.
 
@@ -267,12 +294,12 @@ def add_heatmap_trace(fig, xbins, ybins, heatmap_values):
             connectgaps=False,
             zsmooth="best",
             colorscale="Jet",
-            colorbar={"title": 'Motivation'},
+            colorbar={"title": "Motivation"},
         )
     )
 
 
-def add_polygon_traces(fig, polygons):
+def add_polygon_traces(fig: Figure, polygons: Dict[int, List[List[float]]]) -> None:
     """
     Add polygon traces to the Plotly figure.
 
@@ -288,12 +315,12 @@ def add_polygon_traces(fig, polygons):
                 x=x_values,
                 y=y_values,
                 mode="lines",
-                line={"color": 'white'},
+                line={"color": "white"},
             )
         )
 
 
-def customize_fig_layout(fig):
+def customize_fig_layout(fig: Figure) -> None:
     """
     Customize the layout of the Plotly figure.
 
@@ -303,7 +330,7 @@ def customize_fig_layout(fig):
     fig.update_layout(title="Heatmap", showlegend=False)
 
 
-def load_json(filename: p.Path):
+def load_json(filename: p.Path) -> Any:
     """load json file"""
 
     try:
@@ -315,7 +342,7 @@ def load_json(filename: p.Path):
         return {}
 
 
-def save_json(output: p.Path, data: Dict[str, Any]):
+def save_json(output: p.Path, data: Dict[str, Any]) -> None:
     """save data in json file"""
     with open(output, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
@@ -380,8 +407,12 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
                 for vertex_idx, vertex in enumerate(door["vertices"]):
                     x_key = f"vertex_x_{door_idx}_{vertex_idx}"
                     y_key = f"vertex_y_{door_idx}_{vertex_idx}"
-                    vertex[0] = column_1.number_input("Point X:", value=vertex[0], key=x_key)
-                    vertex[1] = column_2.number_input("Point Y:", value=vertex[1], key=y_key)
+                    vertex[0] = column_1.number_input(
+                        "Point X:", value=vertex[0], key=x_key
+                    )
+                    vertex[1] = column_2.number_input(
+                        "Point Y:", value=vertex[1], key=y_key
+                    )
 
 
 def ui_grid_parameters(data: Dict[str, Any]) -> None:
@@ -421,7 +452,9 @@ if __name__ == "__main__":
 
     with tab1:
         column_1, column_2 = st.columns((1, 1))
-        file_name = column_1.text_input("Load config file: ", value="files/bottleneck.json")
+        file_name = column_1.text_input(
+            "Load config file: ", value="files/bottleneck.json"
+        )
         json_file = p.Path(file_name)
         data = {}
         if not json_file.exists():
@@ -453,7 +486,9 @@ if __name__ == "__main__":
     # Run Simulation
     with tab2:
         output_file = st.text_input("Result: ", value="files/trajectory.txt")
-        config_file = st.selectbox("Select config file", st.session_state.all_files)
+        config_file = str(
+            st.selectbox("Select config file", st.session_state.all_files)
+        )
         if st.button("Run Simulation"):
             # Modify the command as needed
 

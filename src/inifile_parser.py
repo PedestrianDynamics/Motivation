@@ -256,16 +256,16 @@ def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:
     return None
 
 
-def parse_simulation_time(json_data: Dict[str, Any]) -> Optional[int]:
+def parse_simulation_time(json_data: Dict[str, Any]) -> float:
     """Get simulation if found, otherwise None"""
 
     if (
         "simulation_parameters" in json_data
         and "simulation_time" in json_data["simulation_parameters"]
     ):
-        return int(json_data["simulation_parameters"]["simulation_time"])
+        return float(json_data["simulation_parameters"]["simulation_time"])
 
-    return None
+    return 100.0
 
 
 def is_motivation_active(json_data: Dict[str, Any]) -> int:
