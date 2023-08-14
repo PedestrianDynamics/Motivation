@@ -53,12 +53,14 @@ from src.utilities import (
 Point: TypeAlias = Tuple[float, float]
 
 
-def write_value_to_file(file_handle, value):
-    file_handle.write(str(value) + "\n")
+def write_value_to_file(file_handle, value: str) -> None:
+    """write motivation information for ploting as heatmap"""
+    file_handle.write(value + "\n")
 
 
 @contextlib.contextmanager
 def profile_function(name: str):
+    """utility function to profile. use with <with> and name it <name>"""
     start_time = time.perf_counter_ns()
     yield  # <-- your code will execute here
     total_time = time.perf_counter_ns() - start_time
@@ -148,7 +150,8 @@ def update_profiles(
         try:
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
             write_value_to_file(
-                file_handle, f"{position[0]} {position[1]} {motivation_i}"
+                file_handle,
+                f"{position[0]} {position[1]} {motivation_i} {v_0} {time_gap} {distance}",
             )
         except RuntimeError:
             # pass
@@ -157,59 +160,6 @@ def update_profiles(
                 to Profile={actual_profile} at
                 Iteration={simulation.iteration_count()}."""
             )
-
-
-def run_simulation(
-    simulation: Any,
-    writer: Any,
-    grid: pp.ParameterGrid,
-    motivation_model: mm.MotivationModel,
-) -> None:
-    """Run simulation logic
-
-    :param simulation:
-    :type simulation:
-    :param writer:
-    :type writer:
-    :returns:
-
-    """
-
-    def update_profiles(
-        simulation: Any,
-        grid: pp.ParameterGrid,
-        motivation_model: mm.MotivationModel,
-        file_handle,
-    ) -> None:
-        """Switch profile of pedestrian depending on its motivation"""
-
-        # TODO get neighbors
-        # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
-        agents = simulation.agents()
-        for agent in agents:
-            position = agent.position
-            actual_profile = agent.profile_id
-            (
-                new_profile,
-                motivation_i,
-                v_0,
-                time_gap,
-                distance,
-            ) = motivation_model.get_profile_number(position, grid)
-            try:
-                simulation.switch_agent_profile(
-                    agent_id=agent.id, profile_id=new_profile
-                )
-                write_value_to_file(
-                    file_handle, f"{position[0]} {position[1]} {motivation_i}"
-                )
-            except RuntimeError:
-                # pass
-                log_error(
-                    f"""Can not change Profile of Agent {agent.id}
-                    to Profile={actual_profile} at
-                    Iteration={simulation.iteration_count()}."""
-                )
 
 
 def run_simulation(
@@ -231,7 +181,7 @@ def run_simulation(
     # profiler = cProfile.Profile()
     # profiler.enable()
     # deltas = []
-    with open("values.txt", "w") as file_handle:
+    with open("values.txt", "w", encoding="utf-8") as file_handle:
         while (
             simulation.agent_count() > 0 and simulation.elapsed_time() < simulation_time
         ):

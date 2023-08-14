@@ -18,7 +18,7 @@ class MotivationModel:
     door_point1: Point = (60, 101)
     door_point2: Point = (60, 102)
     normal_v_0: float = 1.2
-    normal_time_gap: float = 1
+    normal_time_gap: float = 1.0
     active: int = 1
 
     def print_details(self) -> None:
@@ -46,7 +46,7 @@ class MotivationModel:
 
         expr = 1 / ((_distance / _width) ** 2 - 1)
         if np.isinf(expr):
-            motivation_y = 0
+            motivation_y = 0.0
         else:
             motivation_y = float(np.exp(expr) * np.e * _height)
 
