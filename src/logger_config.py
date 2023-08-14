@@ -2,9 +2,9 @@
 Setup logger
 """
 import logging
-import jupedsim as jps
 import sys
 
+import jupedsim as jps
 
 # Create a handler that writes INFO and DEBUG messages to stdout
 stdout_handler = logging.StreamHandler(sys.stdout)
