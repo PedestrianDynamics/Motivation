@@ -1,5 +1,6 @@
 """
-Parse json file and extract configs
+Parse json file and extract configs.
+
 Module is also used for testing
 """
 
@@ -61,11 +62,29 @@ def parse_velocity_model_parameter_profiles(
     return _profiles
 
 
+def parse_velocity_init_parameters(
+    json_data: Dict[str, Any]
+) -> Tuple[float, float, float, float]:
+    """Parse init parameters for velocity model.
+
+    return a_ped, d_ped, a_wall, d_Wall
+    """
+    if "velocity_init_parameters" in json_data:
+        print(json_data["velocity_init_parameters"])
+        a_ped = float(json_data["velocity_init_parameters"]["a_ped"])
+        d_ped = float(json_data["velocity_init_parameters"]["d_ped"])
+        a_wall = float(json_data["velocity_init_parameters"]["a_wall"])
+        d_wall = float(json_data["velocity_init_parameters"]["d_wall"])
+        return (a_ped, d_ped, a_wall, d_wall)
+    else:
+        return (8.0, 0.1, 5.0, 0.02)
+
+
 def parse_way_points(
     json_data: Dict[str, Any],
 ) -> List[Tuple[Point, float]]:
     """
-    Parses the 'way_points' object from a JSON string into a Python dictionary.
+    Parse the 'way_points' object from a JSON string into a Python dictionary.
 
     Args:
         json_data: A dict containing JSON data with a 'way_points' object.
@@ -75,8 +94,9 @@ def parse_way_points(
         ID (int) to lists of tuples, where each tuple contains a (x, y) point
         and a floating-point number representing a distance.
     """
-
     _way_points: List[Tuple[Point, float]] = []
+    if "way_points" not in json_data:
+        return []
     for _, way_point in enumerate(json_data["way_points"]):
         coordinates = way_point["coordinates"]
         if len(coordinates) != 2:
@@ -352,6 +372,7 @@ if __name__ == "__main__":
             grid_time_gap_min = parse_grid_min_time_gap(data)
             grid_time_gap_max = parse_grid_max_time_gap(data)
             grid_time_gap_step = parse_grid_time_gap_step(data)
+            init_velocity = parse_velocity_init_parameters(data)
 
             print(f"{version=}")
             print(f"{fps=}")
@@ -370,6 +391,7 @@ if __name__ == "__main__":
             print_obj(motivation_doors, "motivation_doors")
             print_obj(distribution_polygons, "distribution polygon")
             print_obj(profiles, "profile")
+            print(f"init_velocity_model: {init_velocity}")
             print(f"{way_points=}")
 
         except jsonschema.exceptions.ValidationError as e:

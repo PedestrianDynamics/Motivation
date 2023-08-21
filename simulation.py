@@ -20,6 +20,7 @@ from src import motivation_model as mm
 from src import profiles as pp
 from src.inifile_parser import (
     is_motivation_active,
+    parse_velocity_init_parameters,
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
@@ -103,7 +104,13 @@ def init_simulation(
 
     geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
-    init_parameters = {"a_ped": 8, "d_ped": 0.1, "a_wall": 5, "d_wall": 0.02}
+    a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
+    init_parameters = {
+        "a_ped": a_ped,
+        "d_ped": d_ped,
+        "a_wall": a_wall,
+        "d_wall": d_wall,
+    }
     model = build_velocity_model(
         init_parameters,
         parameter_profiles=parameter_profiles,
