@@ -10,20 +10,30 @@ import pathlib as p
 import subprocess
 from typing import Any, Dict, List, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from pedpy.column_identifier import (
+    CUMULATED_COL,
+    DENSITY_COL,
+    FRAME_COL,
+    ID_COL,
+    TIME_COL,
+)
 from plotly.graph_objs import Figure
 from scipy import stats
+from shapely import Polygon
+from shapely.ops import unary_union
 
 from src import inifile_parser as parser
 
 
 def read_data(output_file: str) -> pd.DataFrame:
-    """reading data from csv file
+    """reading data from csv file.
 
     Args:
         output_file : path to csv file
@@ -42,7 +52,7 @@ def read_data(output_file: str) -> pd.DataFrame:
 
 
 def set_color_and_size(data_df: pd.DataFrame) -> Tuple[str, List[float]]:
-    """setting color and size with help of trajectory data
+    """setting color and size with help of trajectory data.
 
     Args:
         data_df (_type_): DataFrame containing trajectory data
@@ -72,7 +82,7 @@ def set_color_and_size(data_df: pd.DataFrame) -> Tuple[str, List[float]]:
 def update_fig_layout(
     fig: Figure, geo_min_x: float, geo_max_x: float, geo_min_y: float, geo_max_y: float
 ) -> None:
-    """Update figure layout to adjust axes ranges
+    """Update figure layout to adjust axes ranges.
 
     Args:
         fig (_type_): Plotly figure
@@ -348,6 +358,21 @@ def save_json(output: p.Path, data: Dict[str, Any]) -> None:
         json.dump(data, file, indent=4)
 
 
+def ui_measurement_parameters(data: Dict[str, Any]) -> None:
+    """Measurement lines, polygons."""
+    with st.expander("Measurement Parameters"):
+        st.code("Measurement line:")
+        column_1, column_2 = st.columns((1, 1))
+        line = data["measurement_line"]["vertices"]
+        for idx, vertex in enumerate(line):
+            x_key = f"vertex_x_{idx}"
+            y_key = f"vertex_y_{idx}"
+            vertex[0] = column_1.number_input("Point X:", value=vertex[0], key=x_key)
+            vertex[1] = column_2.number_input("Point Y:", value=vertex[1], key=y_key)
+
+        st.code("Measurement square:")
+
+
 def ui_simulation_parameters(data: Dict[str, Any]) -> None:
     """ "Simulation Parameters Section"""
     with st.expander("Simulation Parameters"):
@@ -440,6 +465,59 @@ def ui_grid_parameters(data: Dict[str, Any]) -> None:
         )
 
 
+def plot_density_time_series(df_data: pd.DataFrame):
+    """Figure for density."""
+    fig_density = go.Figure(
+        data=[go.Scatter(y=df_data[DENSITY_COL], mode="lines", name="Density")]
+    )
+    fig_density.update_layout(
+        title="Density over Time Steps",
+        xaxis_title="Time Steps",
+        yaxis_title="Density (1/m/m)",
+    )
+
+    st.plotly_chart(fig_density)
+
+
+def plotly_time_series(df_data: pd.DataFrame):
+    """Figure for flow."""
+    fig_flow = go.Figure(
+        data=[go.Scatter(y=df_data["flow"], mode="lines", name="Flow")]
+    )
+    fig_flow.update_layout(
+        title="Flow over Time Steps", xaxis_title="Time Steps", yaxis_title="Flow (1/s)"
+    )
+
+    st.plotly_chart(fig_flow)
+
+    fig_speed = go.Figure(
+        data=[go.Scatter(y=df_data["mean_speed"], mode="lines", name="Mean Speed")]
+    )
+    fig_speed.update_layout(
+        title="Mean Speed over Time Steps",
+        xaxis_title="Time Steps",
+        yaxis_title="Mean Speed (m/s)",
+    )
+
+    st.plotly_chart(fig_speed)
+
+
+def plotly_nt_series(df_data: pd.DataFrame):
+    """Figure for flow."""
+    fig_nt = go.Figure(
+        data=[
+            go.Scatter(
+                x=df_data[TIME_COL], y=df_data[CUMULATED_COL], mode="lines", name="NT"
+            )
+        ]
+    )
+    fig_nt.update_layout(
+        title="NT", xaxis_title="Time Steps", yaxis_title="# pedestrians"
+    )
+
+    st.plotly_chart(fig_nt)
+
+
 if __name__ == "__main__":
     if "data" not in st.session_state:
         st.session_state.data = {}
@@ -448,7 +526,7 @@ if __name__ == "__main__":
         st.session_state.all_files = []
         # User will select from these files to do simulations
 
-    tab1, tab2 = st.tabs(["Initialisation", "Simulation"])
+    tab1, tab2, tab3 = st.tabs(["Initialisation", "Simulation", "Analysis"])
 
     with tab1:
         column_1, column_2 = st.columns((1, 1))
@@ -466,6 +544,7 @@ if __name__ == "__main__":
             ui_simulation_parameters(data)
             ui_motivation_parameters(data)
             ui_grid_parameters(data)
+            ui_measurement_parameters(data)
             st.session_state.data = data
             st.session_state.all_files.append(file_name)
 
@@ -487,7 +566,7 @@ if __name__ == "__main__":
     with tab2:
         OUTPUT_FILE = st.text_input("Result: ", value="files/trajectory.txt")
         CONFIG_FILE = str(
-            st.selectbox("Select config file", st.session_state.all_files)
+            st.selectbox("Select config file", list(set(st.session_state.all_files)))
         )
         if st.button("Run Simulation"):
             # Modify the command as needed
@@ -505,10 +584,90 @@ if __name__ == "__main__":
                 if WARNINGS:
                     st.error(WARNINGS)
 
-        if p.Path(OUTPUT_FILE).exists():
+        output_path = p.Path(OUTPUT_FILE)
+        if output_path.exists():
             moving_trajectories(CONFIG_FILE, OUTPUT_FILE)
 
         if p.Path("values.txt").exists():
-            values = np.loadtxt("values.txt")
-            if values.any():
-                generate_heatmap(CONFIG_FILE, values[:, 0], values[:, 1], values[:, 2])
+            print(output_path.name)
+            p.Path("values.txt").rename(output_path.name + "_Heatmap.txt")
+
+    with tab3:
+        # measure flow
+        import glob
+
+        import pedpy
+
+        heatmap_files = glob.glob("*Heatmap.*")
+        selected_heatmap_file = st.selectbox(
+            "Select heatmap file", list(set(heatmap_files))
+        )
+        values = np.loadtxt(selected_heatmap_file)
+        if values.any():
+            generate_heatmap(CONFIG_FILE, values[:, 0], values[:, 1], values[:, 2])
+
+        fps = parser.parse_fps(CONFIG_FILE)
+
+        SLECTED_OUTPUT_FILE = st.selectbox(
+            "Select file", list(set(glob.glob("files/*.txt")))
+        )
+        if SLECTED_OUTPUT_FILE:
+            traj = pedpy.load_trajectory(
+                trajectory_file=p.Path(SLECTED_OUTPUT_FILE),
+                default_frame_rate=fps,
+                default_unit=pedpy.TrajectoryUnit.METER,
+            )
+
+            parsed_measurement_line = data["measurement_line"]["vertices"]
+            measurement_line = pedpy.MeasurementLine(parsed_measurement_line)
+            nt, crossing_frames = pedpy.compute_n_t(
+                traj_data=traj,
+                measurement_line=measurement_line,
+            )
+            individual_speed = pedpy.compute_individual_speed(
+                traj_data=traj, frame_step=10
+            )
+            flow_speed = pedpy.compute_flow(
+                nt=nt,
+                crossing_frames=crossing_frames,
+                individual_speed=individual_speed,
+                delta_t=10,
+                frame_rate=fps,
+            )
+            measurement_area = pedpy.MeasurementArea(
+                data["measurement_area"]["vertices"]
+            )
+
+            accessible_areas = parser.parse_accessible_areas(data)
+            polygons = [Polygon(value) for value in accessible_areas.values()]
+            walkable_area = unary_union(polygons)
+            walkable_area = pedpy.WalkableArea(walkable_area)
+            individual = pedpy.compute_individual_voronoi_polygons(
+                traj_data=traj, walkable_area=walkable_area
+            )
+            density_voronoi, intersecting = pedpy.compute_voronoi_density(
+                individual_voronoi_data=individual, measurement_area=measurement_area
+            )
+            plot_density_time_series(density_voronoi)
+            # pedpy.compute_voronoi_density()
+            plotly_time_series(flow_speed)
+            plotly_nt_series(nt)
+            plot_density_time_series(density_voronoi)
+            data = individual.merge(traj.data, on=[ID_COL, FRAME_COL])
+            frame_value = st.slider(
+                "Select Frame",
+                min_value=min(data.frame),
+                max_value=max(data.frame),
+                value=10,
+            )
+            ax = pedpy.plot_voronoi_cells(
+                data=data[data.frame == frame_value],
+                walkable_area=walkable_area,
+                color_mode="density",
+                vmin=0,
+                vmax=10,
+                show_ped_positions=True,
+                ped_size=5,
+            ).set_aspect("equal")
+            fig = plt.gcf()
+            st.pyplot(fig)

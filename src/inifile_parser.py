@@ -135,6 +135,19 @@ def parse_distribution_polygons(
     return _distribution_polygons
 
 
+def parse_measurement_line(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
+    """Measurement line has two points."""
+
+    _points: List[Point] = []
+
+    if "measurement_line" in json_data:
+        line_dict = json_data["measurement_line"]["vertices"]
+        _points.append(line_dict[0])
+        _points.append(line_dict[1])
+
+    return _points
+
+
 def parse_motivation_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
     """
     Parses a JSON string containing information about doors, around which people get motivated. Returns a dictionary
@@ -177,7 +190,7 @@ def parse_accessible_areas(json_data: Dict[str, Any]) -> Dict[int, List[List[flo
     return _areas
 
 
-def parse_fps(json_data: Dict[str, Any]) -> Optional[int]:
+def parse_fps(json_data: Dict[str, Any]) -> int:
     """Get fps if found in file, otherwise None"""
 
     if (
@@ -186,7 +199,7 @@ def parse_fps(json_data: Dict[str, Any]) -> Optional[int]:
     ):
         return int(json_data["simulation_parameters"]["fps"])
 
-    return None
+    return 10
 
 
 def parse_grid_min_v0(json_data: Dict[str, Any]) -> float:
@@ -373,7 +386,7 @@ if __name__ == "__main__":
             grid_time_gap_max = parse_grid_max_time_gap(data)
             grid_time_gap_step = parse_grid_time_gap_step(data)
             init_velocity = parse_velocity_init_parameters(data)
-
+            measurement_points = parse_measurement_line(data)
             print(f"{version=}")
             print(f"{fps=}")
             print(f"{time_step=}")
@@ -391,6 +404,7 @@ if __name__ == "__main__":
             print_obj(motivation_doors, "motivation_doors")
             print_obj(distribution_polygons, "distribution polygon")
             print_obj(profiles, "profile")
+            print(f"{measurement_points=}")
             print(f"init_velocity_model: {init_velocity}")
             print(f"{way_points=}")
 

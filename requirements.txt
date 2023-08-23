@@ -4,3 +4,4 @@ numpy
 jupedsim
 streamlit
 plotly
+pedpy

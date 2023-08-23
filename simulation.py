@@ -115,6 +115,7 @@ def init_simulation(
         init_parameters,
         parameter_profiles=parameter_profiles,
     )
+
     simulation = jps.Simulation(model=model, geometry=geometry, dt=_time_step)
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
