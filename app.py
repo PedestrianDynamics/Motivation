@@ -365,12 +365,19 @@ def ui_measurement_parameters(data: Dict[str, Any]) -> None:
         column_1, column_2 = st.columns((1, 1))
         line = data["measurement_line"]["vertices"]
         for idx, vertex in enumerate(line):
-            x_key = f"vertex_x_{idx}"
-            y_key = f"vertex_y_{idx}"
+            x_key = f"l_vertex_x_{idx}"
+            y_key = f"l_vertex_y_{idx}"
             vertex[0] = column_1.number_input("Point X:", value=vertex[0], key=x_key)
             vertex[1] = column_2.number_input("Point Y:", value=vertex[1], key=y_key)
 
-        st.code("Measurement square:")
+        st.code("Measurement area:")
+        column_1, column_2 = st.columns((1, 1))
+        area = data["measurement_area"]["vertices"]
+        for idx, vertex in enumerate(area):
+            x_key = f"a_vertex_x_{idx}"
+            y_key = f"a_vertex_y_{idx}"
+            vertex[0] = column_1.number_input("Point X:", value=vertex[0], key=x_key)
+            vertex[1] = column_2.number_input("Point Y:", value=vertex[1], key=y_key)
 
 
 def ui_simulation_parameters(data: Dict[str, Any]) -> None:
@@ -619,7 +626,33 @@ if __name__ == "__main__":
             )
 
             parsed_measurement_line = data["measurement_line"]["vertices"]
+            measurement_area = pedpy.MeasurementArea(
+                data["measurement_area"]["vertices"]
+            )
+
             measurement_line = pedpy.MeasurementLine(parsed_measurement_line)
+            accessible_areas = parser.parse_accessible_areas(data)
+            polygons = [Polygon(value) for value in accessible_areas.values()]
+            walkable_area = unary_union(polygons)
+            walkable_area = pedpy.WalkableArea(walkable_area)
+
+            pedpy.plot_measurement_setup(
+                walkable_area=walkable_area,
+                hole_color="lightgrey",
+                traj=traj,
+                traj_color="lightblue",
+                traj_alpha=0.5,
+                traj_width=1,
+                measurement_lines=[measurement_line],
+                measurement_areas=[measurement_area],
+                ml_color="b",
+                ma_color="r",
+                ma_line_color="r",
+                ma_line_width=1,
+                ma_alpha=0.2,
+            ).set_aspect("equal")
+            fig = plt.gcf()
+            st.pyplot(fig)
             nt, crossing_frames = pedpy.compute_n_t(
                 traj_data=traj,
                 measurement_line=measurement_line,
@@ -634,14 +667,7 @@ if __name__ == "__main__":
                 delta_t=10,
                 frame_rate=fps,
             )
-            measurement_area = pedpy.MeasurementArea(
-                data["measurement_area"]["vertices"]
-            )
 
-            accessible_areas = parser.parse_accessible_areas(data)
-            polygons = [Polygon(value) for value in accessible_areas.values()]
-            walkable_area = unary_union(polygons)
-            walkable_area = pedpy.WalkableArea(walkable_area)
             individual = pedpy.compute_individual_voronoi_polygons(
                 traj_data=traj, walkable_area=walkable_area
             )
