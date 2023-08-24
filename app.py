@@ -678,7 +678,7 @@ if __name__ == "__main__":
             # pedpy.compute_voronoi_density()
             plotly_time_series(flow_speed)
             plotly_nt_series(nt)
-            plot_density_time_series(density_voronoi)
+
             data = individual.merge(traj.data, on=[ID_COL, FRAME_COL])
             frame_value = st.slider(
                 "Select Frame",

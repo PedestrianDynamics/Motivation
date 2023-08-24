@@ -16,6 +16,7 @@ import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
+from src.motivation_model import DefaultMotivationStrategy
 from src import motivation_model as mm
 from src import profiles as pp
 from src.inifile_parser import (
@@ -123,12 +124,29 @@ def init_simulation(
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
 
+    # TODO: Parse
+    motivation_parameters = {
+        "default": mm.MotivationParameters(width=1, height=1),
+        "ezel": mm.MotivationParameters(
+            width=1,
+            height=1,
+            max_reward=parse_number_agents(data),
+            seed=1,
+            max_value=1,
+            min_value=0,
+        ),
+    }
+    # TODO parse strategy
+    motivation_strategy = "default"
+    motivation_parameters = motivation_parameters[motivation_strategy]
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
         door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
         normal_v_0=normal_v_0,
         normal_time_gap=normal_time_gap,
         active=is_motivation_active(_data),
+        motivation_parameters=motivation_parameters,
+        motivation_strategy=DefaultMotivationStrategy,
     )
     motivation_model.print_details()
     log_info("Init simulation done")
@@ -145,6 +163,7 @@ def update_profiles(
 
     # TODO get neighbors
     # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
+
     agents = simulation.agents()
     for agent in agents:
         position = agent.position
@@ -155,7 +174,9 @@ def update_profiles(
             v_0,
             time_gap,
             distance,
-        ) = motivation_model.get_profile_number(position, grid)
+        ) = motivation_model.get_profile_number(
+            position, simulation.agent_count(), grid
+        )
         try:
             simulation.switch_agent_profile(agent_id=agent.id, profile_id=new_profile)
             write_value_to_file(
