@@ -1,12 +1,14 @@
 """
 Module for motivational model
 """
-from typing import Tuple, TypeAlias, Protocol, Optional, Any
-from dataclasses import dataclass
-import numpy as np
 import random
-from .profiles import ParameterGrid
+from dataclasses import dataclass
+from typing import Any, Optional, Tuple, TypeAlias
+
+import numpy as np
+
 from .logger_config import log_debug
+from .profiles import ParameterGrid
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -33,7 +35,7 @@ class DefaultMotivationStrategy:
 
 @dataclass
 class EVCStrategy:
-    """Motivation theory based on E.V.C (model4)"""
+    """Motivation theory based on E.V.C (model4)."""
 
     width: float = 1.0
     height: float = 1.0
@@ -44,7 +46,7 @@ class EVCStrategy:
 
     @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
-        """Expectancy depends on the distance to the entrance."""
+        """Calculate Expectancy depends on the distance to the entrance."""
         if _distance >= _width:
             return 0.0
 
@@ -75,8 +77,7 @@ class EVCStrategy:
         return random.uniform(min_v, max_v)
 
     def motivation(self, params: dict[str, Any]) -> float:
-        """EVC model."""
-
+        """Define EVC model."""
         number_agents_in_simulation = params["number_agents_in_simulation"]
         distance = params["distance"]
         got_reward = self.max_reward - number_agents_in_simulation
@@ -93,7 +94,7 @@ class EVCStrategy:
 
 @dataclass
 class MotivationModel:
-    """Class defining the motivation model"""
+    """Class defining the motivation model."""
 
     door_point1: Point = (60, 101)
     door_point2: Point = (60, 102)
@@ -104,7 +105,6 @@ class MotivationModel:
 
     def print_details(self) -> None:
         """Print member variables for debugging."""
-
         log_debug("Motivation Model:")
         log_debug(f">>  Door Point 1: {self.door_point1}")
         log_debug(f">>  Door Point 2: {self.door_point2}")
@@ -113,6 +113,7 @@ class MotivationModel:
         log_debug(f">>  Active: {self.active}")
 
     def __post_init__(self) -> None:
+        """Init v0 and time gap."""
         if self.normal_v_0 is None:
             self.normal_v_0 = 1.2  # Default value if parsing returns None
 
@@ -120,8 +121,7 @@ class MotivationModel:
             self.normal_time_gap = 1  # Default value if parsing returns None
 
     def calculate_motivation_state(self, motivation_i: float) -> Tuple[float, float]:
-        """return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
-
+        """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
         v_0 = self.normal_v_0
         time_gap = self.normal_time_gap
         v_0_new = (1 + 0 * motivation_i) * v_0  # TODO
