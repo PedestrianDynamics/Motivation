@@ -5,3 +5,4 @@ jupedsim
 streamlit
 plotly
 pedpy
+streamlit

@@ -1,7 +1,7 @@
 """
 Module for motivational model
 """
-from typing import Tuple, TypeAlias, Protocol, Optional
+from typing import Tuple, TypeAlias, Protocol, Optional, Any
 from dataclasses import dataclass
 import numpy as np
 import random
@@ -12,46 +12,35 @@ Point: TypeAlias = Tuple[float, float]
 
 
 @dataclass
-class MotivationParameters:
-    """Class with several parameters for different MotivationStrategies."""
+class DefaultMotivationStrategy:
+    """Default strategy for motivation calculation based on distance."""
 
     width: float = 1.0
     height: float = 1.0
-    distance: float = 0.0
-    got_reward: int = 0
+
+    def motivation(self, params: dict[str, Any]) -> float:
+        """Motivation based on distance to entrance."""
+        distance = params["distance"]
+        if distance >= self.width:
+            return 0.0
+
+        expr = 1 / ((distance / self.width) ** 2 - 1)
+        if np.isinf(expr):
+            return 0.0
+
+        return float(np.exp(expr) * np.e * self.height)
+
+
+@dataclass
+class EVCStrategy:
+    """Motivation theory based on E.V.C (model4)"""
+
+    width: float = 1.0
+    height: float = 1.0
     max_reward: int = 0
     seed: int = 0
     min_value: int = 0
     max_value: int = 1
-
-
-class MotivationStrategy(Protocol):
-    """Protocol for defining the motivation calculation strategy."""
-
-    def motivation(motivation_parameters: MotivationParameters) -> float:
-        """Flexible."""
-
-
-class DefaultMotivationStrategy:
-    """Default strategy for motivation calculation based on distance."""
-
-    def motivation(motivation_parameters: MotivationParameters) -> float:
-        """Motivation based on distance to entrance."""
-        _width = motivation_parameters.width
-        _height = motivation_parameters.height
-        _distance = motivation_parameters.distance
-        if _distance >= _width:
-            return 0.0
-
-        expr = 1 / ((_distance / _width) ** 2 - 1)
-        if np.isinf(expr):
-            return 0.0
-
-        return float(np.exp(expr) * np.e * _height)
-
-
-class EVCStrategy:
-    """Motivation theory based on E.V.C (model4)"""
 
     @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
@@ -85,22 +74,19 @@ class EVCStrategy:
             random.seed(seed)
         return random.uniform(min_v, max_v)
 
-    @staticmethod
-    def motivation(motivation_parameters: MotivationParameters) -> float:
+    def motivation(self, params: dict[str, Any]) -> float:
         """EVC model."""
+
+        number_agents_in_simulation = params["number_agents_in_simulation"]
+        distance = params["distance"]
+        got_reward = self.max_reward - number_agents_in_simulation
         return (
-            EVCStrategy.value(
-                motivation_parameters.min_value,
-                motivation_parameters.max_value,
-                motivation_parameters.seed,
-            )
-            * EVCStrategy.competition(
-                motivation_parameters.got_reward, motivation_parameters.max_reward
-            )
+            EVCStrategy.value(self.min_value, self.max_value, self.seed)
+            * EVCStrategy.competition(got_reward, self.max_reward)
             * EVCStrategy.expectancy(
-                motivation_parameters.distance,
-                motivation_parameters.width,
-                motivation_parameters.height,
+                distance,
+                self.width,
+                self.height,
             )
         )
 
@@ -109,13 +95,12 @@ class EVCStrategy:
 class MotivationModel:
     """Class defining the motivation model"""
 
-    motivation_parameters: MotivationParameters
     door_point1: Point = (60, 101)
     door_point2: Point = (60, 102)
     normal_v_0: float = 1.2
     normal_time_gap: float = 1.0
     active: int = 1
-    motivation_strategy: MotivationStrategy = DefaultMotivationStrategy()
+    motivation_strategy: Any = None
 
     def print_details(self) -> None:
         """Print member variables for debugging."""
@@ -149,23 +134,22 @@ class MotivationModel:
     ) -> Tuple[int, float, float, float, float]:
         """Calculate the profile num from grid based on motivation related (v0,T)."""
 
-        def update_motivation_parameters():
+        def calculate_distance():
             x_door = 0.5 * (self.door_point1[0] + self.door_point2[0])
             y_door = 0.5 * (self.door_point1[1] + self.door_point2[1])
             door = [x_door, y_door]
             distance = (
                 (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
             ) ** 0.5
-            self.motivation_parameters.distance = distance
-            self.motivation_parameters.got_reward = (
-                self.motivation_parameters.max_reward - number_agents_in_simulation
-            )
             return distance
 
-        distance = update_motivation_parameters()
-        motivation_i = self.motivation_strategy.motivation(
-            motivation_parameters=self.motivation_parameters
-        )
+        distance = calculate_distance()
+        params = {
+            "distance": distance,
+            "number_agents_in_simulation": number_agents_in_simulation,
+        }
+        motivation_i = self.motivation_strategy.motivation(params)
+
         v_0, time_gap = self.calculate_motivation_state(motivation_i)
         number = int(grid.get_profile_number(v_0_i=v_0, time_gap_i=time_gap))
         return number, motivation_i, v_0, time_gap, distance

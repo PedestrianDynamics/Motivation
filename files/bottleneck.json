@@ -5,7 +5,7 @@
     ],
     "version": 0.1,
     "velocity_init_parameters": {
-        "a_ped": 4.31,
+        "a_ped": 0.29,
         "d_ped": 0.11,
         "a_wall": 0.5,
         "d_wall": 0.02
@@ -65,7 +65,7 @@
         "width": "1.0",
         "height": "1.0",
         "seed": "1.0",
-        "max_value": "0.0",
+        "max_value": "1.0",
         "min_value": "0.0",
         "motivation_doors": [
             {

@@ -16,8 +16,6 @@ import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
-
-from src.motivation_model import DefaultMotivationStrategy, EVCStrategy
 from src import motivation_model as mm
 from src import profiles as pp
 from src.inifile_parser import (
@@ -90,18 +88,6 @@ def init_simulation(
     seed = parse_motivation_parameter(data, "seed")
     min_value = parse_motivation_parameter(data, "min_value")
     max_value = parse_motivation_parameter(data, "max_value")
-    motivation_parameters = {
-        "default": mm.MotivationParameters(width=width, height=height),
-        "EVC": mm.MotivationParameters(
-            width=width,
-            height=height,
-            max_reward=parse_number_agents(data),
-            seed=seed,
-            max_value=max_value,
-            min_value=min_value,
-        ),
-    }
-    motivation_strategy = {"default": DefaultMotivationStrategy, "EVC": EVCStrategy}
 
     accessible_areas = parse_accessible_areas(_data)
 
@@ -146,15 +132,28 @@ def init_simulation(
         log_error("json file does not contain any motivation door")
 
     choose_motivation_strategy = parse_motivation_strategy(data)
-    motivation_parameters = motivation_parameters[choose_motivation_strategy]
+
+    # =================
+    if choose_motivation_strategy == "default":
+        motivation_strategy = mm.DefaultMotivationStrategy(width=width, height=height)
+    if choose_motivation_strategy == "EVC":
+        motivation_strategy = mm.EVCStrategy(
+            width=width,
+            height=height,
+            max_reward=parse_number_agents(data),
+            seed=seed,
+            max_value=max_value,
+            min_value=min_value,
+        )
+    # =================
+
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
         door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
         normal_v_0=normal_v_0,
         normal_time_gap=normal_time_gap,
         active=is_motivation_active(_data),
-        motivation_parameters=motivation_parameters,
-        motivation_strategy=motivation_strategy[choose_motivation_strategy],
+        motivation_strategy=motivation_strategy,
     )
     motivation_model.print_details()
     log_info("Init simulation done")
