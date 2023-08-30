@@ -1,21 +1,35 @@
 """
 Some functions to setup the simulation.
 """
+import glob
+import os
 from typing import Dict, List, Tuple, TypeAlias
 
 import jupedsim as jps
 from jupedsim.util import build_jps_geometry
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-from .logger_config import log_info
+
+from .logger_config import log_info, log_error
 
 Point: TypeAlias = Tuple[float, float]
+
+
+def delete_txt_files():
+    """Delete all *.txt files in the current directory."""
+    files = glob.glob("*.txt")
+
+    for file in files:
+        try:
+            os.remove(file)
+        except Exception as e:
+            log_error(f"Error deleting {file}: {e}")
 
 
 def build_geometry(
     accessible_areas: Dict[int, List[List[float]]]
 ) -> jps.GeometryBuilder:
-    """build geometry object
+    """Build geometry object.
 
     All points should be defined CCW
     :returns: a geometry builder

@@ -16,11 +16,14 @@ import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
-from src.motivation_model import DefaultMotivationStrategy
+
+from src.motivation_model import DefaultMotivationStrategy, EVCStrategy
 from src import motivation_model as mm
 from src import profiles as pp
 from src.inifile_parser import (
     is_motivation_active,
+    parse_motivation_parameter,
+    parse_motivation_strategy,
     parse_velocity_init_parameters,
     parse_accessible_areas,
     parse_destinations,
@@ -57,13 +60,13 @@ Point: TypeAlias = Tuple[float, float]
 
 
 def write_value_to_file(file_handle: _io.TextIOWrapper, value: str) -> None:
-    """write motivation information for ploting as heatmap"""
+    """Write motivation information for ploting as heatmap."""
     file_handle.write(value + "\n")
 
 
 @contextlib.contextmanager
 def profile_function(name: str) -> Iterator[None]:
-    """utility function to profile. use with <with> and name it <name>"""
+    """Profile function. use with <with> and name it <name>."""
     start_time = time.perf_counter_ns()
     yield  # <-- your code will execute here
     total_time = time.perf_counter_ns() - start_time
@@ -73,7 +76,7 @@ def profile_function(name: str) -> Iterator[None]:
 def init_simulation(
     _data: Dict[str, Any], _time_step: float
 ) -> Tuple[Any, pp.ParameterGrid, mm.MotivationModel]:
-    """Setup geometry and parameter profiles,
+    """Initialise geometry and parameter profiles.
 
     :param data:
     :type data: str
@@ -82,6 +85,24 @@ def init_simulation(
     :returns:
 
     """
+    width = parse_motivation_parameter(data, "width")
+    height = parse_motivation_parameter(data, "height")
+    seed = parse_motivation_parameter(data, "seed")
+    min_value = parse_motivation_parameter(data, "min_value")
+    max_value = parse_motivation_parameter(data, "max_value")
+    motivation_parameters = {
+        "default": mm.MotivationParameters(width=width, height=height),
+        "EVC": mm.MotivationParameters(
+            width=width,
+            height=height,
+            max_reward=parse_number_agents(data),
+            seed=seed,
+            max_value=max_value,
+            min_value=min_value,
+        ),
+    }
+    motivation_strategy = {"default": DefaultMotivationStrategy, "EVC": EVCStrategy}
+
     accessible_areas = parse_accessible_areas(_data)
 
     grid = pp.ParameterGrid(
@@ -124,21 +145,8 @@ def init_simulation(
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
 
-    # TODO: Parse
-    motivation_parameters = {
-        "default": mm.MotivationParameters(width=1, height=1),
-        "ezel": mm.MotivationParameters(
-            width=1,
-            height=1,
-            max_reward=parse_number_agents(data),
-            seed=1,
-            max_value=1,
-            min_value=0,
-        ),
-    }
-    # TODO parse strategy
-    motivation_strategy = "default"
-    motivation_parameters = motivation_parameters[motivation_strategy]
+    choose_motivation_strategy = parse_motivation_strategy(data)
+    motivation_parameters = motivation_parameters[choose_motivation_strategy]
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
         door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
@@ -146,7 +154,7 @@ def init_simulation(
         normal_time_gap=normal_time_gap,
         active=is_motivation_active(_data),
         motivation_parameters=motivation_parameters,
-        motivation_strategy=DefaultMotivationStrategy,
+        motivation_strategy=motivation_strategy[choose_motivation_strategy],
     )
     motivation_model.print_details()
     log_info("Init simulation done")
@@ -159,10 +167,7 @@ def update_profiles(
     motivation_model: mm.MotivationModel,
     file_handle: _io.TextIOWrapper,
 ) -> None:
-    """Switch profile of pedestrian depending on its motivation"""
-
-    # TODO get neighbors
-    # JPS_Simulation_AgentsInRange(JPS_Simulation handle, JPS_Point position, double distance);
+    """Switch profile of pedestrian depending on its motivation."""
 
     agents = simulation.agents()
     for agent in agents:
@@ -199,7 +204,7 @@ def run_simulation(
     motivation_model: mm.MotivationModel,
     _simulation_time: float,
 ) -> None:
-    """Run simulation logic
+    """Run simulation logic.
 
     :param simulation:
     :type simulation:

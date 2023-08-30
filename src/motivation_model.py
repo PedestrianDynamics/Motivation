@@ -50,9 +50,10 @@ class DefaultMotivationStrategy:
         return float(np.exp(expr) * np.e * _height)
 
 
-class EzelMotivationStrategy:
+class EVCStrategy:
     """Motivation theory based on E.V.C (model4)"""
 
+    @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
         """Expectancy depends on the distance to the entrance."""
         if _distance >= _width:
@@ -64,6 +65,7 @@ class EzelMotivationStrategy:
 
         return float(np.exp(expr) * np.e * _height)
 
+    @staticmethod
     def competition(got_reward: int, max_reward: int) -> float:
         """Competition is a question of rewards.
 
@@ -76,23 +78,26 @@ class EzelMotivationStrategy:
 
         return comp
 
+    @staticmethod
     def value(min_v: float, max_v: float, seed: Optional[float] = None):
         """Random value in interval. seed is optional."""
         if seed is not None:
             random.seed(seed)
         return random.uniform(min_v, max_v)
 
+    @staticmethod
     def motivation(motivation_parameters: MotivationParameters) -> float:
+        """EVC model."""
         return (
-            self.value(
+            EVCStrategy.value(
                 motivation_parameters.min_value,
                 motivation_parameters.max_value,
                 motivation_parameters.seed,
             )
-            * self.competition(
+            * EVCStrategy.competition(
                 motivation_parameters.got_reward, motivation_parameters.max_reward
             )
-            * self.expectancy(
+            * EVCStrategy.expectancy(
                 motivation_parameters.distance,
                 motivation_parameters.width,
                 motivation_parameters.height,
@@ -113,7 +118,7 @@ class MotivationModel:
     motivation_strategy: MotivationStrategy = DefaultMotivationStrategy()
 
     def print_details(self) -> None:
-        """Print member variables for debugging"""
+        """Print member variables for debugging."""
 
         log_debug("Motivation Model:")
         log_debug(f">>  Door Point 1: {self.door_point1}")
@@ -130,11 +135,11 @@ class MotivationModel:
             self.normal_time_gap = 1  # Default value if parsing returns None
 
     def calculate_motivation_state(self, motivation_i: float) -> Tuple[float, float]:
-        """return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)"""
+        """return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
 
         v_0 = self.normal_v_0
         time_gap = self.normal_time_gap
-        v_0_new = (1 + motivation_i) * v_0
+        v_0_new = (1 + 0 * motivation_i) * v_0  # TODO
         time_gap_new = time_gap / (1 + motivation_i)
 
         return v_0_new, time_gap_new

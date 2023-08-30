@@ -10,6 +10,8 @@ from typing import Dict, List, Optional, Tuple, TypeAlias, Any
 
 import jsonschema
 import shapely
+from shapely.ops import unary_union
+from shapely import Polygon, GeometryCollection
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -192,14 +194,8 @@ def parse_accessible_areas(json_data: Dict[str, Any]) -> Dict[int, List[List[flo
 
 def parse_fps(json_data: Dict[str, Any]) -> int:
     """Get fps if found in file, otherwise None"""
-
-    if (
-        "simulation_parameters" in json_data
-        and "fps" in json_data["simulation_parameters"]
-    ):
-        return int(json_data["simulation_parameters"]["fps"])
-
-    return 10
+    fps = int(json_data["simulation_parameters"]["fps"])
+    return fps
 
 
 def parse_grid_min_v0(json_data: Dict[str, Any]) -> float:
@@ -301,6 +297,30 @@ def parse_simulation_time(json_data: Dict[str, Any]) -> float:
     return 100.0
 
 
+def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
+    """Get motivation strategy."""
+
+    if (
+        "motivation_parameters" in json_data
+        and "motivation_strategy" in json_data["motivation_parameters"]
+    ):
+        return json_data["motivation_parameters"]["motivation_strategy"]
+
+    return "default"
+
+
+def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> str:
+    """Get motivation parameter."""
+
+    if (
+        "motivation_parameters" in json_data
+        and parameter in json_data["motivation_parameters"]
+    ):
+        return float(json_data["motivation_parameters"][parameter])
+
+    return 1.0
+
+
 def is_motivation_active(json_data: Dict[str, Any]) -> int:
     """Get status of motivation if activated"""
     if (
@@ -367,6 +387,14 @@ if __name__ == "__main__":
                 jsonschema.validate(instance=data, schema=SCHEMA)
 
             accessible_areas = parse_accessible_areas(data)
+            polygons = [Polygon(value) for value in accessible_areas.values()]
+            walkable_area = GeometryCollection(
+                unary_union(polygons)
+            )  # unary_union(polygons)
+            ac = shapely.to_wkt(walkable_area)
+            print("--------")
+            print(ac)
+            print("--------")
             destinations = parse_destinations(data)
             distribution_polygons = parse_distribution_polygons(data)
             way_points = parse_way_points(data)

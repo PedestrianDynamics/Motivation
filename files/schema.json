@@ -212,5 +212,5 @@
             }
         }
     },
-    "required": ["version", "simulation_parameters", "accessible_areas", "destinations", "velocity_model_parameter_profiles", "way_points", "distribution_polygons"]
+    "required": ["version", "simulation_parameters", "accessible_areas", "destinations", "velocity_model_parameter_profiles",  "distribution_polygons"]
 }

@@ -30,6 +30,7 @@ from shapely import Polygon
 from shapely.ops import unary_union
 
 from src import inifile_parser as parser
+from src.utilities import delete_txt_files
 
 
 def read_data(output_file: str) -> pd.DataFrame:
@@ -380,8 +381,37 @@ def ui_measurement_parameters(data: Dict[str, Any]) -> None:
             vertex[1] = column_2.number_input("Point Y:", value=vertex[1], key=y_key)
 
 
+def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
+    """Set velocity Parameters Section."""
+    with st.expander("Velocity model Parameters"):
+        data["velocity_init_parameters"]["a_ped"] = st.slider(
+            "a_ped:",
+            min_value=0.0,
+            max_value=10.0,
+            value=data["velocity_init_parameters"]["a_ped"],
+        )
+        data["velocity_init_parameters"]["d_ped"] = st.slider(
+            "d_ped:",
+            min_value=0.01,
+            max_value=1.0,
+            value=data["velocity_init_parameters"]["d_ped"],
+        )
+        data["velocity_init_parameters"]["a_wall"] = st.slider(
+            "a_wall:",
+            min_value=0.0,
+            max_value=10.0,
+            value=data["velocity_init_parameters"]["a_wall"],
+        )
+        data["velocity_init_parameters"]["d_wall"] = st.slider(
+            "d_wall:",
+            min_value=0.01,
+            max_value=1.0,
+            value=data["velocity_init_parameters"]["d_wall"],
+        )
+
+
 def ui_simulation_parameters(data: Dict[str, Any]) -> None:
-    """ "Simulation Parameters Section"""
+    """Set simulation Parameters Section."""
     with st.expander("Simulation Parameters"):
         data["simulation_parameters"]["fps"] = st.slider(
             "FPS:",
@@ -401,15 +431,54 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
 
 
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
-    """Motivation Parameters Section"""
+    """Motivation Parameters Section."""
     with st.expander("Motivation Parameters"):
         motivation_activated = st.checkbox("Activate motivation")
-
         if motivation_activated:
             data["motivation_parameters"]["active"] = 1
         else:
             data["motivation_parameters"]["active"] = 0
 
+        motivation_strategy = st.selectbox(
+            "Select model",
+            ["default", "EVC"],
+            help="Model 2: M = M(dist). Model 3: M = V.E, Model4: M=V.E.C",
+        )
+        data["motivation_parameters"]["width"] = st.text_input(
+            "Width",
+            key="width",
+            value=float(data["motivation_parameters"]["width"]),
+            help="width of function defining distance dependency",
+        )
+        data["motivation_parameters"]["height"] = st.text_input(
+            "Height",
+            key="hight",
+            value=float(data["motivation_parameters"]["height"]),
+            help="Height of function defining distance dependency",
+        )
+
+        data["motivation_parameters"]["seed"] = st.text_input(
+            "Seed",
+            key="seed",
+            value=float(data["motivation_parameters"]["seed"]),
+            help="Seed for random generator for value",
+        )
+
+        data["motivation_parameters"]["max_value"] = st.text_input(
+            "Max_value",
+            key="max_value",
+            value=float(data["motivation_parameters"]["max_value"]),
+            help="Max Value",
+        )
+
+        data["motivation_parameters"]["min_value"] = st.text_input(
+            "Min_value",
+            key="min_value",
+            value=float(data["motivation_parameters"]["min_value"]),
+            help="Min Value",
+        )
+
+        data["motivation_parameters"]["motivation_strategy"] = motivation_strategy
         data["motivation_parameters"]["normal_v_0"] = st.slider(
             "Normal V0:",
             min_value=0.5,
@@ -448,8 +517,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
 
 
 def ui_grid_parameters(data: Dict[str, Any]) -> None:
-    """Grid Parameters Section"""
-
+    """Grid Parameters Section."""
     with st.expander("Grid Parameters"):
         column_1, column_2, column_3 = st.columns((1, 1, 1))
         data["grid_parameters"]["min_v_0"] = column_1.number_input(
@@ -548,10 +616,10 @@ if __name__ == "__main__":
 
         with column_1:
             data = load_json(json_file)
+            ui_velocity_model_parameters(data)
             ui_simulation_parameters(data)
             ui_motivation_parameters(data)
             ui_grid_parameters(data)
-            ui_measurement_parameters(data)
             st.session_state.data = data
             st.session_state.all_files.append(file_name)
 
@@ -560,7 +628,6 @@ if __name__ == "__main__":
             "Save config file: ", value="files/bottleneck.json"
         )
         new_json_file = p.Path(new_json_name)
-
         if column_2.button(
             "Save config",
             help=f"After changing the values, you can save the configs in a separate file ({new_json_name})",
@@ -568,6 +635,9 @@ if __name__ == "__main__":
             save_json(new_json_file, data)
             column_1.info(f"Saved file as {new_json_name}")
             st.session_state.all_files.append(new_json_name)
+
+        if column_2.button("Reset", help="Delete all trajectory files"):
+            delete_txt_files()
 
     # Run Simulation
     with tab2:
@@ -602,22 +672,22 @@ if __name__ == "__main__":
     with tab3:
         # measure flow
         import glob
-
         import pedpy
 
         heatmap_files = glob.glob("*Heatmap.*")
         selected_heatmap_file = st.selectbox(
             "Select heatmap file", list(set(heatmap_files))
         )
-        values = np.loadtxt(selected_heatmap_file)
-        if values.any():
-            generate_heatmap(CONFIG_FILE, values[:, 0], values[:, 1], values[:, 2])
+        if selected_heatmap_file and p.Path(selected_heatmap_file).exists():
+            values = np.loadtxt(selected_heatmap_file)
+            if values.any():
+                generate_heatmap(CONFIG_FILE, values[:, 0], values[:, 1], values[:, 2])
 
-        fps = parser.parse_fps(CONFIG_FILE)
-
+        fps = parser.parse_fps(data)
         SLECTED_OUTPUT_FILE = st.selectbox(
             "Select file", list(set(glob.glob("files/*.txt")))
         )
+        ui_measurement_parameters(data)
         if SLECTED_OUTPUT_FILE:
             traj = pedpy.load_trajectory(
                 trajectory_file=p.Path(SLECTED_OUTPUT_FILE),
@@ -686,7 +756,8 @@ if __name__ == "__main__":
                 max_value=max(data.frame),
                 value=10,
             )
-            ax = pedpy.plot_voronoi_cells(
+            fig2 = plt.figure()
+            ax2 = pedpy.plot_voronoi_cells(
                 data=data[data.frame == frame_value],
                 walkable_area=walkable_area,
                 color_mode="density",
@@ -695,5 +766,5 @@ if __name__ == "__main__":
                 show_ped_positions=True,
                 ped_size=5,
             ).set_aspect("equal")
-            fig = plt.gcf()
-            st.pyplot(fig)
+            fig2 = plt.gcf()
+            st.pyplot(fig2)

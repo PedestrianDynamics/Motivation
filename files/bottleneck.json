@@ -4,14 +4,28 @@
         "to start a jupedsim simulation with the motivation model"
     ],
     "version": 0.1,
+    "velocity_init_parameters": {
+        "a_ped": 4.31,
+        "d_ped": 0.11,
+        "a_wall": 0.5,
+        "d_wall": 0.02
+    },
+    "velocity_model_parameter_profiles": [
+        {
+            "id": 1.0,
+            "time_gap": 1.0,
+            "tau": 0.5,
+            "v0": 1.2,
+            "radius": 0.15
+        }
+    ],
     "simulation_parameters": {
-        "fps": 10,
+        "fps": 60,
         "time_step": 0.01,
-        "number_agents": 40,
+        "number_agents": 50,
         "simulation_time": 50
     },
-    "measurement_line":
-    {
+    "measurement_line": {
         "vertices": [
             [
                 60,
@@ -23,8 +37,7 @@
             ]
         ]
     },
-    "measurement_area":
-    {
+    "measurement_area": {
         "vertices": [
             [
                 60,
@@ -42,24 +55,29 @@
                 59,
                 101.6
             ]
-            
         ]
     },
     "motivation_parameters": {
-        "active": 1,
-        "normal_v_0": 0.5,
-        "normal_time_gap": 1.3,
+        "motivation_strategy": "default",
+        "active": 0,
+        "normal_v_0": 1.2,
+        "normal_time_gap": 1.0,
+        "width": "1.0",
+        "height": "1.0",
+        "seed": "1.0",
+        "max_value": "0.0",
+        "min_value": "0.0",
         "motivation_doors": [
             {
                 "id": 1,
                 "label": "door",
                 "vertices": [
                     [
-                        57,
+                        58,
                         102.6
                     ],
                     [
-                        57,
+                        58,
                         101.4
                     ]
                 ]
@@ -79,7 +97,7 @@
             "id": 1,
             "vertices": [
                 [
-                    50.0,
+                    47.0,
                     100.0
                 ],
                 [
@@ -91,7 +109,7 @@
                     104.0
                 ],
                 [
-                    50.0,
+                    47.0,
                     104.0
                 ]
             ]
@@ -163,50 +181,12 @@
             ]
         }
     ],
-    "velocity_init_parameters": {
-        "a_ped": 5,
-        "d_ped": 0.1,
-        "a_wall": 2,
-        "d_wall": 0.02
-    },
-    "velocity_model_parameter_profiles": [
-        {
-            "id": 1,
-            "time_gap": 1.0,
-            "tau": 0.5,
-            "v0": 1.0,
-            "radius": 0.15
-        },
-        {
-            "id": 2,
-            "time_gap": 1.0,
-            "tau": 0.5,
-            "v0": 0.1,
-            "radius": 0.2
-        }
-    ],
-    "way_points": [
-        {
-            "coordinates": [
-                61.0,
-                102.0
-            ],
-            "distance": 1
-        },
-        {
-            "coordinates": [
-                64.75,
-                102.0
-            ],
-            "distance": 0.4
-        }
-    ],
     "distribution_polygons": [
         {
             "id": 1,
             "vertices": [
                 [
-                    50.0,
+                    48.0,
                     100.0
                 ],
                 [
@@ -218,28 +198,7 @@
                     104.0
                 ],
                 [
-                    50.0,
-                    104.0
-                ]
-            ]
-        },
-        {
-            "id": 2,
-            "vertices": [
-                [
-                    57.0,
-                    100.0
-                ],
-                [
-                    60.0,
-                    100.0
-                ],
-                [
-                    60.0,
-                    104.0
-                ],
-                [
-                    57.0,
+                    48.0,
                     104.0
                 ]
             ]
