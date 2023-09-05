@@ -1,8 +1,7 @@
-shapely
-jsonschema
-numpy
+streamlit>=*
+shapely>=*
+jsonschema>=*
 jupedsim
-streamlit
-plotly
+plotly>=*
 pedpy
-streamlit
+numpy==1.24.2
