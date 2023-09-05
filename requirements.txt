@@ -1,5 +1,5 @@
-streamlit>=*
-shapely==2.0
+streamlit
+shapely==2.0.1
 jsonschema
 jupedsim
 plotly
