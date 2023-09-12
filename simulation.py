@@ -109,7 +109,6 @@ def init_simulation(
             velocity_profile.v_0,
             velocity_profile.radius,
         ]
-
     geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
@@ -265,31 +264,69 @@ def main(
     way_points = parse_way_points(_data)
     destinations_dict = parse_destinations(_data)
     destinations = list(destinations_dict.values())
-    journey_id = init_journey(simulation, way_points, destinations[0])
+    
+    log_info(f"number of destination is {len(destinations)}")   
+    if len(destinations)>1:
+        agent_parameters = []
+        for destination in destinations:
+            journey_id = init_journey(simulation, way_points, destination)
+            agent_parameters_list = init_velocity_agent_parameters(
+            phi_x=1, phi_y=0, journey=journey_id, profile=1
+            )
+            agent_parameters.append(agent_parameters_list)
+        
+        distribution_polygons = parse_distribution_polygons(_data)
+        positions = []
+        total_agents = _number_agents
+        num_poly = len(distribution_polygons.values())
+        log_info(f"number of polygns is {num_poly}")
+        for s_polygon in distribution_polygons.values():
+            log_info(f"Distribute {_number_agents/num_poly} agents in {s_polygon}")
+            pos = distribute_by_number(
+                polygon=s_polygon,
+                number_of_agents=_number_agents/num_poly,
+                distance_to_agents=0.4,
+                distance_to_polygon=0.2,
+                seed=45131502,
+                )
+            total_agents -= total_agents/num_poly
+            positions.append(pos)
+            if not total_agents:
+                break
+        ped_ids= []
+        for agent_parameter, position in zip(agent_parameters,positions):
+            ped_id = distribute_and_add_agents(simulation, agent_parameter, position)
+            ped_ids.append(ped_id)
+            
+            
+    else:
+        journey_id = init_journey(simulation, way_points, destinations[0])
 
-    agent_parameters = init_velocity_agent_parameters(
-        phi_x=1, phi_y=0, journey=journey_id, profile=1
-    )
-    distribution_polygons = parse_distribution_polygons(_data)
-    positions = []
+        agent_parameters = init_velocity_agent_parameters(
+            phi_x=1, phi_y=0, journey=journey_id, profile=1
+            )
+        distribution_polygons = parse_distribution_polygons(_data)
+        positions = []
 
-    total_agents = _number_agents
-    for s_polygon in distribution_polygons.values():
-        log_info(f"Distribute {total_agents} agents in {s_polygon}")
-        pos = distribute_by_number(
-            polygon=s_polygon,
-            number_of_agents=total_agents,
-            distance_to_agents=0.4,
-            distance_to_polygon=0.2,
-            seed=45131502,
-        )
-        total_agents -= _number_agents
-        positions += pos
-        if not total_agents:
-            break
+        total_agents = _number_agents
+        num_poly = len(distribution_polygons.values())
+        log_info(f"number of polygns is {num_poly}")
+        for s_polygon in distribution_polygons. values():
+            log_info(f"Distribute {_number_agents/num_poly} agents in {s_polygon}")
+            pos = distribute_by_number(
+                polygon=s_polygon,
+                number_of_agents=_number_agents/num_poly,
+                distance_to_agents=0.4,
+                distance_to_polygon=0.2,
+                seed=45131502,
+            )
+            total_agents -= total_agents/num_poly
+            positions += pos
+            if not total_agents:
+                break
 
-    ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
-
+        ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
+    
     log_info(f"Running simulation for {len(ped_ids)} agents:")
     writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
     writer.begin_writing(_fps)
