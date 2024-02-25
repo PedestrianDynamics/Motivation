@@ -18,7 +18,7 @@ Point: TypeAlias = Tuple[float, float]
 
 def parse_destinations(json_data: Dict[str, Any]) -> Dict[int, List[List[Point]]]:
     """
-    Parses the 'destinations' object from a JSON string into a Python dictionary.
+    Parse the 'destinations' object from a JSON string into a Python dictionary.
 
     Args:
         json_data: A dict containing JSON data with a 'destinations' object.
@@ -37,35 +37,8 @@ def parse_destinations(json_data: Dict[str, Any]) -> Dict[int, List[List[Point]]
     return _destinations
 
 
-def parse_velocity_model_parameter_profiles(
-    json_data: Dict[str, Any]
-) -> Dict[int, List[float]]:
-    """
-    Parse the 'velocity_model_parameter_profiles' object
-    from a JSON string into a Python dictionary.
-
-    Args:
-        json_data: A dict containing JSON data with a
-                   'velocity_model_parameter_profiles' object.
-
-    Returns:
-        A dictionary with the parsed 'velocity_model_parameter_profiles' object. The dictionary maps
-        ID (int) to lists of floating-point numbers.
-    """
-
-    _profiles: Dict[int, List[float]] = {}
-    for profile in json_data["velocity_model_parameter_profiles"]:
-        id_str = profile["id"]
-        time_gap = profile["time_gap"]
-        tau = profile["tau"]
-        v_0 = profile["v0"]
-        radius = profile["radius"]
-        _profiles[int(id_str)] = [time_gap, tau, v_0, radius]
-    return _profiles
-
-
 def parse_velocity_init_parameters(
-    json_data: Dict[str, Any]
+    json_data: Dict[str, Any],
 ) -> Tuple[float, float, float, float]:
     """Parse init parameters for velocity model.
 
@@ -398,7 +371,6 @@ if __name__ == "__main__":
             destinations = parse_destinations(data)
             distribution_polygons = parse_distribution_polygons(data)
             way_points = parse_way_points(data)
-            profiles = parse_velocity_model_parameter_profiles(data)
             version = data["version"]
             fps = parse_fps(data)
             time_step = parse_time_step(data)
@@ -431,7 +403,6 @@ if __name__ == "__main__":
             print_obj(destinations, "destination")
             print_obj(motivation_doors, "motivation_doors")
             print_obj(distribution_polygons, "distribution polygon")
-            print_obj(profiles, "profile")
             print(f"{measurement_points=}")
             print(f"init_velocity_model: {init_velocity}")
             print(f"{way_points=}")

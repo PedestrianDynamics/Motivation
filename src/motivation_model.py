@@ -1,6 +1,5 @@
-"""
-Module for motivational model
-"""
+"""Module for motivational model."""
+
 import random
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple, TypeAlias
@@ -8,7 +7,6 @@ from typing import Any, Optional, Tuple, TypeAlias
 import numpy as np
 
 from .logger_config import log_debug
-from .profiles import ParameterGrid
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -128,28 +126,3 @@ class MotivationModel:
         time_gap_new = time_gap / (1 + motivation_i)
 
         return v_0_new, time_gap_new
-
-    def get_profile_number(
-        self, position: Point, number_agents_in_simulation: int, grid: ParameterGrid
-    ) -> Tuple[int, float, float, float, float]:
-        """Calculate the profile num from grid based on motivation related (v0,T)."""
-
-        def calculate_distance():
-            x_door = 0.5 * (self.door_point1[0] + self.door_point2[0])
-            y_door = 0.5 * (self.door_point1[1] + self.door_point2[1])
-            door = [x_door, y_door]
-            distance = (
-                (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
-            ) ** 0.5
-            return distance
-
-        distance = calculate_distance()
-        params = {
-            "distance": distance,
-            "number_agents_in_simulation": number_agents_in_simulation,
-        }
-        motivation_i = self.motivation_strategy.motivation(params)
-
-        v_0, time_gap = self.calculate_motivation_state(motivation_i)
-        number = int(grid.get_profile_number(v_0_i=v_0, time_gap_i=time_gap))
-        return number, motivation_i, v_0, time_gap, distance

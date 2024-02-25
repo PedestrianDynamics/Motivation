@@ -1,5 +1,5 @@
-"""
-Module Name: Jupedsim
+"""Motivation model with jupedsim.
+
 Description: This module contains functions for visualizing and simulating data.
 Author: Mohcine Chraibi
 Date: August 11, 2023
@@ -34,7 +34,7 @@ from src.utilities import delete_txt_files
 
 
 def read_data(output_file: str) -> pd.DataFrame:
-    """reading data from csv file.
+    """Read data from csv file.
 
     Args:
         output_file : path to csv file
@@ -53,7 +53,7 @@ def read_data(output_file: str) -> pd.DataFrame:
 
 
 def set_color_and_size(data_df: pd.DataFrame) -> Tuple[str, List[float]]:
-    """setting color and size with help of trajectory data.
+    """Set color and size with help of trajectory data.
 
     Args:
         data_df (_type_): DataFrame containing trajectory data
@@ -97,7 +97,7 @@ def update_fig_layout(
 
 
 def add_polygons_to_fig(fig: Figure, polygons: Dict[int, List[List[float]]]) -> None:
-    """adding polygons to figure
+    """Add polygons to figure.
 
     Args:
         fig (_type_): Plotly figure
@@ -117,7 +117,7 @@ def add_polygons_to_fig(fig: Figure, polygons: Dict[int, List[List[float]]]) -> 
 
 
 def customize_fig(fig: Figure) -> None:
-    """Customize the appearance and layout of the Plotly figure
+    """Customize the appearance and layout of the Plotly figure.
 
     Args:
         fig (_type_): Plotly figure
@@ -131,7 +131,7 @@ def customize_fig(fig: Figure) -> None:
 
 
 def moving_trajectories(config_file: str, output_file: str) -> None:
-    """Generate moving trajectories based on simulation
+    """Generate moving trajectories based on simulation.
 
     Args:
         config_file (_type_): JSON file
@@ -251,7 +251,7 @@ def calculate_heatmap_values(
     polygons: Dict[int, List[List[float]]],
 ) -> Tuple[npt.NDArray[Any], npt.NDArray[Any], npt.NDArray[Any]]:
     """
-    Calculate heatmap values using statistical binning
+    Calculate heatmap values using statistical binning.
 
     Args:
         position_x: Array of X positions.
@@ -342,7 +342,7 @@ def customize_fig_layout(fig: Figure) -> None:
 
 
 def load_json(filename: p.Path) -> Any:
-    """load json file"""
+    """Load json file."""
 
     try:
         with open(filename, "r", encoding="utf-8") as file:
@@ -354,7 +354,7 @@ def load_json(filename: p.Path) -> Any:
 
 
 def save_json(output: p.Path, data: Dict[str, Any]) -> None:
-    """save data in json file"""
+    """Save data in json file."""
     with open(output, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
 
