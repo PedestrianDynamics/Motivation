@@ -413,3 +413,19 @@ if __name__ == "__main__":
             print("Invalid JSON syntax:", e)
         except ValueError as e:
             print("Invalid JSON:", e)
+
+
+def parse_geometry(config_file: str) -> Dict[int, List[List[float]]]:
+    """
+    Parse accessible areas from a JSON configuration file.
+
+    Args:
+        config_file (str): Path to the JSON configuration file.
+
+    Returns:
+        dict: Parsed polygons representing accessible areas.
+    """
+    with open(config_file, "r", encoding="utf8") as fig2:
+        json_str = fig2.read()
+        data = json.loads(json_str)
+        return parse_accessible_areas(data)

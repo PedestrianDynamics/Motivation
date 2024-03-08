@@ -18,6 +18,11 @@ class DefaultMotivationStrategy:
     width: float = 1.0
     height: float = 1.0
 
+    @staticmethod
+    def name() -> str:
+        """Give back name of strategy."""
+        return "DefaultStrategy"
+
     def motivation(self, params: dict[str, Any]) -> float:
         """Motivation based on distance to entrance."""
         distance = params["distance"]
@@ -41,6 +46,11 @@ class EVCStrategy:
     seed: int = 0
     min_value: int = 0
     max_value: int = 1
+
+    @staticmethod
+    def name() -> str:
+        """Give back name of strategy."""
+        return "EVCStrategy"
 
     @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
@@ -103,7 +113,7 @@ class MotivationModel:
 
     def print_details(self) -> None:
         """Print member variables for debugging."""
-        log_debug("Motivation Model:")
+        log_debug(f"Motivation Model: {self.motivation_strategy.name()}")
         log_debug(f">>  Door Point 1: {self.door_point1}")
         log_debug(f">>  Door Point 2: {self.door_point2}")
         log_debug(f">  Normal Velocity 0: {self.normal_v_0}")

@@ -9,11 +9,9 @@ import pathlib
 import sys
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
-
 import _io
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
-from jupedsim.serialization import JpsCoreStyleTrajectoryWriter
 
 from src import motivation_model as mm
 from src.inifile_parser import (
@@ -36,10 +34,8 @@ from src.inifile_parser import (
 from src.logger_config import init_logger, log_debug, log_error, log_info
 from src.utilities import (
     build_geometry,
-    build_velocity_model,
     distribute_and_add_agents,
     init_journey,
-    init_velocity_agent_parameters,
 )
 
 # import cProfile
@@ -64,7 +60,10 @@ def profile_function(name: str) -> Iterator[None]:
 
 
 def init_simulation(
-    _data: Dict[str, Any], _time_step: float
+    _data: Dict[str, Any],
+    _time_step: float,
+    _fps: int,
+    _trajectory_path: pathlib.Path,
 ) -> Tuple[Any, mm.MotivationModel]:
     """Initialise geometry.
 
@@ -85,17 +84,19 @@ def init_simulation(
     geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
-    init_parameters = {
-        "a_ped": a_ped,
-        "d_ped": d_ped,
-        "a_wall": a_wall,
-        "d_wall": d_wall,
-    }
-    model = build_velocity_model(
-        init_parameters,
+    simulation = jps.Simulation(
+        model=jps.CollisionFreeSpeedModel(
+            strength_neighbor_repulsion=a_ped,
+            range_neighbor_repulsion=d_ped,
+            strength_geometry_repulsion=a_wall,
+            range_geometry_repulsion=d_wall,
+        ),
+        geometry=geometry,
+        dt=_time_step,
+        trajectory_writer=jps.SqliteTrajectoryWriter(
+            output_file=pathlib.Path(_trajectory_path), every_nth_frame=_fps
+        ),
     )
-
-    simulation = jps.Simulation(model=model, geometry=geometry, dt=_time_step)
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
     motivation_doors = parse_motivation_doors(_data)
@@ -126,14 +127,15 @@ def init_simulation(
         active=is_motivation_active(_data),
         motivation_strategy=motivation_strategy,
     )
-    motivation_model.print_details()
+    if motivation_model.active:
+        motivation_model.print_details()
+    log_info("No motivation!")
     log_info("Init simulation done")
     return simulation, motivation_model
 
 
 def run_simulation(
-    simulation: Any,
-    writer: Any,
+    simulation: jps.Simulation,
     motivation_model: mm.MotivationModel,
     _simulation_time: float,
 ) -> None:
@@ -151,12 +153,53 @@ def run_simulation(
     # deltas = []
     with open("values.txt", "w", encoding="utf-8") as file_handle:
         while (
-            simulation.agent_count() > 0 and simulation.elapsed_time() < simulation_time
+            simulation.agent_count() > 0
+            and simulation.elapsed_time() < _simulation_time
         ):
             simulation.iterate()
+            if motivation_model.active and simulation.iteration_count() % 100 == 0:
+                agents = simulation.agents()
+                number_agents_in_simulation = simulation.agent_count()
+                log_info(number_agents_in_simulation)
+                for agent in agents:
+                    position = agent.position
 
-            if simulation.iteration_count() % 10 == 0:
-                writer.write_iteration_state(simulation)
+                    def calculate_distance():
+                        x_door = 0.5 * (
+                            motivation_model.door_point1[0]
+                            + motivation_model.door_point2[0]
+                        )
+                        y_door = 0.5 * (
+                            motivation_model.door_point1[1]
+                            + motivation_model.door_point2[1]
+                        )
+                        door = [x_door, y_door]
+                        distance = (
+                            (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
+                        ) ** 0.5
+                        return distance
+
+                    distance = calculate_distance()
+
+                    params = {
+                        "distance": distance,
+                        "number_agents_in_simulation": number_agents_in_simulation,
+                    }
+                    motivation_i = motivation_model.motivation_strategy.motivation(
+                        params
+                    )
+                    v_0, time_gap = motivation_model.calculate_motivation_state(
+                        motivation_i
+                    )
+                    if agent.id == 1:
+                        log_info(
+                            f"Agents: {agent.id},{v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
+                        )
+
+                    write_value_to_file(
+                        file_handle,
+                        f"{position[0]} {position[1]} {motivation_i} {v_0} {time_gap} {distance}",
+                    )
 
 
 def main(
@@ -167,24 +210,27 @@ def main(
     _data: Dict[str, Any],
     _trajectory_path: pathlib.Path,
 ) -> None:
-    """Main simulation loop
+    """Main simulation loop.
 
     :param fps:
     :param dt:
     :param ini_file:
     :param trajectory_file:
     :returns:
-
     """
-    simulation, motivation_model = init_simulation(_data, _time_step)
+    print("main")
+    print(f"{_number_agents = }")
+    print(f"{_fps = }")
+    print(f"{ _time_step = }")
+    print(f"{_simulation_time = }")
+    print(f"{ _trajectory_path = }")
+    simulation, motivation_model = init_simulation(
+        _data, _time_step, _fps, _trajectory_path
+    )
     way_points = parse_way_points(_data)
     destinations_dict = parse_destinations(_data)
     destinations = list(destinations_dict.values())
-    journey_id = init_journey(simulation, way_points, destinations[0])
-
-    agent_parameters = init_velocity_agent_parameters(
-        phi_x=1, phi_y=0, journey=journey_id
-    )
+    journey_id, stage_id = init_journey(simulation, way_points, destinations[0])
     distribution_polygons = parse_distribution_polygons(_data)
     positions = []
 
@@ -203,17 +249,15 @@ def main(
         if not total_agents:
             break
 
-    ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
-
-    log_info(f"Running simulation for {len(ped_ids)} agents:")
-    writer = JpsCoreStyleTrajectoryWriter(_trajectory_path)
-    writer.begin_writing(_fps)
-    run_simulation(simulation, writer, motivation_model, _simulation_time)
-    writer.end_writing()
-    log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
-    log_info(
-        f"{time_step}, {simulation.iteration_count()=},  simulation time: {simulation.iteration_count()*time_step} [s]"
+    agent_parameters = jps.CollisionFreeSpeedModelAgentParameters(
+        journey_id=journey_id, stage_id=stage_id, radius=0.2
     )
+
+    ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
+    log_info(f"Running simulation for {len(ped_ids)} agents:")
+    run_simulation(simulation, motivation_model, _simulation_time)
+    log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
+    log_info(f"simulation time: {simulation.iteration_count()*time_step} [s]")
     # log_info(f"Trajectory: {_trajectory_path}")
 
 

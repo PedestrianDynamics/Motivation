@@ -128,3 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *tree*
+/files/bottleneck_0.8m.json
+/profile_stats.prof

@@ -1,7 +1,8 @@
 streamlit
-shapely==2.0.1
+shapely
 jsonschema
 jupedsim
 plotly
 pedpy
-numpy==1.24.2
+numpy
+streamlit_option_menu
