@@ -27,6 +27,7 @@ from pedpy.column_identifier import (
 import pedpy
 from .plotting import plot_density_time_series, plotly_nt_series, plotly_time_series
 from .ui import ui_measurement_parameters
+from jupedsim.internal.notebook_utils import read_sqlite_file
 
 
 def generate_heatmap(
@@ -74,26 +75,15 @@ def run(data: pedpy.TrajectoryData, CONFIG_FILE: str):
             generate_heatmap(CONFIG_FILE, values[:, 0], values[:, 1], values[:, 2])
 
     fps = parse_fps(data)
-    SLECTED_OUTPUT_FILE = st.selectbox(
-        "Select file", list(set(glob.glob("files/*.txt")))
+    SELECTED_OUTPUT_FILE = st.selectbox(
+        "Select file", list(set(glob.glob("files/*.sqlite")))
     )
     ui_measurement_parameters(data)
-    if SLECTED_OUTPUT_FILE:
-        traj = pedpy.load_trajectory(
-            trajectory_file=Path(SLECTED_OUTPUT_FILE),
-            default_frame_rate=fps,
-            default_unit=pedpy.TrajectoryUnit.METER,
-        )
-
+    if SELECTED_OUTPUT_FILE:
+        traj, walkable_area = read_sqlite_file(SELECTED_OUTPUT_FILE)
         parsed_measurement_line = data["measurement_line"]["vertices"]
         measurement_area = pedpy.MeasurementArea(data["measurement_area"]["vertices"])
-
         measurement_line = pedpy.MeasurementLine(parsed_measurement_line)
-        accessible_areas = parse_accessible_areas(data)
-        polygons = [Polygon(value) for value in accessible_areas.values()]
-        walkable_area = unary_union(polygons)
-        walkable_area = pedpy.WalkableArea(walkable_area)
-
         pedpy.plot_measurement_setup(
             walkable_area=walkable_area,
             hole_color="lightgrey",
