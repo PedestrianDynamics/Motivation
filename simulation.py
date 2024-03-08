@@ -74,11 +74,11 @@ def init_simulation(
     :returns:
 
     """
-    width = parse_motivation_parameter(data, "width")
-    height = parse_motivation_parameter(data, "height")
-    seed = parse_motivation_parameter(data, "seed")
-    min_value = parse_motivation_parameter(data, "min_value")
-    max_value = parse_motivation_parameter(data, "max_value")
+    width = parse_motivation_parameter(_data, "width")
+    height = parse_motivation_parameter(_data, "height")
+    seed = parse_motivation_parameter(_data, "seed")
+    min_value = parse_motivation_parameter(_data, "min_value")
+    max_value = parse_motivation_parameter(_data, "max_value")
 
     accessible_areas = parse_accessible_areas(_data)
     geometry = build_geometry(accessible_areas)
@@ -103,7 +103,7 @@ def init_simulation(
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
 
-    choose_motivation_strategy = parse_motivation_strategy(data)
+    choose_motivation_strategy = parse_motivation_strategy(_data)
 
     # =================
     if choose_motivation_strategy == "default":
@@ -257,7 +257,7 @@ def main(
     log_info(f"Running simulation for {len(ped_ids)} agents:")
     run_simulation(simulation, motivation_model, _simulation_time)
     log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
-    log_info(f"simulation time: {simulation.iteration_count()*time_step} [s]")
+    log_info(f"simulation time: {simulation.iteration_count()*_time_step} [s]")
     # log_info(f"Trajectory: {_trajectory_path}")
 
 

@@ -30,8 +30,14 @@ from pedpy.column_identifier import (
 from scipy import stats
 from shapely import Polygon
 from shapely.ops import unary_union
-
-
+from src.logger_config import init_logger, log_info
+import simulation
+from src.inifile_parser import (
+    parse_fps,
+    parse_time_step,
+    parse_number_agents,
+    parse_simulation_time,
+)
 from src.ui import (
     ui_motivation_parameters,
     ui_simulation_parameters,
@@ -63,6 +69,7 @@ def read_data(output_file: str) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    init_logger()
     if "data" not in st.session_state:
         st.session_state.data = {}
 
@@ -123,20 +130,27 @@ if __name__ == "__main__":
             if Path(OUTPUT_FILE).exists():
                 Path(OUTPUT_FILE).unlink()
             msg.empty()
-            msg.info("Running simulation ...")
-            command = f"python simulation.py {CONFIG_FILE} {OUTPUT_FILE}"
-            n_agents = st.session_state.data["simulation_parameters"]["number_agents"]
-            with st.spinner(f"Simulating with {n_agents}"):
-                with subprocess.Popen(
-                    command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                ) as process:
-                    stdout, stderr = process.communicate()
-                INFO_OUTPUT = stdout.decode().replace("\n", "  \n")
-                WARNINGS = stderr.decode().replace("\n", "  \n")
-                msg.code(INFO_OUTPUT)
-                if WARNINGS:
-                    msg.error(WARNINGS)
+            msg.code("Running simulation ...")
+            with open(CONFIG_FILE, "r", encoding="utf8") as f:
+                json_str = f.read()
+                data = json.loads(json_str)
+                fps = parse_fps(data)
+                time_step = parse_time_step(data)
+                number_agents = parse_number_agents(data)
+                simulation_time = parse_simulation_time(data)
 
+            with st.spinner(f"Simulating ..."):
+                if fps and time_step:
+                    simulation.main(
+                        number_agents,
+                        fps,
+                        time_step,
+                        simulation_time,
+                        data,
+                        Path(OUTPUT_FILE),
+                    )
+            msg.code("Finished simulation")
+            st.empty()
         output_path = Path(OUTPUT_FILE)
         if Path("values.txt").exists():
             print(output_path.name)
