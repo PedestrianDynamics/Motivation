@@ -39,6 +39,8 @@ from src.ui import (
 )
 from src.utilities import delete_txt_files, load_json, save_json
 from src.analysis import run
+import jupedsim as jps
+import pedpy
 
 
 def read_data(output_file: str) -> pd.DataFrame:
@@ -69,7 +71,8 @@ if __name__ == "__main__":
         # User will select from these files to do simulations
 
     tab1, tab2, tab3 = st.tabs(["Initialisation", "Simulation", "Analysis"])
-
+    st.sidebar.info(f"{jps.__version__ = }")
+    st.sidebar.info(f"{pedpy.__version__ = }")
     with tab1:
         column_1, column_2 = st.columns((1, 1))
         file_name = column_1.text_input(
