@@ -1,4 +1,4 @@
-name: madras-data-app
+name: motivation-app
 
 on:
   push:
