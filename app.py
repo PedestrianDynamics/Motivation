@@ -110,7 +110,7 @@ if __name__ == "__main__":
             c2.selectbox("Select config file", list(set(st.session_state.all_files)))
         )
         fps = c3.number_input(
-            "fps", min_value=1, max_value=32, value=1, help="show every nth frame"
+            "fps", min_value=8, max_value=32, value=1, help="show every nth frame"
         )
         if c1.button("Run Simulation"):
             if Path(OUTPUT_FILE).exists():

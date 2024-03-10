@@ -214,7 +214,7 @@ def add_polygon_traces(fig: Figure, walkable_area: pedpy.WalkableArea) -> None:
         polygons (dict): Dictionary of polygons representing accessible areas.
     """
 
-    x, y = walkable_area.exterior.xy
+    x, y = walkable_area.polygon.exterior.xy
     x = np.array(x)
     y = np.array(y)
     fig.add_trace(
