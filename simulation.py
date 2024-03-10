@@ -104,7 +104,7 @@ def init_simulation(
         log_error("json file does not contain any motivation door")
 
     choose_motivation_strategy = parse_motivation_strategy(_data)
-
+    number_agents = parse_number_agents(_data)
     # =================
     if choose_motivation_strategy == "default":
         motivation_strategy = mm.DefaultMotivationStrategy(width=width, height=height)
@@ -112,7 +112,7 @@ def init_simulation(
         motivation_strategy = mm.EVCStrategy(
             width=width,
             height=height,
-            max_reward=parse_number_agents(data),
+            max_reward=number_agents,
             seed=seed,
             max_value=max_value,
             min_value=min_value,
@@ -151,6 +151,9 @@ def run_simulation(
     # profiler = cProfile.Profile()
     # profiler.enable()
     # deltas = []
+    x_door = 0.5 * (motivation_model.door_point1[0] + motivation_model.door_point2[0])
+    y_door = 0.5 * (motivation_model.door_point1[1] + motivation_model.door_point2[1])
+    door = [x_door, y_door]
     with open("values.txt", "w", encoding="utf-8") as file_handle:
         while (
             simulation.agent_count() > 0
@@ -163,24 +166,9 @@ def run_simulation(
                 log_info(number_agents_in_simulation)
                 for agent in agents:
                     position = agent.position
-
-                    def calculate_distance():
-                        x_door = 0.5 * (
-                            motivation_model.door_point1[0]
-                            + motivation_model.door_point2[0]
-                        )
-                        y_door = 0.5 * (
-                            motivation_model.door_point1[1]
-                            + motivation_model.door_point2[1]
-                        )
-                        door = [x_door, y_door]
-                        distance = (
-                            (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
-                        ) ** 0.5
-                        return distance
-
-                    distance = calculate_distance()
-
+                    distance = (
+                        (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
+                    ) ** 0.5
                     params = {
                         "distance": distance,
                         "number_agents_in_simulation": number_agents_in_simulation,
@@ -191,6 +179,8 @@ def run_simulation(
                     v_0, time_gap = motivation_model.calculate_motivation_state(
                         motivation_i
                     )
+                    agent.model.v0 = v_0
+                    agent.model.time_gap = time_gap
                     if agent.id == 1:
                         log_info(
                             f"Agents: {agent.id},{v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
