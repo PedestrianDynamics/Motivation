@@ -10,7 +10,7 @@ import json
 from .inifile_parser import parse_accessible_areas
 
 
-def plot_density_time_series(df_data: pd.DataFrame):
+def plot_density_time_series(df_data: pd.DataFrame) -> None:
     """Figure for density."""
     fig_density = go.Figure(
         data=[go.Scatter(y=df_data[DENSITY_COL], mode="lines", name="Density")]
@@ -24,7 +24,7 @@ def plot_density_time_series(df_data: pd.DataFrame):
     st.plotly_chart(fig_density)
 
 
-def plotly_time_series(df_data: pd.DataFrame):
+def plot_flow_time_series(df_data: pd.DataFrame) -> None:
     """Figure for flow."""
     fig_flow = go.Figure(
         data=[go.Scatter(y=df_data["flow"], mode="lines", name="Flow")]
@@ -32,12 +32,11 @@ def plotly_time_series(df_data: pd.DataFrame):
     fig_flow.update_layout(
         title="Flow over Time Steps", xaxis_title="Time Steps", yaxis_title="Flow (1/s)"
     )
-
     st.plotly_chart(fig_flow)
 
-    fig_speed = go.Figure(
-        data=[go.Scatter(y=df_data["mean_speed"], mode="lines", name="Mean Speed")]
-    )
+
+def plot_speed_time_series(df_data: pd.DataFrame) -> None:
+    fig_speed = go.Figure(data=[go.Scatter(y=df_data, mode="lines", name="Mean Speed")])
     fig_speed.update_layout(
         title="Mean Speed over Time Steps",
         xaxis_title="Time Steps",
@@ -47,7 +46,7 @@ def plotly_time_series(df_data: pd.DataFrame):
     st.plotly_chart(fig_speed)
 
 
-def plotly_nt_series(df_data: pd.DataFrame):
+def plotly_nt_series(df_data: pd.DataFrame) -> None:
     """Figure for flow."""
     fig_nt = go.Figure(
         data=[
@@ -156,7 +155,6 @@ def moving_trajectories(config_file: str, trajectory_data: pd.DataFrame) -> None
     data_df = data_df.merge(trajectory_data.data, on=["id", "frame"], how="left")
     data_df["radius"] = 0.2
     color, range_color = set_color_and_size(data_df)
-    st.dataframe(data_df)
     fig = px.scatter(
         data_df,
         x="x",

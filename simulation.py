@@ -2,7 +2,7 @@
 
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
-
+import logging
 import contextlib
 import json
 import pathlib
@@ -129,8 +129,8 @@ def init_simulation(
     )
     if motivation_model.active:
         motivation_model.print_details()
-    log_info("No motivation!")
-    log_info("Init simulation done")
+    logging.info("No motivation!")
+    logging.info("Init simulation done")
     return simulation, motivation_model
 
 
@@ -163,7 +163,7 @@ def run_simulation(
             if motivation_model.active and simulation.iteration_count() % 100 == 0:
                 agents = simulation.agents()
                 number_agents_in_simulation = simulation.agent_count()
-                log_info(number_agents_in_simulation)
+                logging.info(f"{number_agents_in_simulation = }")
                 for agent in agents:
                     position = agent.position
                     distance = (
@@ -182,7 +182,7 @@ def run_simulation(
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap
                     if agent.id == 1:
-                        log_info(
+                        logging.info(
                             f"Agents: {agent.id},{v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
                         )
 
@@ -226,7 +226,7 @@ def main(
 
     total_agents = _number_agents
     for s_polygon in distribution_polygons.values():
-        log_info(f"Distribute {total_agents} agents in {s_polygon}")
+        logging.info(f"Distribute {total_agents} agents in {s_polygon}")
         pos = distribute_by_number(
             polygon=s_polygon,
             number_of_agents=total_agents,
@@ -244,11 +244,11 @@ def main(
     )
 
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
-    log_info(f"Running simulation for {len(ped_ids)} agents:")
+    logging.info(f"Running simulation for {len(ped_ids)} agents:")
     run_simulation(simulation, motivation_model, _simulation_time)
-    log_info(f"Simulation completed after {simulation.iteration_count()} iterations")
-    log_info(f"simulation time: {simulation.iteration_count()*_time_step} [s]")
-    # log_info(f"Trajectory: {_trajectory_path}")
+    logging.info(f"Simulation completed after {simulation.iteration_count()} iterations")
+    logging.info(f"simulation time: {simulation.iteration_count()*_time_step} [s]")
+    # logging.info(f"Trajectory: {_trajectory_path}")
 
 
 if __name__ == "__main__":

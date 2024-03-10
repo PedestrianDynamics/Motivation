@@ -5,6 +5,7 @@ Author: Mohcine Chraibi
 Date: August 11, 2023
 """
 
+import glob
 import json
 from pathlib import Path
 import numpy as np
@@ -12,7 +13,7 @@ import pandas as pd
 import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import animate, read_sqlite_file
-from src.logger_config import init_logger, log_info
+from src.logger_config import init_logger
 import simulation
 from src.inifile_parser import (
     parse_fps,
@@ -24,6 +25,7 @@ from src.ui import (
     ui_motivation_parameters,
     ui_simulation_parameters,
     ui_velocity_model_parameters,
+    init_sidebar,
 )
 from src.utilities import delete_txt_files, load_json, save_json
 from src.analysis import run
@@ -58,10 +60,13 @@ if __name__ == "__main__":
         st.session_state.all_files = []
         # User will select from these files to do simulations
 
-    tab1, tab2, tab3 = st.tabs(["Initialisation", "Simulation", "Analysis"])
-    st.sidebar.info(f"{jps.__version__ = }")
-    st.sidebar.info(f"{pedpy.__version__ = }")
-    with tab1:
+    tab = init_sidebar()
+
+    # tab1, tab2, tab3 = st.tabs(["Initialisation", "Simulation", "Analysis"])
+    # st.sidebar.info(f"{jps.__version__ = }")
+    # st.sidebar.info(f"{pedpy.__version__ = }")
+
+    if tab == "Initialisation":
         column_1, column_2 = st.columns((1, 1))
         file_name = column_1.text_input(
             "Load config file: ", value="files/bottleneck.json"
@@ -97,7 +102,7 @@ if __name__ == "__main__":
             delete_txt_files()
 
     # Run Simulation
-    with tab2:
+    if tab == "Simulation":
         msg = st.sidebar.empty()
         c1, c2, c3 = st.columns(3)
         OUTPUT_FILE = c1.text_input("Result: ", value="files/trajectory.sqlite")
@@ -120,7 +125,7 @@ if __name__ == "__main__":
                 number_agents = parse_number_agents(data)
                 simulation_time = parse_simulation_time(data)
 
-            with st.spinner(f"Simulating ..."):
+            with st.spinner("Simulating ..."):
                 if fps and time_step:
                     simulation.main(
                         number_agents,
@@ -143,9 +148,5 @@ if __name__ == "__main__":
                 anm = animate(trajectory_data, walkable_area, every_nth_frame=int(fps))
                 st.plotly_chart(anm)
 
-    with tab3:
-        # measure flow
-        activate_tab3 = st.toggle("Activate", value=False)
-        if activate_tab3 and output_path.exists():
-            trajectory_data, walkable_area = read_sqlite_file(OUTPUT_FILE)
-            run(data, CONFIG_FILE)
+    if tab == "Analysis":
+        run()

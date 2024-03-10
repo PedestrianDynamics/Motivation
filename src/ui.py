@@ -14,7 +14,6 @@ def init_sidebar() -> Any:
         icons=[
             "info-square",
             "pin-map",
-            "people",
             "bar-chart-line",
             "exclamation-triangle",
         ],

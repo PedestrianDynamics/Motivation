@@ -17,6 +17,7 @@ import numpy as np
 from scipy import stats
 from src.inifile_parser import parse_accessible_areas
 from .logger_config import log_info, log_error
+import pedpy
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -127,7 +128,7 @@ def create_empty_figure() -> Figure:
     return go.Figure(go.Scatter(x=[], y=[], mode="markers", marker={"size": 0}))
 
 
-def update_figure_layout(fig: Figure, polygons: Dict[int, List[List[float]]]) -> None:
+def update_figure_layout(fig: Figure, walkable_area: pedpy.WalkableArea) -> None:
     """
     Update the layout of the Plotly figure based on polygon boundaries.
 
@@ -135,20 +136,17 @@ def update_figure_layout(fig: Figure, polygons: Dict[int, List[List[float]]]) ->
         fig (go.Figure): The Plotly figure.
         polygons (dict): Dictionary of polygons representing accessible areas.
     """
-    geo_min_x = min(point[0] for polygon in polygons.values() for point in polygon)
-    geo_max_x = max(point[0] for polygon in polygons.values() for point in polygon)
-    geo_min_y = min(point[1] for polygon in polygons.values() for point in polygon)
-    geo_max_y = max(point[1] for polygon in polygons.values() for point in polygon)
-
-    fig.update_xaxes(range=[geo_min_x, geo_max_x])
-    fig.update_yaxes(range=[geo_min_y, geo_max_y])
+    geo_min_x, geo_min_y, geo_max_x, geo_max_y = walkable_area.bounds
+    eps = 0
+    fig.update_xaxes(range=[geo_min_x - eps, geo_max_x + eps])
+    fig.update_yaxes(range=[geo_min_y - eps, geo_max_y + eps])
 
 
 def calculate_heatmap_values(
     position_x: npt.NDArray[Any],
     position_y: npt.NDArray[Any],
     value: npt.NDArray[Any],
-    polygons: Dict[int, List[List[float]]],
+    walkable_area: pedpy.WalkableArea,
 ) -> Tuple[npt.NDArray[Any], npt.NDArray[Any], npt.NDArray[Any]]:
     """
     Calculate heatmap values using statistical binning.
@@ -157,13 +155,10 @@ def calculate_heatmap_values(
         position_x: Array of X positions.
         position_y: Array of Y positions.
         value: Array of values associated with positions.
-        polygons (dict): polygons representing accessible areas.
+        walkable_area
 
     """
-    geo_min_x = min(point[0] for polygon in polygons.values() for point in polygon)
-    geo_max_x = max(point[0] for polygon in polygons.values() for point in polygon)
-    geo_min_y = min(point[1] for polygon in polygons.values() for point in polygon)
-    geo_max_y = max(point[1] for polygon in polygons.values() for point in polygon)
+    geo_min_x, geo_max_x, geo_min_y, geo_max_y = walkable_area.bounds
     delta_x = st.slider(label="grid size", min_value=0.1, max_value=1.0, step=0.1)
     delta_y = delta_x
     xbins = np.arange(geo_min_x, geo_max_x + delta_x, delta_x)
@@ -210,7 +205,7 @@ def add_heatmap_trace(
     )
 
 
-def add_polygon_traces(fig: Figure, polygons: Dict[int, List[List[float]]]) -> None:
+def add_polygon_traces(fig: Figure, walkable_area: pedpy.WalkableArea) -> None:
     """
     Add polygon traces to the Plotly figure.
 
@@ -218,17 +213,18 @@ def add_polygon_traces(fig: Figure, polygons: Dict[int, List[List[float]]]) -> N
         fig (go.Figure): The Plotly figure.
         polygons (dict): Dictionary of polygons representing accessible areas.
     """
-    for polygon in polygons.values():
-        x_values = [point[0] for point in polygon] + [polygon[0][0]]
-        y_values = [point[1] for point in polygon] + [polygon[0][1]]
-        fig.add_trace(
-            go.Scatter(
-                x=x_values,
-                y=y_values,
-                mode="lines",
-                line={"color": "white"},
-            )
+
+    x, y = walkable_area.exterior.xy
+    x = np.array(x)
+    y = np.array(y)
+    fig.add_trace(
+        go.Scatter(
+            x=x,
+            y=y,
+            mode="lines+markers",
+            line={"color": "white"},
         )
+    )
 
 
 def customize_fig_layout(fig: Figure) -> None:

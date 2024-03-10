@@ -59,7 +59,7 @@
     },
     "motivation_parameters": {
         "motivation_strategy": "default",
-        "active": 0,
+        "active": 1,
         "normal_v_0": 1.2,
         "normal_time_gap": 1.0,
         "width": "1.0",
