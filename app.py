@@ -5,31 +5,13 @@ Author: Mohcine Chraibi
 Date: August 11, 2023
 """
 
-import glob
 import json
-import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
-
-import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import pedpy
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 from jupedsim.internal.notebook_utils import animate, read_sqlite_file
-from pedpy.column_identifier import (
-    CUMULATED_COL,
-    DENSITY_COL,
-    FRAME_COL,
-    ID_COL,
-    TIME_COL,
-)
-from scipy import stats
-from shapely import Polygon
-from shapely.ops import unary_union
 from src.logger_config import init_logger, log_info
 import simulation
 from src.inifile_parser import (
@@ -46,7 +28,6 @@ from src.ui import (
 from src.utilities import delete_txt_files, load_json, save_json
 from src.analysis import run
 import jupedsim as jps
-import pedpy
 
 
 def read_data(output_file: str) -> pd.DataFrame:
