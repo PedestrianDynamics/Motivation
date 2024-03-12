@@ -57,7 +57,7 @@ if __name__ == "__main__":
         st.session_state.data = {}
 
     if "all_files" not in st.session_state:
-        st.session_state.all_files = []
+        st.session_state.all_files = ["files/bottleneck.json"]
         # User will select from these files to do simulations
 
     tab = init_sidebar()
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
             with st.spinner("Simulating ..."):
                 if fps and time_step:
-                    simulation.main(
+                    evac_time = simulation.main(
                         number_agents,
                         fps,
                         time_step,
@@ -152,7 +152,7 @@ if __name__ == "__main__":
                         data,
                         Path(OUTPUT_FILE),
                     )
-            msg.code("Finished simulation")
+            msg.code(f"Finished simulation. Evac time {evac_time} s")
             st.empty()
         output_path = Path(OUTPUT_FILE)
         if Path("values.txt").exists():

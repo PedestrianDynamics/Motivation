@@ -251,7 +251,7 @@ def main(
     logging.info(f"Simulation completed after {simulation.iteration_count()} iterations")
     logging.info(f"simulation time: {simulation.iteration_count()*_time_step} [s]")
     # logging.info(f"Trajectory: {_trajectory_path}")
-
+    return  simulation.iteration_count()*_time_step
 
 if __name__ == "__main__":
     init_logger()
