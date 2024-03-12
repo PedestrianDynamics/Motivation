@@ -71,25 +71,21 @@ def run():
     selected = st.sidebar.radio(
         "Choose option",
         [
-            "Heatmap",
+            "Distance to entrance",
+            "Speed",
             "Density",
             "Flow",
-            "Speed",
             "NT",
             "Voronoi polygons",
-            "Distance to entrance",
+            "Heatmap",
         ],
     )
     SELECTED_OUTPUT_FILE = st.selectbox(
-        "Select file", list(set(glob.glob("files/*.sqlite")))
+        "Select file", sorted(list(set(glob.glob("files/*.sqlite"))), reverse=True)
     )
-    CONFIG_FILE = str(
-        st.selectbox("Select config file", list(set(st.session_state.all_files)))
-    )
-
     traj, walkable_area = read_sqlite_file(SELECTED_OUTPUT_FILE)
 
-    with open(CONFIG_FILE, "r", encoding="utf8") as f:
+    with open("files/bottleneck.json", "r", encoding="utf8") as f:
         json_str = f.read()
         json_data = json.loads(json_str)
     ui_measurement_parameters(json_data)
@@ -129,7 +125,7 @@ def run():
                 ma_alpha=0.2,
             ).set_aspect("equal")
             fig = plt.gcf()
-            st.pyplot(fig)
+            st.sidebar.pyplot(fig)
             if selected == "NT":
                 nt, crossing_frames = pedpy.compute_n_t(
                     traj_data=traj,

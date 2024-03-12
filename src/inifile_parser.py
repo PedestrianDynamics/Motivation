@@ -55,6 +55,20 @@ def parse_velocity_init_parameters(
         return (8.0, 0.1, 5.0, 0.02)
 
 
+def parse_radius(
+    json_data: Dict[str, Any],
+) -> float:
+    """Parse radius.
+
+    return radius
+    """
+    if "velocity_init_parameters" in json_data:
+        return float(json_data["velocity_init_parameters"]["radius"])
+
+    else:
+        return 0.3
+
+
 def parse_way_points(
     json_data: Dict[str, Any],
 ) -> List[Tuple[Point, float]]:

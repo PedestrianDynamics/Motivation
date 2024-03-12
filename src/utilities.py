@@ -23,10 +23,12 @@ Point: TypeAlias = Tuple[float, float]
 
 
 def delete_txt_files():
-    """Delete all *.txt files in the current directory."""
-    files = glob.glob("*.txt")
-
+    """Delete all *.sqlite files in the current directory."""
+    files = glob.glob("files/*.sqlite")
+    if not files:
+        st.toast(f"No trajectories to delete!", icon="💿")
     for file in files:
+        st.toast(f"Delete {file}", icon="💿")
         try:
             os.remove(file)
         except Exception as e:

@@ -5,25 +5,17 @@
     ],
     "version": 0.1,
     "velocity_init_parameters": {
-        "a_ped": 0.29,
-        "d_ped": 0.11,
-        "a_wall": 0.5,
-        "d_wall": 0.02
+        "a_ped": 1.0,
+        "d_ped": 0.2,
+        "a_wall": 1.0,
+        "d_wall": 0.2,
+        "radius": 0.10
     },
-    "velocity_model_parameter_profiles": [
-        {
-            "id": 1.0,
-            "time_gap": 1.0,
-            "tau": 0.5,
-            "v0": 1.2,
-            "radius": 0.15
-        }
-    ],
     "simulation_parameters": {
         "fps": 60,
         "time_step": 0.01,
         "number_agents": 50,
-        "simulation_time": 50
+        "simulation_time": 100
     },
     "measurement_line": {
         "vertices": [
@@ -59,7 +51,7 @@
     },
     "motivation_parameters": {
         "motivation_strategy": "default",
-        "active": 1,
+        "active": 0,
         "normal_v_0": 1.2,
         "normal_time_gap": 1.0,
         "width": "1.0",
@@ -83,14 +75,6 @@
                 ]
             }
         ]
-    },
-    "grid_parameters": {
-        "min_v_0": 1,
-        "max_v_0": 2,
-        "v_0_step": 0.1,
-        "min_time_gap": 0.1,
-        "max_time_gap": 1,
-        "time_gap_step": 0.1
     },
     "accessible_areas": [
         {
@@ -119,19 +103,19 @@
             "vertices": [
                 [
                     60.0,
-                    101.4
+                    101.7
                 ],
                 [
                     62.0,
-                    101.4
+                    101.7
                 ],
                 [
                     62.0,
-                    102.6
+                    102.3
                 ],
                 [
                     60.0,
-                    102.6
+                    102.3
                 ]
             ]
         },

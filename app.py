@@ -66,49 +66,66 @@ if __name__ == "__main__":
     # st.sidebar.info(f"{jps.__version__ = }")
     # st.sidebar.info(f"{pedpy.__version__ = }")
 
-    if tab == "Initialisation":
-        column_1, column_2 = st.columns((1, 1))
-        file_name = column_1.text_input(
-            "Load config file: ", value="files/bottleneck.json"
+    if tab == "Simulation":
+        with st.sidebar.expander("Save/load config"):
+            column_1, column_2 = st.columns((1, 1))
+
+        file_name = str(
+            column_1.selectbox(
+                "Load",
+                sorted(list(set(st.session_state.all_files)), reverse=True),
+            )
         )
+
+        # file_name = column_1.text_input(
+        #     "Load", value="files/bottleneck.json", help="Load config file"
+        # )
         json_file = Path(file_name)
         data = {}
         if not json_file.exists():
             st.error(f"file: {file_name} does not exist!")
             st.stop()
 
-        with column_1:
-            data = load_json(json_file)
-            ui_velocity_model_parameters(data)
-            ui_simulation_parameters(data)
-            ui_motivation_parameters(data)
-            st.session_state.data = data
-            st.session_state.all_files.append(file_name)
+        # with column_1:
+        data = load_json(json_file)
+        ui_velocity_model_parameters(data)
+        ui_simulation_parameters(data)
+        ui_motivation_parameters(data)
+        st.session_state.data = data
+        st.session_state.all_files.append(file_name)
 
         # Save Button (optional)
         new_json_name = column_2.text_input(
-            "Save config file: ", value="files/bottleneck.json"
+            "Save", help="Save config file: ", value="files/bottleneck2.json"
         )
         new_json_file = Path(new_json_name)
-        if column_2.button(
-            "Save config",
-            help=f"After changing the values, you can save the configs in a separate file ({new_json_name})",
-        ):
-            save_json(new_json_file, data)
-            column_1.info(f"Saved file as {new_json_name}")
-            st.session_state.all_files.append(new_json_name)
+        save_json(new_json_file, data)
+        # if column_1.button(
+        #    "Save config",
+        #    help=f"After changing the values, you can save the configs in a separate file ({new_json_name})",
+        # ):
+        #    save_json(new_json_file, data)
+        #    st.sidebar.info(f"Saved file as {new_json_name}")
+        st.session_state.all_files.append(new_json_name)
 
-        if column_2.button("Reset", help="Delete all trajectory files"):
+        if column_2.button("Delete files", help="Delete all trajectory files"):
             delete_txt_files()
 
     # Run Simulation
     if tab == "Simulation":
-        msg = st.sidebar.empty()
         c1, c2, c3 = st.columns(3)
-        OUTPUT_FILE = c1.text_input("Result: ", value="files/trajectory.sqlite")
+        msg = st.empty()
         CONFIG_FILE = str(
-            c2.selectbox("Select config file", list(set(st.session_state.all_files)))
+            c2.selectbox(
+                "Select config file",
+                sorted(list(set(st.session_state.all_files)), reverse=True),
+            )
         )
+        strategy = data["motivation_parameters"]["motivation_strategy"]
+        name, extension = CONFIG_FILE.rsplit(".", 1)
+        sqlite_filename = f"{name}_{strategy}.{extension.replace('json', 'sqlite')}"
+        OUTPUT_FILE = c1.text_input("Result: ", value=f"{sqlite_filename}")
+
         fps = c3.number_input(
             "fps", min_value=1, max_value=32, value=8, help="show every nth frame"
         )

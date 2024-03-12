@@ -20,6 +20,7 @@ from src.inifile_parser import (
     parse_destinations,
     parse_distribution_polygons,
     parse_fps,
+    parse_radius,
     parse_motivation_doors,
     parse_motivation_parameter,
     parse_motivation_strategy,
@@ -84,6 +85,8 @@ def init_simulation(
     geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
+    normal_v_0 = parse_normal_v_0(_data)
+    normal_time_gap = parse_normal_time_gap(_data)
     simulation = jps.Simulation(
         model=jps.CollisionFreeSpeedModel(
             strength_neighbor_repulsion=a_ped,
@@ -97,8 +100,6 @@ def init_simulation(
             output_file=pathlib.Path(_trajectory_path), every_nth_frame=_fps
         ),
     )
-    normal_v_0 = parse_normal_v_0(_data)
-    normal_time_gap = parse_normal_time_gap(_data)
     motivation_doors = parse_motivation_doors(_data)
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
@@ -163,7 +164,6 @@ def run_simulation(
             if motivation_model.active and simulation.iteration_count() % 100 == 0:
                 agents = simulation.agents()
                 number_agents_in_simulation = simulation.agent_count()
-                logging.info(f"{number_agents_in_simulation = }")
                 for agent in agents:
                     position = agent.position
                     distance = (
@@ -208,12 +208,6 @@ def main(
     :param trajectory_file:
     :returns:
     """
-    print("main")
-    print(f"{_number_agents = }")
-    print(f"{_fps = }")
-    print(f"{ _time_step = }")
-    print(f"{_simulation_time = }")
-    print(f"{ _trajectory_path = }")
     simulation, motivation_model = init_simulation(
         _data, _time_step, _fps, _trajectory_path
     )
@@ -239,8 +233,16 @@ def main(
         if not total_agents:
             break
 
+    normal_v_0 = parse_normal_v_0(_data)
+    normal_time_gap = parse_normal_time_gap(_data)
+    radius = parse_radius(_data)
     agent_parameters = jps.CollisionFreeSpeedModelAgentParameters(
-        journey_id=journey_id, stage_id=stage_id, radius=0.2
+        journey_id=journey_id,
+        stage_id=stage_id,
+        radius=radius,
+        v0=normal_v_0,
+        time_gap=normal_time_gap
+
     )
 
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)

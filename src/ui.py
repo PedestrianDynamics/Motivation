@@ -9,8 +9,8 @@ from streamlit_option_menu import option_menu
 def init_sidebar() -> Any:
     """Init sidebar and 4 tabs."""
     return option_menu(
-        "A well-motivated model for pedestrians",
-        ["Initialisation", "Simulation", "Analysis"],
+        "",
+        ["Simulation", "Analysis"],
         icons=[
             "info-square",
             "pin-map",
@@ -35,7 +35,7 @@ def init_sidebar() -> Any:
 
 def ui_measurement_parameters(data: Dict[str, Any]) -> None:
     """Measurement lines, polygons."""
-    with st.expander("Measurement Parameters"):
+    with st.sidebar.expander("Measurement Parameters", expanded=True):
         st.code("Measurement line:")
         column_1, column_2 = st.columns((1, 1))
         line = data["measurement_line"]["vertices"]
@@ -57,26 +57,28 @@ def ui_measurement_parameters(data: Dict[str, Any]) -> None:
 
 def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
     """Set velocity Parameters Section."""
-    with st.expander("Velocity model Parameters"):
-        data["velocity_init_parameters"]["a_ped"] = st.slider(
+    with st.sidebar.expander("Velocity model Parameters", expanded=False):
+        c1, c2 = st.columns(2)
+        data["velocity_init_parameters"]["a_ped"] = c1.number_input(
             "a_ped:",
             min_value=0.0,
             max_value=10.0,
             value=data["velocity_init_parameters"]["a_ped"],
         )
-        data["velocity_init_parameters"]["d_ped"] = st.slider(
+        data["velocity_init_parameters"]["d_ped"] = c2.number_input(
             "d_ped:",
             min_value=0.01,
             max_value=1.0,
             value=data["velocity_init_parameters"]["d_ped"],
         )
-        data["velocity_init_parameters"]["a_wall"] = st.slider(
+        data["velocity_init_parameters"]["a_wall"] = c1.number_input(
             "a_wall:",
             min_value=0.0,
             max_value=10.0,
+            step=0.1,
             value=data["velocity_init_parameters"]["a_wall"],
         )
-        data["velocity_init_parameters"]["d_wall"] = st.slider(
+        data["velocity_init_parameters"]["d_wall"] = c2.number_input(
             "d_wall:",
             min_value=0.01,
             max_value=1.0,
@@ -86,8 +88,8 @@ def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
 
 def ui_simulation_parameters(data: Dict[str, Any]) -> None:
     """Set simulation Parameters Section."""
-    with st.expander("Simulation Parameters"):
-        data["simulation_parameters"]["fps"] = st.slider(
+    with st.sidebar.expander("Simulation Parameters"):
+        data["simulation_parameters"]["fps"] = st.number_input(
             "FPS:",
             min_value=1,
             max_value=60,
@@ -102,35 +104,6 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
         data["simulation_parameters"]["simulation_time"] = st.number_input(
             "Simulation Time:", value=data["simulation_parameters"]["simulation_time"]
         )
-
-
-def ui_motivation_parameters(data: Dict[str, Any]) -> None:
-    """Motivation Parameters Section."""
-    with st.expander("Motivation Parameters"):
-        motivation_activated = st.checkbox("Activate motivation")
-        if motivation_activated:
-            data["motivation_parameters"]["active"] = 1
-        else:
-            data["motivation_parameters"]["active"] = 0
-
-        motivation_strategy = st.selectbox(
-            "Select model",
-            ["default", "EVC"],
-            help="Model 2: M = M(dist). Model 3: M = V.E, Model4: M=V.E.C",
-        )
-        data["motivation_parameters"]["width"] = st.text_input(
-            "Width",
-            key="width",
-            value=float(data["motivation_parameters"]["width"]),
-            help="width of function defining distance dependency",
-        )
-        data["motivation_parameters"]["height"] = st.text_input(
-            "Height",
-            key="hight",
-            value=float(data["motivation_parameters"]["height"]),
-            help="Height of function defining distance dependency",
-        )
-
         data["motivation_parameters"]["seed"] = st.text_input(
             "Seed",
             key="seed",
@@ -138,14 +111,45 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             help="Seed for random generator for value",
         )
 
-        data["motivation_parameters"]["max_value"] = st.text_input(
+
+def ui_motivation_parameters(data: Dict[str, Any]) -> None:
+    """Motivation Parameters Section."""
+    with st.sidebar.expander("Motivation Parameters", expanded=True):
+        act = st.empty()
+        model = st.empty()
+        c1, c2 = st.columns(2)
+        motivation_activated = act.checkbox("Activate motivation", value=True)
+        if motivation_activated:
+            data["motivation_parameters"]["active"] = 1
+        else:
+            data["motivation_parameters"]["active"] = 0
+
+        motivation_strategy = model.selectbox(
+            "Select model",
+            ["default", "EVC"],
+            help="Model 2: M = M(dist). Model 3: M = V.E, Model4: M=V.E.C",
+        )
+        data["motivation_parameters"]["width"] = c1.text_input(
+            "Width",
+            key="width",
+            value=float(data["motivation_parameters"]["width"]),
+            help="width of function defining distance dependency",
+        )
+        data["motivation_parameters"]["height"] = c2.text_input(
+            "Height",
+            key="hight",
+            value=float(data["motivation_parameters"]["height"]),
+            help="Height of function defining distance dependency",
+        )
+
+        data["motivation_parameters"]["max_value"] = c1.number_input(
             "Max_value",
             key="max_value",
             value=float(data["motivation_parameters"]["max_value"]),
             help="Max Value",
         )
 
-        data["motivation_parameters"]["min_value"] = st.text_input(
+        data["motivation_parameters"]["min_value"] = c2.number_input(
             "Min_value",
             key="min_value",
             value=float(data["motivation_parameters"]["min_value"]),
@@ -153,19 +157,21 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
         )
 
         data["motivation_parameters"]["motivation_strategy"] = motivation_strategy
-        data["motivation_parameters"]["normal_v_0"] = st.slider(
+        data["motivation_parameters"]["normal_v_0"] = c1.number_input(
             "Normal V0:",
-            min_value=0.5,
+            min_value=0.1,
             max_value=2.5,
             value=float(data["motivation_parameters"]["normal_v_0"]),
         )
-        data["motivation_parameters"]["normal_time_gap"] = st.slider(
+        data["motivation_parameters"]["normal_time_gap"] = c2.number_input(
             "Normal Time Gap:",
             min_value=0.1,
             max_value=3.0,
             step=0.1,
             value=float(data["motivation_parameters"]["normal_time_gap"]),
         )
+
+    with st.sidebar.expander(label="Door"):
         column_1, column_2 = st.columns((1, 1))
         for door_idx, door in enumerate(
             data["motivation_parameters"]["motivation_doors"]

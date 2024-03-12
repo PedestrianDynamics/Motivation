@@ -1,8 +1,0 @@
-streamlit
-shapely
-jsonschema
-jupedsim
-plotly
-pedpy
-numpy
-streamlit_option_menu
