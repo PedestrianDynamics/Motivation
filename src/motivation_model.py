@@ -106,8 +106,10 @@ class EVCStrategy:
         number_agents_in_simulation = params["number_agents_in_simulation"]
         distance = params["distance"]
         got_reward = self.max_reward - number_agents_in_simulation
+        if "seed" not in params:
+            params["seed"] = None
         return (
-            EVCStrategy.value(self.min_value, self.max_value, self.seed)
+            EVCStrategy.value(self.min_value, self.max_value, params["seed"])
             * EVCStrategy.competition(got_reward, self.max_reward)
             * EVCStrategy.expectancy(
                 distance,
@@ -139,19 +141,13 @@ class EVCStrategy:
         V = []
         agents = np.linspace(1, self.max_reward)
         for s in agents:
-            V.append(self.value(self.min_value, self.max_value, self.seed))
+            V.append(self.value(self.min_value, self.max_value))
 
         ax1.plot(agents, V, "o")
-        ax1.plot(
-            [self.seed],
-            [self.value(self.min_value, self.max_value, self.seed)],
-            "or",
-            ms=10,
-        )
         ax1.grid(alpha=0.3)
         ax1.set_ylim([-0.1, 5])
         ax1.set_xlim([-0.1, self.max_reward + 1])
-        ax1.set_title(f"{self.name()} - V (seed = {self.seed})")
+        ax1.set_title(f"{self.name()} - V (seed = {self.seed:.0f})")
         ax1.set_xlabel("# Agents")
         ax1.set_ylabel("Value")
         # C
@@ -173,6 +169,7 @@ class EVCStrategy:
             params = {
                 "distance": dist,
                 "number_agents_in_simulation": self.max_reward,
+                "seed": self.seed,
             }
             m.append(self.motivation(params))
 
@@ -180,7 +177,9 @@ class EVCStrategy:
         ax3.grid(alpha=0.3)
         ax3.set_ylim([-0.1, 3])
         ax3.set_xlim([-0.1, 4])
-        ax3.set_title(f"{self.name()} - E.V.C (N={self.max_reward})")
+        ax3.set_title(
+            f"{self.name()} - E.V.C (N={self.max_reward:.0f}, seed={self.seed:.0f})"
+        )
         ax3.set_xlabel("Distance / m")
         ax3.set_ylabel("Motivation")
 

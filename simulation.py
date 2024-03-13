@@ -86,6 +86,9 @@ def init_simulation(
     a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
+    if seed is not None:
+        random.seed(seed)
+
     simulation = jps.Simulation(
         model=jps.CollisionFreeSpeedModel(
             strength_neighbor_repulsion=a_ped,
