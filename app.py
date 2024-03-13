@@ -193,6 +193,54 @@ if __name__ == "__main__":
                     min_value=min_value,
                 )
 
+            with st.expander("(click) to enlarge documentation"):
+                st.markdown("""### Default Strategy""")
+                st.markdown(r"""
+                $
+                \textbf{motivation}(distance) = 
+                \begin{cases} 
+                0 & \text{if\;} distance  \geq \text{width}, \\
+                e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
+                \end{cases}
+                $
+                
+                ---
+                ---
+                """)
+                st.markdown(r"""
+                ### EVC
+                $\textbf{motivation} = E\cdot V\cdot C,$ where
+                - $E$: expectancy
+                - $V$: value
+                - $C$: competition
+
+                ---
+                """)
+
+                st.markdown(r"""
+                $
+                \textbf{expectancy}(distance) = 
+                \begin{cases}
+                0 & \text{if\;} distance  \geq \text{width}, \\
+                e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
+                \end{cases}\\
+                $
+
+                **Note:** this is the same function like default strategy
+
+                ---
+                
+                $
+                \textbf{competition} = 1 - \frac{N}{N_0},
+                 $
+                
+                $N$: Agents still in the simulation and $N_0$ initial number of agents.
+
+                ---
+                $\textbf{value} = random\_number \in [v_{\min}, v_{\max}].$
+           
+                """)
+
             figs = motivation_strategy.plot()
             with st.expander("Plot model", expanded=True):
                 for fig in figs:
