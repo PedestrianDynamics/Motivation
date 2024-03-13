@@ -238,6 +238,12 @@ if __name__ == "__main__":
 
                 ---
                 $\textbf{value} = random\_number \in [v_{\min}, v_{\max}].$
+
+                ### Update agents
+                For an agent $i$ we calculate $m_i$ by one of the methods above and update its parameters as follows:
+
+                $v^0_\text{new} = (1 + m_i)\cdot v^0$ and $T_\text{new} = \frac{T}{1 + m_i}$
+
            
                 """)
 
