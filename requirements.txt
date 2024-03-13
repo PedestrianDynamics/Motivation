@@ -1,0 +1,9 @@
+streamlit
+shapely
+jsonschema
+jupedsim
+plotly
+matplotlib
+pedpy
+numpy
+streamlit_option_menu
