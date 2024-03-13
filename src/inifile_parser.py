@@ -6,12 +6,12 @@ Module is also used for testing
 
 import json
 import sys
-from typing import Dict, List, Optional, Tuple, TypeAlias, Any
+from typing import Any, Dict, List, Optional, Tuple, TypeAlias
 
 import jsonschema
 import shapely
+from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-from shapely import Polygon, GeometryCollection
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -124,7 +124,7 @@ def parse_distribution_polygons(
     return _distribution_polygons
 
 
-def parse_measurement_line(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
+def parse_measurement_line(json_data: Dict[str, Any]) -> List[Point]:
     """Measurement line has two points."""
 
     _points: List[Point] = []
@@ -291,21 +291,21 @@ def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
         "motivation_parameters" in json_data
         and "motivation_strategy" in json_data["motivation_parameters"]
     ):
-        return json_data["motivation_parameters"]["motivation_strategy"]
+        return str(json_data["motivation_parameters"]["motivation_strategy"])
 
     return "default"
 
 
-def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> str:
+def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> int:
     """Get motivation parameter."""
 
     if (
         "motivation_parameters" in json_data
         and parameter in json_data["motivation_parameters"]
     ):
-        return float(json_data["motivation_parameters"][parameter])
+        return int(json_data["motivation_parameters"][parameter])
 
-    return 1.0
+    return 1
 
 
 def is_motivation_active(json_data: Dict[str, Any]) -> int:

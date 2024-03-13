@@ -3,6 +3,7 @@ Setup logger
 """
 
 import logging
+
 import jupedsim as jps
 
 # # Create a handler that writes INFO and DEBUG messages to stdout

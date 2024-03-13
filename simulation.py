@@ -2,41 +2,33 @@
 
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
-import logging
 import contextlib
 import json
+import logging
 import pathlib
+import random
 import sys
 import time
-from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
+from typing import Any, Dict, Iterator, Tuple, TypeAlias
+
 import _io
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 
 from src import motivation_model as mm
-from src.inifile_parser import (
-    parse_accessible_areas,
-    parse_destinations,
-    parse_distribution_polygons,
-    parse_fps,
-    parse_radius,
-    parse_motivation_doors,
-    parse_motivation_parameter,
-    parse_motivation_strategy,
-    parse_normal_time_gap,
-    parse_normal_v_0,
-    parse_number_agents,
-    parse_simulation_time,
-    parse_time_step,
-    parse_velocity_init_parameters,
-    parse_way_points,
-)
-from src.logger_config import init_logger, log_debug, log_error, log_info
-from src.utilities import (
-    build_geometry,
-    distribute_and_add_agents,
-    init_journey,
-)
+from src.inifile_parser import (parse_accessible_areas, parse_destinations,
+                                parse_distribution_polygons, parse_fps,
+                                parse_motivation_doors,
+                                parse_motivation_parameter,
+                                parse_motivation_strategy,
+                                parse_normal_time_gap, parse_normal_v_0,
+                                parse_number_agents, parse_radius,
+                                parse_simulation_time, parse_time_step,
+                                parse_velocity_init_parameters,
+                                parse_way_points)
+from src.logger_config import init_logger, log_debug, log_error
+from src.utilities import (build_geometry, distribute_and_add_agents,
+                           init_journey)
 
 # import cProfile
 # import pstats
@@ -109,6 +101,7 @@ def init_simulation(
     choose_motivation_strategy = parse_motivation_strategy(_data)
     number_agents = parse_number_agents(_data)
     # =================
+    motivation_strategy: mm.MotivationStrategy
     if choose_motivation_strategy == "default":
         motivation_strategy = mm.DefaultMotivationStrategy(width=width, height=height)
     if choose_motivation_strategy == "EVC":
@@ -198,7 +191,7 @@ def main(
     _simulation_time: float,
     _data: Dict[str, Any],
     _trajectory_path: pathlib.Path,
-) -> None:
+) -> float:
     """Main simulation loop.
 
     :param fps:
@@ -250,7 +243,7 @@ def main(
     )
     logging.info(f"simulation time: {simulation.iteration_count()*_time_step} [s]")
     # logging.info(f"Trajectory: {_trajectory_path}")
-    return simulation.iteration_count() * _time_step
+    return float(simulation.iteration_count() * _time_step)
 
 
 if __name__ == "__main__":

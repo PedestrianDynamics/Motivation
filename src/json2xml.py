@@ -6,7 +6,8 @@ Looking in json for
 - jpsvis_doors
 - accessible_areas: Make a union on all walls to get a nice polygon
 
- """
+"""
+
 import json
 import sys
 import xml.etree.ElementTree as ET
@@ -26,7 +27,7 @@ def add_transitions(_root: ET.Element, _data: Dict[str, Any]) -> None:
     :returns:
 
     """
-    if not "jpsvis_doors" in _data:
+    if "jpsvis_doors" not in _data:
         return
 
     destinations = _data["jpsvis_doors"]

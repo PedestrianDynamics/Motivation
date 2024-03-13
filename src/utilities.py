@@ -1,32 +1,32 @@
 """Some functions to setup the simulation."""
 
 import glob
-import os
-import plotly.graph_objects as go
-from plotly.graph_objs import Figure
-
-from typing import Dict, List, Tuple, TypeAlias, Any
 import json
-import streamlit as st
+import os
 from pathlib import Path
+from typing import Any, Dict, List, Tuple, TypeAlias
+
 import jupedsim as jps
+import numpy as np
+import numpy.typing as npt
+import pedpy
+import plotly.graph_objects as go
+import streamlit as st
+from plotly.graph_objs import Figure
+from scipy import stats
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-import numpy.typing as npt
-import numpy as np
-from scipy import stats
-from src.inifile_parser import parse_accessible_areas
-from .logger_config import log_info, log_error
-import pedpy
+
+from .logger_config import log_error, log_info
 
 Point: TypeAlias = Tuple[float, float]
 
 
-def delete_txt_files():
+def delete_txt_files() -> None:
     """Delete all *.sqlite files in the current directory."""
     files = glob.glob("files/*.sqlite")
     if not files:
-        st.toast(f"No trajectories to delete!", icon="💿")
+        st.toast("No trajectories to delete!", icon="💿")
     for file in files:
         st.toast(f"Delete {file}", icon="💿")
         try:

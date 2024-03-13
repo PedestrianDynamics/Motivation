@@ -1,39 +1,26 @@
 import glob
-import numpy as np
-import numpy.typing as npt
-from typing import Any
-import pedpy
-
-import streamlit as st
-from .utilities import (
-    create_empty_figure,
-    update_figure_layout,
-    calculate_heatmap_values,
-    add_heatmap_trace,
-    add_polygon_traces,
-    customize_fig_layout,
-)
 import json
 from pathlib import Path
-from .inifile_parser import parse_fps, parse_accessible_areas, parse_geometry
-from shapely import Polygon
-from shapely.ops import unary_union
+from typing import Any
+
 import matplotlib.pyplot as plt
-from pedpy.column_identifier import (
-    CUMULATED_COL,
-    DENSITY_COL,
-    FRAME_COL,
-    ID_COL,
-)
+import numpy as np
+import numpy.typing as npt
 import pedpy
-from .plotting import (
-    plot_density_time_series,
-    plotly_nt_series,
-    plot_flow_time_series,
-    plot_speed_time_series,
-)
-from .ui import ui_measurement_parameters
+import streamlit as st
 from jupedsim.internal.notebook_utils import read_sqlite_file
+from pedpy.column_identifier import FRAME_COL, ID_COL
+
+from .inifile_parser import parse_fps
+from .plotting import (plot_density_time_series, plot_flow_time_series,
+                       plot_speed_time_series, plotly_nt_series)
+from .ui import ui_measurement_parameters
+from .utilities import (add_heatmap_trace, add_polygon_traces,
+                        calculate_heatmap_values, create_empty_figure,
+                        customize_fig_layout, update_figure_layout)
+
+# from shapely import Polygon
+# from shapely.ops import unary_union
 
 
 def generate_heatmap(
@@ -67,7 +54,7 @@ def generate_heatmap(
     st.plotly_chart(fig)
 
 
-def run():
+def run() -> None:
     selected = st.sidebar.radio(
         "Choose option",
         [

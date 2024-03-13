@@ -5,18 +5,16 @@ Author: Mohcine Chraibi
 Date: August 11, 2023
 """
 
-import glob
 import json
 from pathlib import Path
-from src import motivation_model as mm
-import jupedsim as jps
+
 import numpy as np
 import pandas as pd
-import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import animate, read_sqlite_file
 
 from simulation import main
+from src import motivation_model as mm
 from src.analysis import run
 from src.inifile_parser import (
     parse_fps,
@@ -159,7 +157,7 @@ if __name__ == "__main__":
                         data,
                         Path(OUTPUT_FILE),
                     )
-            msg.code(f"Finished simulation. Evac time {evac_time} s")
+            msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
             st.empty()
         output_path = Path(OUTPUT_FILE)
         if Path("values.txt").exists():
@@ -179,7 +177,8 @@ if __name__ == "__main__":
             max_value = float(data["motivation_parameters"]["max_value"])
             min_value = float(data["motivation_parameters"]["min_value"])
             seed = data["motivation_parameters"]["seed"]
-            number_agents = float(parse_number_agents(data))
+            number_agents = int(parse_number_agents(data))
+            motivation_strategy: mm.MotivationStrategy
             if strategy == "default":
                 motivation_strategy = mm.DefaultMotivationStrategy(
                     width=width, height=height

@@ -1,12 +1,14 @@
-import streamlit as st
-from pedpy.column_identifier import DENSITY_COL, TIME_COL, CUMULATED_COL
-import plotly.graph_objects as go
+import json
+from typing import Dict, List, Tuple
+
 import pandas as pd
-from typing import Tuple, List, Dict
-from plotly.graph_objs import Figure
 import pedpy
 import plotly.express as px
-import json
+import plotly.graph_objects as go
+import streamlit as st
+from pedpy.column_identifier import CUMULATED_COL, DENSITY_COL, TIME_COL
+from plotly.graph_objs import Figure
+
 from .inifile_parser import parse_accessible_areas
 
 

@@ -1,18 +1,31 @@
 """Module for motivational model."""
 
 import random
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple, TypeAlias
+from typing import Any, List, Optional, Tuple, TypeAlias
+
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 
 from .logger_config import log_debug
 
 Point: TypeAlias = Tuple[float, float]
 
 
+class MotivationStrategy(ABC):
+    @abstractmethod
+    def motivation(self, params: dict[str, Any]) -> float:
+        pass
+
+    # abstractmethod
+    def plot(self) -> List[Figure]:
+        pass
+
+
 @dataclass
-class DefaultMotivationStrategy:
+class DefaultMotivationStrategy(MotivationStrategy):
     """Default strategy for motivation calculation based on distance."""
 
     width: float = 1.0
@@ -35,7 +48,7 @@ class DefaultMotivationStrategy:
 
         return float(np.exp(expr) * np.e * self.height)
 
-    def plot(self):
+    def plot(self) -> List[Figure]:
         fig = plt.figure()
         distances = np.linspace(0, 10, 100)
         m = []
@@ -53,15 +66,15 @@ class DefaultMotivationStrategy:
 
 
 @dataclass
-class EVCStrategy:
+class EVCStrategy(MotivationStrategy):
     """Motivation theory based on E.V.C (model4)."""
 
     width: float = 1.0
     height: float = 1.0
     max_reward: int = 0
     seed: int = 0
-    min_value: int = 0
-    max_value: int = 1
+    min_value: float = 0
+    max_value: float = 1
 
     @staticmethod
     def name() -> str:
@@ -87,14 +100,14 @@ class EVCStrategy:
         got_reward: How many got reward
         max_reward: hom many max can get reward
         """
-        comp = 0
+        comp = 0.0
         if got_reward <= max_reward:
             comp = 1 - got_reward / max_reward
 
         return comp
 
     @staticmethod
-    def value(min_v: float, max_v: float, seed: Optional[float] = None):
+    def value(min_v: float, max_v: float, seed: Optional[float] = None) -> float:
         """Random value in interval. seed is optional."""
         if seed is not None:
             random.seed(seed)
@@ -108,7 +121,7 @@ class EVCStrategy:
         got_reward = self.max_reward - number_agents_in_simulation
         if "seed" not in params:
             params["seed"] = None
-        return (
+        return float(
             EVCStrategy.value(self.min_value, self.max_value, params["seed"])
             * EVCStrategy.competition(got_reward, self.max_reward)
             * EVCStrategy.expectancy(
@@ -118,7 +131,7 @@ class EVCStrategy:
             )
         )
 
-    def plot(self):
+    def plot(self) -> List[Figure]:
         """Plot functions for inspection."""
         fig0, ax0 = plt.subplots(ncols=1, nrows=1)
         fig1, ax1 = plt.subplots(ncols=1, nrows=1)
@@ -183,7 +196,7 @@ class EVCStrategy:
         ax3.set_xlabel("Distance / m")
         ax3.set_ylabel("Motivation")
 
-        return fig0, fig1, fig2, fig3
+        return [fig0, fig1, fig2, fig3]
 
 
 @dataclass

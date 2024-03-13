@@ -112,13 +112,6 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
             min_value=50,
             max_value=300,
         )
-        data["motivation_parameters"]["seed"] = st.number_input(
-            "Seed",
-            key="seed",
-            step=1.0,
-            value=float(data["motivation_parameters"]["seed"]),
-            help="Seed for random generator for value",
-        )
 
 
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
@@ -175,6 +168,13 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             max_value=3.0,
             step=0.1,
             value=float(data["motivation_parameters"]["normal_time_gap"]),
+        )
+        data["motivation_parameters"]["seed"] = st.number_input(
+            "Seed",
+            key="seed",
+            step=1.0,
+            value=float(data["motivation_parameters"]["seed"]),
+            help="Seed for random generator for value",
         )
 
     st.sidebar.write("**At this line the motivation is maximal**")
