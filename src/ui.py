@@ -99,10 +99,18 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
             "Time Step:", value=data["simulation_parameters"]["time_step"]
         )
         data["simulation_parameters"]["number_agents"] = st.number_input(
-            "Number of Agents:", value=data["simulation_parameters"]["number_agents"]
+            "Number of Agents:",
+            value=data["simulation_parameters"]["number_agents"],
+            step=10,
+            min_value=10,
+            max_value=150,
         )
         data["simulation_parameters"]["simulation_time"] = st.number_input(
-            "Simulation Time:", value=data["simulation_parameters"]["simulation_time"]
+            "Simulation Time:",
+            value=data["simulation_parameters"]["simulation_time"],
+            step=20,
+            min_value=50,
+            max_value=300,
         )
         data["motivation_parameters"]["seed"] = st.number_input(
             "Seed",
@@ -169,7 +177,8 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             value=float(data["motivation_parameters"]["normal_time_gap"]),
         )
 
-    with st.sidebar.expander(label="Door"):
+    st.sidebar.write("**At this line the motivation is maximal**")
+    with st.sidebar.expander(label="Motivation line"):
         column_1, column_2 = st.columns((1, 1))
         for door_idx, door in enumerate(
             data["motivation_parameters"]["motivation_doors"]
@@ -187,32 +196,18 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
                     x_key = f"vertex_x_{door_idx}_{vertex_idx}"
                     y_key = f"vertex_y_{door_idx}_{vertex_idx}"
                     vertex[0] = column_1.number_input(
-                        "Point X:", value=vertex[0], key=x_key
+                        "Point X:",
+                        value=float(vertex[0]),
+                        key=x_key,
+                        step=1.0,
+                        min_value=47.0,
+                        max_value=65.0,
                     )
                     vertex[1] = column_2.number_input(
-                        "Point Y:", value=vertex[1], key=y_key
+                        "Point Y:",
+                        value=float(vertex[1]),
+                        key=y_key,
+                        step=1.0,
+                        min_value=100.0,
+                        max_value=104.0,
                     )
-
-
-def ui_grid_parameters(data: Dict[str, Any]) -> None:
-    """Grid Parameters Section."""
-    with st.expander("Grid Parameters"):
-        column_1, column_2, column_3 = st.columns((1, 1, 1))
-        data["grid_parameters"]["min_v_0"] = column_1.number_input(
-            "Min V0:", value=data["grid_parameters"]["min_v_0"]
-        )
-        data["grid_parameters"]["max_v_0"] = column_2.number_input(
-            "Max V0:", value=data["grid_parameters"]["max_v_0"]
-        )
-        data["grid_parameters"]["v_0_step"] = column_3.number_input(
-            "V0 Step:", value=data["grid_parameters"]["v_0_step"]
-        )
-        data["grid_parameters"]["min_time_gap"] = column_1.number_input(
-            "Min Time Gap:", value=data["grid_parameters"]["min_time_gap"]
-        )
-        data["grid_parameters"]["max_time_gap"] = column_2.number_input(
-            "Max Time Gap:", value=data["grid_parameters"]["max_time_gap"]
-        )
-        data["grid_parameters"]["time_gap_step"] = column_3.number_input(
-            "Time Gap Step:", value=data["grid_parameters"]["time_gap_step"]
-        )
