@@ -3,7 +3,7 @@
 import random
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple, TypeAlias
-
+import matplotlib.pyplot as plt
 import numpy as np
 
 from .logger_config import log_debug
@@ -34,6 +34,22 @@ class DefaultMotivationStrategy:
             return 0.0
 
         return float(np.exp(expr) * np.e * self.height)
+
+    def plot(self):
+        fig = plt.figure()
+        distances = np.linspace(0, 10, 100)
+        m = []
+        for dist in distances:
+            m.append(self.motivation({"distance": dist}))
+
+        plt.plot(distances, m)
+        plt.grid(alpha=0.3)
+        plt.ylim([-0.1, 3])
+        plt.xlim([-0.1, 4])
+        plt.ylabel("Motivation")
+        plt.xlabel("Distance / m")
+        plt.title(f"{self.name()} -  M(width, height)")
+        return [fig]
 
 
 @dataclass
@@ -82,6 +98,7 @@ class EVCStrategy:
         """Random value in interval. seed is optional."""
         if seed is not None:
             random.seed(seed)
+
         return random.uniform(min_v, max_v)
 
     def motivation(self, params: dict[str, Any]) -> float:
@@ -99,6 +116,76 @@ class EVCStrategy:
             )
         )
 
+    def plot(self):
+        """Plot functions for inspection."""
+        fig0, ax0 = plt.subplots(ncols=1, nrows=1)
+        fig1, ax1 = plt.subplots(ncols=1, nrows=1)
+        fig2, ax2 = plt.subplots(ncols=1, nrows=1)
+        fig3, ax3 = plt.subplots(ncols=1, nrows=1)
+        distances = np.linspace(0, 10, 100)
+        # E
+        E = []
+        for dist in distances:
+            E.append(self.expectancy(dist, self.width, self.height))
+
+        ax0.plot(distances, E)
+        ax0.grid(alpha=0.3)
+        ax0.set_ylim([-0.1, 3])
+        ax0.set_xlim([-0.1, 4])
+        ax0.set_title(f"{self.name()} - E (width, height)")
+        ax0.set_xlabel("Distance / m")
+        ax0.set_ylabel("Expectancy")
+        # V
+        V = []
+        agents = np.linspace(1, self.max_reward)
+        for s in agents:
+            V.append(self.value(self.min_value, self.max_value, self.seed))
+
+        ax1.plot(agents, V, "o")
+        ax1.plot(
+            [self.seed],
+            [self.value(self.min_value, self.max_value, self.seed)],
+            "or",
+            ms=10,
+        )
+        ax1.grid(alpha=0.3)
+        ax1.set_ylim([-0.1, 5])
+        ax1.set_xlim([-0.1, self.max_reward + 1])
+        ax1.set_title(f"{self.name()} - V (seed = {self.seed})")
+        ax1.set_xlabel("# Agents")
+        ax1.set_ylabel("Value")
+        # C
+        C = []
+        N = np.arange(0, self.max_reward)
+        for n in N:
+            C.append(self.competition(n, self.max_reward))
+
+        ax2.plot(N, C)
+        ax2.grid(alpha=0.3)
+        ax2.set_xlim([0, self.max_reward + 1])
+        ax2.set_ylim([0, 1.5])
+        ax2.set_xlabel("reward")
+        ax2.set_ylabel("Competition")
+        ax2.set_title(f"{self.name()} - C (max reward {self.max_reward:.0f})")
+        # M
+        m = []
+        for dist in distances:
+            params = {
+                "distance": dist,
+                "number_agents_in_simulation": self.max_reward,
+            }
+            m.append(self.motivation(params))
+
+        ax3.plot(distances, m)
+        ax3.grid(alpha=0.3)
+        ax3.set_ylim([-0.1, 3])
+        ax3.set_xlim([-0.1, 4])
+        ax3.set_title(f"{self.name()} - E.V.C (N={self.max_reward})")
+        ax3.set_xlabel("Distance / m")
+        ax3.set_ylabel("Motivation")
+
+        return fig0, fig1, fig2, fig3
+
 
 @dataclass
 class MotivationModel:
@@ -108,7 +195,6 @@ class MotivationModel:
     door_point2: Point = (60, 102)
     normal_v_0: float = 1.2
     normal_time_gap: float = 1.0
-    active: int = 1
     motivation_strategy: Any = None
 
     def print_details(self) -> None:
@@ -118,7 +204,6 @@ class MotivationModel:
         log_debug(f">>  Door Point 2: {self.door_point2}")
         log_debug(f">  Normal Velocity 0: {self.normal_v_0}")
         log_debug(f">>  Normal Time Gap: {self.normal_time_gap}")
-        log_debug(f">>  Active: {self.active}")
 
     def __post_init__(self) -> None:
         """Init v0 and time gap."""
@@ -132,7 +217,7 @@ class MotivationModel:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
         v_0 = self.normal_v_0
         time_gap = self.normal_time_gap
-        v_0_new = (1 + 0 * motivation_i) * v_0  # TODO
+        v_0_new = (1 + motivation_i) * v_0
         time_gap_new = time_gap / (1 + motivation_i)
 
         return v_0_new, time_gap_new

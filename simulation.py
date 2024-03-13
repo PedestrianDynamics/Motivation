@@ -15,7 +15,6 @@ from jupedsim.distributions import distribute_by_number
 
 from src import motivation_model as mm
 from src.inifile_parser import (
-    is_motivation_active,
     parse_accessible_areas,
     parse_destinations,
     parse_distribution_polygons,
@@ -125,12 +124,10 @@ def init_simulation(
         door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
         normal_v_0=normal_v_0,
         normal_time_gap=normal_time_gap,
-        active=is_motivation_active(_data),
         motivation_strategy=motivation_strategy,
     )
-    if motivation_model.active:
-        motivation_model.print_details()
-    logging.info("No motivation!")
+
+    motivation_model.print_details()
     logging.info("Init simulation done")
     return simulation, motivation_model
 
@@ -161,7 +158,7 @@ def run_simulation(
             and simulation.elapsed_time() < _simulation_time
         ):
             simulation.iterate()
-            if motivation_model.active and simulation.iteration_count() % 100 == 0:
+            if simulation.iteration_count() % 100 == 0:
                 agents = simulation.agents()
                 number_agents_in_simulation = simulation.agent_count()
                 for agent in agents:
@@ -185,7 +182,6 @@ def run_simulation(
                         logging.info(
                             f"Agents: {agent.id},{v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
                         )
-
                     write_value_to_file(
                         file_handle,
                         f"{position[0]} {position[1]} {motivation_i} {v_0} {time_gap} {distance}",
@@ -241,17 +237,18 @@ def main(
         stage_id=stage_id,
         radius=radius,
         v0=normal_v_0,
-        time_gap=normal_time_gap
-
+        time_gap=normal_time_gap,
     )
-
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
     run_simulation(simulation, motivation_model, _simulation_time)
-    logging.info(f"Simulation completed after {simulation.iteration_count()} iterations")
+    logging.info(
+        f"Simulation completed after {simulation.iteration_count()} iterations"
+    )
     logging.info(f"simulation time: {simulation.iteration_count()*_time_step} [s]")
     # logging.info(f"Trajectory: {_trajectory_path}")
-    return  simulation.iteration_count()*_time_step
+    return simulation.iteration_count() * _time_step
+
 
 if __name__ == "__main__":
     init_logger()

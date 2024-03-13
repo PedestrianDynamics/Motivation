@@ -104,9 +104,10 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
         data["simulation_parameters"]["simulation_time"] = st.number_input(
             "Simulation Time:", value=data["simulation_parameters"]["simulation_time"]
         )
-        data["motivation_parameters"]["seed"] = st.text_input(
+        data["motivation_parameters"]["seed"] = st.number_input(
             "Seed",
             key="seed",
+            step=1.0,
             value=float(data["motivation_parameters"]["seed"]),
             help="Seed for random generator for value",
         )
@@ -115,29 +116,24 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section."""
     with st.sidebar.expander("Motivation Parameters", expanded=True):
-        act = st.empty()
         model = st.empty()
         c1, c2 = st.columns(2)
-        motivation_activated = act.checkbox("Activate motivation", value=True)
-        if motivation_activated:
-            data["motivation_parameters"]["active"] = 1
-        else:
-            data["motivation_parameters"]["active"] = 0
-
         motivation_strategy = model.selectbox(
             "Select model",
             ["default", "EVC"],
             help="Model 2: M = M(dist). Model 3: M = V.E, Model4: M=V.E.C",
         )
-        data["motivation_parameters"]["width"] = c1.text_input(
+        data["motivation_parameters"]["width"] = c1.number_input(
             "Width",
             key="width",
+            step=0.5,
             value=float(data["motivation_parameters"]["width"]),
             help="width of function defining distance dependency",
         )
-        data["motivation_parameters"]["height"] = c2.text_input(
+        data["motivation_parameters"]["height"] = c2.number_input(
             "Height",
             key="hight",
+            step=0.5,
             value=float(data["motivation_parameters"]["height"]),
             help="Height of function defining distance dependency",
         )
@@ -145,6 +141,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
         data["motivation_parameters"]["max_value"] = c1.number_input(
             "Max_value",
             key="max_value",
+            step=0.5,
             value=float(data["motivation_parameters"]["max_value"]),
             help="Max Value",
         )
@@ -152,6 +149,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
         data["motivation_parameters"]["min_value"] = c2.number_input(
             "Min_value",
             key="min_value",
+            step=0.5,
             value=float(data["motivation_parameters"]["min_value"]),
             help="Min Value",
         )

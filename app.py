@@ -8,28 +8,31 @@ Date: August 11, 2023
 import glob
 import json
 from pathlib import Path
+from src import motivation_model as mm
+import jupedsim as jps
 import numpy as np
 import pandas as pd
 import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import animate, read_sqlite_file
-from src.logger_config import init_logger
-import simulation
+
+from simulation import main
+from src.analysis import run
 from src.inifile_parser import (
     parse_fps,
-    parse_time_step,
+    parse_motivation_strategy,
     parse_number_agents,
     parse_simulation_time,
+    parse_time_step,
 )
+from src.logger_config import init_logger
 from src.ui import (
+    init_sidebar,
     ui_motivation_parameters,
     ui_simulation_parameters,
     ui_velocity_model_parameters,
-    init_sidebar,
 )
 from src.utilities import delete_txt_files, load_json, save_json
-from src.analysis import run
-import jupedsim as jps
 
 
 def read_data(output_file: str) -> pd.DataFrame:
@@ -133,7 +136,6 @@ if __name__ == "__main__":
             if Path(OUTPUT_FILE).exists():
                 Path(OUTPUT_FILE).unlink()
             msg.empty()
-            msg.code("Running simulation ...")
             with open(CONFIG_FILE, "r", encoding="utf8") as f:
                 json_str = f.read()
                 data = json.loads(json_str)
@@ -141,10 +143,15 @@ if __name__ == "__main__":
                 time_step = parse_time_step(data)
                 number_agents = parse_number_agents(data)
                 simulation_time = parse_simulation_time(data)
+                strategy = parse_motivation_strategy(data)
 
-            with st.spinner("Simulating ..."):
+            msg.code(
+                f"Running simulation with {number_agents}. Strategy: <{strategy}>..."
+            )
+
+            with st.spinner("Simulating..."):
                 if fps and time_step:
-                    evac_time = simulation.main(
+                    evac_time = main(
                         number_agents,
                         fps,
                         time_step,
@@ -164,6 +171,33 @@ if __name__ == "__main__":
                 # moving_trajectories(CONFIG_FILE, trajectory_data)
                 anm = animate(trajectory_data, walkable_area, every_nth_frame=int(fps))
                 st.plotly_chart(anm)
+
+        if True or c3.button("Plot"):
+            strategy = data["motivation_parameters"]["motivation_strategy"]
+            width = float(data["motivation_parameters"]["width"])
+            height = float(data["motivation_parameters"]["height"])
+            max_value = float(data["motivation_parameters"]["max_value"])
+            min_value = float(data["motivation_parameters"]["min_value"])
+            seed = data["motivation_parameters"]["seed"]
+            number_agents = float(parse_number_agents(data))
+            if strategy == "default":
+                motivation_strategy = mm.DefaultMotivationStrategy(
+                    width=width, height=height
+                )
+            if strategy == "EVC":
+                motivation_strategy = mm.EVCStrategy(
+                    width=width,
+                    height=height,
+                    max_reward=number_agents,
+                    seed=seed,
+                    max_value=max_value,
+                    min_value=min_value,
+                )
+
+            figs = motivation_strategy.plot()
+            with st.expander("Plot model", expanded=True):
+                for fig in figs:
+                    st.pyplot(fig)
 
     if tab == "Analysis":
         run()
