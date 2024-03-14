@@ -96,7 +96,11 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
             value=data["simulation_parameters"]["fps"],
         )
         data["simulation_parameters"]["time_step"] = st.number_input(
-            "Time Step:", value=data["simulation_parameters"]["time_step"]
+            "Time Step:",
+            value=0.1,
+            min_value=0.0001,
+            max_value=0.5,
+            step=0.0001,
         )
         data["simulation_parameters"]["number_agents"] = st.number_input(
             "Number of Agents:",

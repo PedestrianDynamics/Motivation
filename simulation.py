@@ -6,10 +6,9 @@ import contextlib
 import json
 import logging
 import pathlib
-import random
 import sys
 import time
-from typing import Any, Dict, Iterator, Tuple, TypeAlias
+from typing import Any, Dict, Iterator, Tuple, TypeAlias, List
 
 import _io
 import jupedsim as jps
@@ -50,54 +49,18 @@ def profile_function(name: str) -> Iterator[None]:
     total_time = time.perf_counter_ns() - start_time
     log_debug(f"{name}: {total_time / 1000000.0:.4f} ms")
 
-
-def init_simulation(
-    _data: Dict[str, Any],
-    _time_step: float,
-    _fps: int,
-    _trajectory_path: pathlib.Path,
-) -> Tuple[Any, mm.MotivationModel]:
-    """Initialise geometry.
-
-    :param data:
-    :type data: str
-    :param time_step:
-    :type time_step: float
-    :returns:
-
-    """
+def init_motivation_model(_data: Dict[str, Any], ped_ids: List[int])-> mm.MotivationModel:
     width = parse_motivation_parameter(_data, "width")
     height = parse_motivation_parameter(_data, "height")
     seed = parse_motivation_parameter(_data, "seed")
     min_value = parse_motivation_parameter(_data, "min_value")
     max_value = parse_motivation_parameter(_data, "max_value")
-
-    accessible_areas = parse_accessible_areas(_data)
-    geometry = build_geometry(accessible_areas)
-    # areas = build_areas(destinations, labels)
-    a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
-    normal_v_0 = parse_normal_v_0(_data)
-    normal_time_gap = parse_normal_time_gap(_data)
-    if seed is not None:
-        random.seed(seed)
-
-    simulation = jps.Simulation(
-        model=jps.CollisionFreeSpeedModel(
-            strength_neighbor_repulsion=a_ped,
-            range_neighbor_repulsion=d_ped,
-            strength_geometry_repulsion=a_wall,
-            range_geometry_repulsion=d_wall,
-        ),
-        geometry=geometry,
-        dt=_time_step,
-        trajectory_writer=jps.SqliteTrajectoryWriter(
-            output_file=pathlib.Path(_trajectory_path), every_nth_frame=_fps
-        ),
-    )
     motivation_doors = parse_motivation_doors(_data)
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
-
+        
+    normal_v_0 = parse_normal_v_0(_data)
+    normal_time_gap = parse_normal_time_gap(_data)
     choose_motivation_strategy = parse_motivation_strategy(_data)
     number_agents = parse_number_agents(_data)
     # =================
@@ -112,9 +75,10 @@ def init_simulation(
             seed=seed,
             max_value=max_value,
             min_value=min_value,
+            nagents=number_agents,
+            agent_ids=ped_ids
         )
     # =================
-
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
         door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
@@ -124,14 +88,49 @@ def init_simulation(
     )
 
     motivation_model.print_details()
+    return motivation_model
+
+
+def init_simulation(
+    _data: Dict[str, Any],
+    _time_step: float,
+    _fps: int,
+    _trajectory_path: pathlib.Path,
+) -> Any:
+    """Initialise geometry.
+
+    :param data:
+    :type data: str
+    :param time_step:
+    :type time_step: float
+    :returns:
+    """
+    accessible_areas = parse_accessible_areas(_data)
+    geometry = build_geometry(accessible_areas)
+    # areas = build_areas(destinations, labels)
+    a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
+    simulation = jps.Simulation(
+        model=jps.CollisionFreeSpeedModel(
+            strength_neighbor_repulsion=a_ped,
+            range_neighbor_repulsion=d_ped,
+            strength_geometry_repulsion=a_wall,
+            range_geometry_repulsion=d_wall,
+        ),
+        geometry=geometry,
+        dt=_time_step,
+        trajectory_writer=jps.SqliteTrajectoryWriter(
+            output_file=pathlib.Path(_trajectory_path), every_nth_frame=_fps
+        ),
+    )
     logging.info("Init simulation done")
-    return simulation, motivation_model
+    return simulation
 
 
 def run_simulation(
     simulation: jps.Simulation,
     motivation_model: mm.MotivationModel,
     _simulation_time: float,
+    ped_ids: List[int]
 ) -> None:
     """Run simulation logic.
 
@@ -148,6 +147,12 @@ def run_simulation(
     x_door = 0.5 * (motivation_model.door_point1[0] + motivation_model.door_point2[0])
     y_door = 0.5 * (motivation_model.door_point1[1] + motivation_model.door_point2[1])
     door = [x_door, y_door]
+    logging.info("init initial speed")
+    for agent_id in ped_ids:
+        value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
+        simulation.agent(agent_id).model.v0 *= value_agent
+        logging.info(f"{agent_id = }, {value_agent = :.2f}, {simulation.agent(agent_id).model.v0 = :.2f}")
+    print("--------------------")
     with open("values.txt", "w", encoding="utf-8") as file_handle:
         while (
             simulation.agent_count() > 0
@@ -157,12 +162,13 @@ def run_simulation(
             if simulation.iteration_count() % 100 == 0:
                 agents = simulation.agents()
                 number_agents_in_simulation = simulation.agent_count()
-                for agent in agents:
+                for agent_id, agent in zip(ped_ids, agents):
                     position = agent.position
                     distance = (
                         (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
                     ) ** 0.5
                     params = {
+                        "agent_id": agent_id,
                         "distance": distance,
                         "number_agents_in_simulation": number_agents_in_simulation,
                     }
@@ -200,7 +206,7 @@ def main(
     :param trajectory_file:
     :returns:
     """
-    simulation, motivation_model = init_simulation(
+    simulation = init_simulation(
         _data, _time_step, _fps, _trajectory_path
     )
     way_points = parse_way_points(_data)
@@ -236,8 +242,9 @@ def main(
         time_gap=normal_time_gap,
     )
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
+    motivation_model = init_motivation_model(_data, ped_ids)
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
-    run_simulation(simulation, motivation_model, _simulation_time)
+    run_simulation(simulation, motivation_model, _simulation_time, ped_ids)
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"
     )

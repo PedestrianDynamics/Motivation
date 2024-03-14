@@ -2,8 +2,8 @@
 
 import random
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple, TypeAlias
+from dataclasses import dataclass, field
+from typing import Any, List, Optional, Tuple, TypeAlias, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,11 +19,20 @@ class MotivationStrategy(ABC):
     def motivation(self, params: dict[str, Any]) -> float:
         pass
 
-    # abstractmethod
+    @abstractmethod
     def plot(self) -> List[Figure]:
         pass
 
+    @abstractmethod
+    def name()->str:
+        pass
 
+    @abstractmethod
+    def get_value(self, **kwargs) -> float:
+        pass
+
+    def motivation(self, params: dict[str, Any]) -> float:
+        pass
 @dataclass
 class DefaultMotivationStrategy(MotivationStrategy):
     """Default strategy for motivation calculation based on distance."""
@@ -35,6 +44,10 @@ class DefaultMotivationStrategy(MotivationStrategy):
     def name() -> str:
         """Give back name of strategy."""
         return "DefaultStrategy"
+
+    def get_value(self, **kwargs) -> float:
+        """Random value in interval."""
+        return 1.0
 
     def motivation(self, params: dict[str, Any]) -> float:
         """Motivation based on distance to entrance."""
@@ -69,12 +82,22 @@ class DefaultMotivationStrategy(MotivationStrategy):
 class EVCStrategy(MotivationStrategy):
     """Motivation theory based on E.V.C (model4)."""
 
+    agent_ids: List[str] = field(default_factory=list)
+    pedestrian_value: Dict[int, float] = field(default_factory=dict)
     width: float = 1.0
     height: float = 1.0
     max_reward: int = 0
     seed: int = 0
     min_value: float = 0
     max_value: float = 1
+    nagents: int = 10
+
+    def __post_init__(self) -> None:
+        if self.seed is not None:
+            random.seed(self.seed)
+
+        for n in self.agent_ids:
+            self.pedestrian_value[n] = self.value(self.min_value, self.max_value)
 
     @staticmethod
     def name() -> str:
@@ -106,6 +129,11 @@ class EVCStrategy(MotivationStrategy):
 
         return comp
 
+    def get_value(self, **kwargs) -> float:
+        """Random value in interval."""
+        ped_id = kwargs.get("agent_id")
+        return self.pedestrian_value[ped_id]
+
     @staticmethod
     def value(min_v: float, max_v: float, seed: Optional[float] = None) -> float:
         """Random value in interval. seed is optional."""
@@ -118,11 +146,13 @@ class EVCStrategy(MotivationStrategy):
         """Define EVC model."""
         number_agents_in_simulation = params["number_agents_in_simulation"]
         distance = params["distance"]
+        agent_id = params["agent_id"]
         got_reward = self.max_reward - number_agents_in_simulation
         if "seed" not in params:
             params["seed"] = None
         return float(
-            EVCStrategy.value(self.min_value, self.max_value, params["seed"])
+            #            EVCStrategy.value(self.min_value, self.max_value, params["seed"])
+            self.pedestrian_value[agent_id]
             * EVCStrategy.competition(got_reward, self.max_reward)
             * EVCStrategy.expectancy(
                 distance,
@@ -153,8 +183,8 @@ class EVCStrategy(MotivationStrategy):
         # V
         V = []
         agents = np.linspace(1, self.max_reward)
-        for s in agents:
-            V.append(self.value(self.min_value, self.max_value))
+        for s in self.agent_ids:
+            V.append(self.get_value(agent_id=s))
 
         ax1.plot(agents, V, "o")
         ax1.grid(alpha=0.3)
@@ -169,31 +199,33 @@ class EVCStrategy(MotivationStrategy):
         for n in N:
             C.append(self.competition(n, self.max_reward))
 
-        ax2.plot(N, C)
+        ax2.plot(N, C, ".-")
         ax2.grid(alpha=0.3)
         ax2.set_xlim([0, self.max_reward + 1])
         ax2.set_ylim([0, 1.5])
-        ax2.set_xlabel("reward")
+        ax2.set_xlabel("#agents left simulation")
         ax2.set_ylabel("Competition")
         ax2.set_title(f"{self.name()} - C (max reward {self.max_reward:.0f})")
         # M
         m = []
-        for dist in distances:
+
+        for agent_id, dist in zip(self.agent_ids, distances):
             params = {
                 "distance": dist,
                 "number_agents_in_simulation": self.max_reward,
                 "seed": self.seed,
+                "agent_id": agent_id,
             }
             m.append(self.motivation(params))
 
-        ax3.plot(distances, m)
+        ax3.plot(self.agent_ids, m, ".-")
         ax3.grid(alpha=0.3)
-        ax3.set_ylim([-0.1, 3])
-        ax3.set_xlim([-0.1, 4])
+        # ax3.set_ylim([-0.1, 3])
+        # ax3.set_xlim([-0.1, 4])
         ax3.set_title(
             f"{self.name()} - E.V.C (N={self.max_reward:.0f}, seed={self.seed:.0f})"
         )
-        ax3.set_xlabel("Distance / m")
+        ax3.set_xlabel("Agent ids")
         ax3.set_ylabel("Motivation")
 
         return [fig0, fig1, fig2, fig3]
