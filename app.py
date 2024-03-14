@@ -138,7 +138,7 @@ if __name__ == "__main__":
                 json_str = f.read()
                 data = json.loads(json_str)
                 fps = parse_fps(data)
-                time_step = 0.005  # parse_time_step(data)
+                time_step = parse_time_step(data)
                 number_agents = parse_number_agents(data)
                 simulation_time = parse_simulation_time(data)
                 strategy = parse_motivation_strategy(data)

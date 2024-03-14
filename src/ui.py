@@ -97,7 +97,8 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
         )
         data["simulation_parameters"]["time_step"] = st.number_input(
             "Time Step:",
-            value=0.1,
+            format="%f",
+            value=data["simulation_parameters"]["time_step"],
             min_value=0.0001,
             max_value=0.5,
             step=0.0001,
@@ -155,6 +156,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             "Min_value",
             key="min_value",
             step=0.5,
+            min_value=0.1,
             value=float(data["motivation_parameters"]["min_value"]),
             help="Min Value",
         )

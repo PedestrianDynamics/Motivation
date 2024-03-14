@@ -13,7 +13,7 @@
     },
     "simulation_parameters": {
         "fps": 60,
-        "time_step": 0.01,
+        "time_step": 0.002,
         "number_agents": 50,
         "simulation_time": 100
     },
@@ -57,7 +57,7 @@
         "height": "1.0",
         "seed": "1.0",
         "max_value": "1.0",
-        "min_value": "0.0",
+        "min_value": "0.1",
         "motivation_doors": [
             {
                 "id": 1,
