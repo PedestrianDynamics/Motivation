@@ -156,6 +156,7 @@ if __name__ == "__main__":
                         simulation_time,
                         data,
                         Path(OUTPUT_FILE),
+                        msg,
                     )
             msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
             st.empty()

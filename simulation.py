@@ -130,7 +130,8 @@ def run_simulation(
     simulation: jps.Simulation,
     motivation_model: mm.MotivationModel,
     _simulation_time: float,
-    ped_ids: List[int]
+    ped_ids: List[int],
+    msg: Any
 ) -> None:
     """Run simulation logic.
 
@@ -159,6 +160,7 @@ def run_simulation(
             and simulation.elapsed_time() < _simulation_time
         ):
             simulation.iterate()
+            msg.code(f"Agents in the simulation: {simulation.agent_count()}")
             if simulation.iteration_count() % 100 == 0:
                 agents = simulation.agents()
                 number_agents_in_simulation = simulation.agent_count()
@@ -197,6 +199,7 @@ def main(
     _simulation_time: float,
     _data: Dict[str, Any],
     _trajectory_path: pathlib.Path,
+    msg
 ) -> float:
     """Main simulation loop.
 
@@ -244,7 +247,7 @@ def main(
     ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
     motivation_model = init_motivation_model(_data, ped_ids)
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
-    run_simulation(simulation, motivation_model, _simulation_time, ped_ids)
+    run_simulation(simulation, motivation_model, _simulation_time, ped_ids, msg)
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"
     )
@@ -265,6 +268,7 @@ if __name__ == "__main__":
         time_step = parse_time_step(data)
         number_agents = parse_number_agents(data)
         simulation_time = parse_simulation_time(data)
+        dummy = ""
         if fps and time_step:
             main(
                 number_agents,
@@ -273,4 +277,5 @@ if __name__ == "__main__":
                 simulation_time,
                 data,
                 pathlib.Path(sys.argv[2]),
+                dummy,
             )
