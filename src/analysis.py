@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 import numpy.typing as npt
 import pedpy
@@ -12,12 +13,21 @@ from jupedsim.internal.notebook_utils import read_sqlite_file
 from pedpy.column_identifier import FRAME_COL, ID_COL
 
 from .inifile_parser import parse_fps
-from .plotting import (plot_density_time_series, plot_flow_time_series,
-                       plot_speed_time_series, plotly_nt_series)
+from .plotting import (
+    plot_density_time_series,
+    plot_flow_time_series,
+    plot_speed_time_series,
+    plotly_nt_series,
+)
 from .ui import ui_measurement_parameters
-from .utilities import (add_heatmap_trace, add_polygon_traces,
-                        calculate_heatmap_values, create_empty_figure,
-                        customize_fig_layout, update_figure_layout)
+from .utilities import (
+    add_heatmap_trace,
+    add_polygon_traces,
+    calculate_heatmap_values,
+    create_empty_figure,
+    customize_fig_layout,
+    update_figure_layout,
+)
 
 # from shapely import Polygon
 # from shapely.ops import unary_union
@@ -190,10 +200,37 @@ def run() -> None:
                 df_time_distance = pedpy.compute_time_distance_line(
                     traj_data=traj, measurement_line=measurement_line
                 )
-                fig = plt.figure()
+                speed = pedpy.compute_individual_speed(
+                    traj_data=traj,
+                    frame_step=5,
+                    speed_calculation=pedpy.SpeedCalculation.BORDER_SINGLE_SIDED,
+                )
+                data = speed.merge(traj.data, on=[ID_COL, FRAME_COL])
+                first_frame_speed = data.loc[
+                    data["frame"] == data["frame"].iloc[0], ["speed"]
+                ]
+                # Normalize the speed values for color mapping
+                norm = plt.Normalize(speed.min().speed, speed.max().speed)
+                cmap = cm.jet
+                fig, ax = plt.subplots()
                 pedpy.plot_time_distance(
                     time_distance=df_time_distance,
                     title="Distance to entrance/Time to entrance",
                     frame_rate=traj.frame_rate,
+                    axes=ax,
                 )
+                distance0 = df_time_distance.loc[
+                    data["frame"] == 0, ["id", "frame", "distance", "time"]
+                ]
+                sc = ax.scatter(
+                    distance0["distance"],
+                    distance0["time"] / traj.frame_rate,
+                    c=first_frame_speed["speed"],
+                    cmap=cmap,
+                    norm=norm,
+                    s=20,
+                )
+                # add a colorbar to the plot to show the speed scale
+                cbar = plt.colorbar(sc, ax=ax)
+                cbar.set_label("Speed (m/s)")
                 st.pyplot(fig)
