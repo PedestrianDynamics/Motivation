@@ -5,6 +5,8 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.collections import LineCollection
+
 import numpy as np
 import numpy.typing as npt
 import pedpy
@@ -206,31 +208,53 @@ def run() -> None:
                     speed_calculation=pedpy.SpeedCalculation.BORDER_SINGLE_SIDED,
                 )
                 data = speed.merge(traj.data, on=[ID_COL, FRAME_COL])
-                first_frame_speed = data.loc[
-                    data["frame"] == data["frame"].iloc[0], ["speed"]
+                speed = speed.merge(df_time_distance, on=[ID_COL, FRAME_COL])
+                st.dataframe(speed)
+                first_frame_speed = speed.loc[
+                    speed[FRAME_COL] == speed[FRAME_COL].min(),
+                    ["speed", "time", "distance"],
                 ]
-                # Normalize the speed values for color mapping
                 norm = plt.Normalize(speed.min().speed, speed.max().speed)
                 cmap = cm.jet
+                # ---------------
+                trajectory_ids = df_time_distance["id"].unique()
                 fig, ax = plt.subplots()
-                pedpy.plot_time_distance(
-                    time_distance=df_time_distance,
-                    title="Distance to entrance/Time to entrance",
-                    frame_rate=traj.frame_rate,
-                    axes=ax,
-                )
-                distance0 = df_time_distance.loc[
-                    data["frame"] == 0, ["id", "frame", "distance", "time"]
-                ]
-                sc = ax.scatter(
-                    distance0["distance"],
-                    distance0["time"] / traj.frame_rate,
+                for traj_id in trajectory_ids:
+                    traj_data = df_time_distance[df_time_distance[ID_COL] == traj_id]
+                    speed_id = speed[speed[ID_COL] == traj_id].speed.to_numpy()
+                    # Extract points and speeds for the current trajectory
+                    traj_data["time"] /= traj.frame_rate
+                    points = traj_data[["distance", "time"]].to_numpy()
+                    # st.dataframe(points)
+                    # st.dataframe(points)
+                    # Prepare segments for the current trajectory
+                    segments = [
+                        [
+                            (points[i, 0], points[i, 1]),
+                            (points[i + 1, 0], points[i + 1, 1]),
+                        ]
+                        for i in range(len(points) - 1)
+                    ]
+                    lc = LineCollection(segments, cmap="jet", alpha=0.7, norm=norm)
+                    lc.set_array(speed_id)
+                    lc.set_linewidth(0.5)
+                    line = ax.add_collection(lc)
+
+                ax.scatter(
+                    first_frame_speed["distance"],
+                    first_frame_speed["time"] / traj.frame_rate,
                     c=first_frame_speed["speed"],
                     cmap=cmap,
                     norm=norm,
-                    s=20,
+                    s=10,
                 )
-                # add a colorbar to the plot to show the speed scale
-                cbar = plt.colorbar(sc, ax=ax)
-                cbar.set_label("Speed (m/s)")
+
+                cbar = fig.colorbar(line, ax=ax)
+                cbar.set_label("Speed / m/s")
+                ax.autoscale()
+                ax.margins(0.1)
+                ax.set_title("Distance to entrance/Time to entrance")
+                plt.grid(alpha=0.3)
+                ax.set_xlabel("Distance / m")
+                ax.set_ylabel("Time / s")
                 st.pyplot(fig)
