@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from .logger_config import log_debug
+import logging
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -86,6 +87,9 @@ class EVCStrategy(MotivationStrategy):
     width: float = 1.0
     height: float = 1.0
     max_reward: int = 0
+    percent: float = 1
+    competition_max: float = 1
+    competition_decay_reward: float = 5
     seed: int = 0
     min_value: float = 0
     max_value: float = 1
@@ -117,17 +121,28 @@ class EVCStrategy(MotivationStrategy):
         return float(np.exp(expr) * np.e * _height)
 
     @staticmethod
-    def competition(got_reward: int, max_reward: int) -> float:
-        """Competition is a question of rewards.
-
-        got_reward: How many got reward
-        max_reward: hom many max can get reward
+    def competition(N: int, c0: float, N0: float, percent: float, Nmax: float) -> float:
         """
-        comp = 0.0
-        if got_reward <= max_reward:
-            comp = 1 - got_reward / max_reward
+        Computes the value of a function that starts with a constant value c0,
+        then linearly decays to zero starting from N0 and reaching zero at Nmax.
 
-        return comp
+        Parameters:
+        - N (int): input value for which the function is evaluated.
+        - c0 (float): The initial constant value of the function.
+        - N0 (float): The point at which the function starts to linearly decay.
+        - percent*Nmax: The value of N at which the function reaches zero.
+
+        Returns:
+        - float: The function value corresponding to input value in N.
+        """
+        max_reward = percent * Nmax
+        slope = c0 / (max_reward - N0)
+        if N <= N0:
+            return c0
+        elif N < max_reward:
+            return c0 - slope * (N - N0)
+        else:
+            return 0
 
     def get_value(self, **kwargs) -> float:
         """Random value in interval."""
@@ -154,7 +169,13 @@ class EVCStrategy(MotivationStrategy):
         value = self.pedestrian_value[agent_id] if self.evc else 1.0
         return float(
             value
-            * EVCStrategy.competition(got_reward, self.max_reward)
+            * EVCStrategy.competition(
+                N=got_reward,
+                c0=self.competition_max,
+                N0=self.competition_decay_reward,
+                percent=self.percent,
+                Nmax=self.max_reward,
+            )
             * EVCStrategy.expectancy(
                 distance,
                 self.width,
@@ -183,11 +204,10 @@ class EVCStrategy(MotivationStrategy):
         ax0.set_ylabel("Expectancy")
         # V
         V = []
-        agents = np.linspace(1, self.max_reward)
         for s in self.agent_ids:
             V.append(self.get_value(agent_id=s))
 
-        ax1.plot(agents, V, "o")
+        ax1.plot(self.agent_ids, V, "o")
         ax1.grid(alpha=0.3)
         ax1.set_ylim([-0.1, 5])
         ax1.set_xlim([-0.1, self.max_reward + 1])
@@ -196,36 +216,101 @@ class EVCStrategy(MotivationStrategy):
         ax1.set_ylabel("Value")
         # C
         C = []
-        N = np.arange(0, self.max_reward)
+        N = np.arange(0, self.max_reward + 1)
+
         for n in N:
-            C.append(self.competition(n, self.max_reward))
+            C.append(
+                self.competition(
+                    N=n,
+                    c0=self.competition_max,
+                    N0=self.competition_decay_reward,
+                    percent=self.percent,
+                    Nmax=self.max_reward,
+                )
+            )
 
         ax2.plot(N, C, ".-")
         ax2.grid(alpha=0.3)
         ax2.set_xlim([0, self.max_reward + 1])
-        ax2.set_ylim([0, 1.5])
+        ax2.set_ylim([-0.1, self.competition_max + 1])
         ax2.set_xlabel("#agents left simulation")
         ax2.set_ylabel("Competition")
-        ax2.set_title(f"{self.name()} - C (max reward {self.max_reward:.0f})")
+        ax2.set_xticks(
+            [0, self.competition_decay_reward, self.max_reward * self.percent],
+            labels=[
+                "0",
+                f"N0={self.competition_decay_reward}",
+                f"Nmax={ self.max_reward * self.percent:.0f}",
+            ],
+        )
+        ax2.set_yticks(
+            [0, self.competition_max], labels=["0", f"Max={self.competition_max:.0f}"]
+        )
+        ax2.set_title(
+            f"{self.name()} - C ({self.percent*100:.0f}% of max reward {self.max_reward:.0f})"
+        )
         # M
-        m = []
+        max_value_id = max(self.pedestrian_value, key=self.pedestrian_value.get)
+        min_value_id = min(self.pedestrian_value, key=self.pedestrian_value.get)
+        logging.info(
+            f"id max value {max_value_id}: {self.pedestrian_value[max_value_id]}"
+        )
+        logging.info(
+            f"id min value {min_value_id}: {self.pedestrian_value[min_value_id]}"
+        )
+        N = np.linspace(10, self.max_reward * self.percent, 3)
+        symbols = ["-", "--", "-."]
+        for i, n in enumerate(N):
+            n = int(n)
+            m_max = []
+            print(int(N[-1]))
+            for dist in distances:
+                params = {
+                    "distance": dist,
+                    "number_agents_in_simulation": n,
+                    "seed": self.seed,
+                    "agent_id": max_value_id,
+                }
+                m_max.append(self.motivation(params))
+            ax3.plot(
+                distances,
+                m_max,
+                linestyle=symbols[i % len(symbols)],
+                color="blue",
+                label=f"max value, Nmax={n}",
+            )
+        for i, n in enumerate(N):
+            n = int(n)
+            m_min = []
+            print(int(N[-1]))
+            for dist in distances:
+                params = {
+                    "distance": dist,
+                    "number_agents_in_simulation": n,
+                    "seed": self.seed,
+                    "agent_id": min_value_id,
+                }
+                m_min.append(self.motivation(params))
 
-        for agent_id, dist in zip(self.agent_ids, distances):
-            params = {
-                "distance": dist,
-                "number_agents_in_simulation": self.max_reward,
-                "seed": self.seed,
-                "agent_id": agent_id,
-            }
-            m.append(self.motivation(params))
+            ax3.plot(
+                distances,
+                m_min,
+                linestyle=symbols[i % len(symbols)],
+                color="red",
+                label=f"min value, Nmax={n}",
+            )
 
-        ax3.plot(self.agent_ids, m, ".-")
         ax3.grid(alpha=0.3)
         # ax3.set_ylim([-0.1, 3])
-        # ax3.set_xlim([-0.1, 4])
-        ax3.set_title(
-            f"{self.name()} - E.V.C (N={self.max_reward:.0f}, seed={self.seed:.0f})"
-        )
+        ax3.set_xlim([-0.1, 4])
+        ax3.legend()
+        if self.evc:
+            title = (
+                f"{self.name()} - E.V.C (N={self.max_reward:.0f}, seed={self.seed:.0f})"
+            )
+        else:
+            title = f"EC-V -  E.C-V (N={self.max_reward:.0f}, seed={self.seed:.0f})"
+        ax3.set_title(title)
         ax3.set_xlabel("Agent ids")
         ax3.set_ylabel("Motivation")
 

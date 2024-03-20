@@ -166,7 +166,13 @@ if __name__ == "__main__":
             max_value = float(data["motivation_parameters"]["max_value"])
             min_value = float(data["motivation_parameters"]["min_value"])
             seed = data["motivation_parameters"]["seed"]
+            competition_max = data["motivation_parameters"]["competition_max"]
+            competition_decay_reward = data["motivation_parameters"][
+                "competition_decay_reward"
+            ]
+            percent = data["motivation_parameters"]["percent"]
             number_agents = int(parse_number_agents(data))
+            st.info(number_agents)
             motivation_strategy: mm.MotivationStrategy
             if strategy == "default":
                 motivation_strategy = mm.DefaultMotivationStrategy(
@@ -181,6 +187,9 @@ if __name__ == "__main__":
                     max_value=max_value,
                     min_value=min_value,
                     agent_ids=range(number_agents),
+                    competition_decay_reward=competition_decay_reward,
+                    competition_max=competition_max,
+                    percent=percent,
                     evc=True,
                 )
             if strategy == "EC-V":
@@ -191,6 +200,9 @@ if __name__ == "__main__":
                     seed=seed,
                     max_value=max_value,
                     min_value=min_value,
+                    competition_decay_reward=competition_decay_reward,
+                    competition_max=competition_max,
+                    percent=percent,
                     agent_ids=range(number_agents),
                     evc=False,
                 )
@@ -200,7 +212,7 @@ if __name__ == "__main__":
                 st.markdown(r"""
                 $
                 \textbf{motivation}(distance) = 
-                \begin{cases} 
+                \begin{cases}
                 0 & \text{if\;} distance  \geq \text{width}, \\
                 e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
                 \end{cases}

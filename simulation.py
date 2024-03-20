@@ -73,6 +73,11 @@ def init_motivation_model(
     normal_time_gap = parse_normal_time_gap(_data)
     choose_motivation_strategy = parse_motivation_strategy(_data)
     number_agents = parse_number_agents(_data)
+    competition_max = data["motivation_parameters"]["competition_max"]
+    competition_decay_reward = data["motivation_parameters"][
+        "competition_decay_reward"
+    ]
+    percent = data["motivation_parameters"]["percent"]
     # =================
     motivation_strategy: mm.MotivationStrategy
     if choose_motivation_strategy == "default":
@@ -87,6 +92,9 @@ def init_motivation_model(
             min_value=min_value,
             nagents=number_agents,
             agent_ids=ped_ids,
+            competition_decay_reward=competition_decay_reward,
+            competition_max=competition_max,
+            percent=percent,
             evc=True,
         )
     if choose_motivation_strategy == "EC-V":
@@ -99,9 +107,11 @@ def init_motivation_model(
             min_value=min_value,
             nagents=number_agents,
             agent_ids=ped_ids,
+            competition_decay_reward=competition_decay_reward,
+            competition_max=competition_max,
+            percent=percent,
             evc=False,
         )
-
     # =================
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),

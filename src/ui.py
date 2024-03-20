@@ -129,6 +129,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             ["default", "EVC", "EC-V"],
             help="Default: M = M(dist). EVC: M = EVC, EC-V: M=(E.C).V",
         )
+
         data["motivation_parameters"]["width"] = c1.number_input(
             "Width",
             key="width",
@@ -159,6 +160,34 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             min_value=0.1,
             value=float(data["motivation_parameters"]["min_value"]),
             help="Min Value",
+        )
+
+        data["motivation_parameters"]["competition_max"] = c1.number_input(
+            "Competition max",
+            key="comp_max",
+            step=1.0,
+            min_value=0.5,
+            max_value=5.0,
+            value=float(data["motivation_parameters"]["competition_max"]),
+            help="Maximum of competition",
+        )
+
+        data["motivation_parameters"]["competition_decay_reward"] = c2.number_input(
+            "Competition decay",
+            key="comp_dec",
+            step=10,
+            min_value=1,
+            value=int(data["motivation_parameters"]["competition_decay_reward"]),
+            help="Start of decay of competition",
+        )
+        data["motivation_parameters"]["percent"] = c1.number_input(
+            "Competition percent",
+            key="comp_perc",
+            step=0.1,
+            min_value=0.1,
+            max_value=1.0,
+            value=float(data["motivation_parameters"]["percent"]),
+            help="Percent of competition max",
         )
 
         data["motivation_parameters"]["motivation_strategy"] = motivation_strategy
