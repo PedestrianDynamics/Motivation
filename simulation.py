@@ -8,26 +8,32 @@ import logging
 import pathlib
 import sys
 import time
-from typing import Any, Dict, Iterator, Tuple, TypeAlias, List
+from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
 
 import _io
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 
 from src import motivation_model as mm
-from src.inifile_parser import (parse_accessible_areas, parse_destinations,
-                                parse_distribution_polygons, parse_fps,
-                                parse_motivation_doors,
-                                parse_motivation_parameter,
-                                parse_motivation_strategy,
-                                parse_normal_time_gap, parse_normal_v_0,
-                                parse_number_agents, parse_radius,
-                                parse_simulation_time, parse_time_step,
-                                parse_velocity_init_parameters,
-                                parse_way_points)
+from src.inifile_parser import (
+    parse_accessible_areas,
+    parse_destinations,
+    parse_distribution_polygons,
+    parse_fps,
+    parse_motivation_doors,
+    parse_motivation_parameter,
+    parse_motivation_strategy,
+    parse_normal_time_gap,
+    parse_normal_v_0,
+    parse_number_agents,
+    parse_radius,
+    parse_simulation_time,
+    parse_time_step,
+    parse_velocity_init_parameters,
+    parse_way_points,
+)
 from src.logger_config import init_logger, log_debug, log_error
-from src.utilities import (build_geometry, distribute_and_add_agents,
-                           init_journey)
+from src.utilities import build_geometry, distribute_and_add_agents, init_journey
 
 # import cProfile
 # import pstats
@@ -49,7 +55,11 @@ def profile_function(name: str) -> Iterator[None]:
     total_time = time.perf_counter_ns() - start_time
     log_debug(f"{name}: {total_time / 1000000.0:.4f} ms")
 
-def init_motivation_model(_data: Dict[str, Any], ped_ids: List[int])-> mm.MotivationModel:
+
+def init_motivation_model(
+    _data: Dict[str, Any], ped_ids: List[int]
+) -> mm.MotivationModel:
+    """Init motuvation model based on parsed streategy."""
     width = parse_motivation_parameter(_data, "width")
     height = parse_motivation_parameter(_data, "height")
     seed = parse_motivation_parameter(_data, "seed")
@@ -58,7 +68,7 @@ def init_motivation_model(_data: Dict[str, Any], ped_ids: List[int])-> mm.Motiva
     motivation_doors = parse_motivation_doors(_data)
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
-        
+
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
     choose_motivation_strategy = parse_motivation_strategy(_data)
@@ -76,8 +86,22 @@ def init_motivation_model(_data: Dict[str, Any], ped_ids: List[int])-> mm.Motiva
             max_value=max_value,
             min_value=min_value,
             nagents=number_agents,
-            agent_ids=ped_ids
+            agent_ids=ped_ids,
+            evc=True,
         )
+    if choose_motivation_strategy == "EC-V":
+        motivation_strategy = mm.EVCStrategy(
+            width=width,
+            height=height,
+            max_reward=number_agents,
+            seed=seed,
+            max_value=max_value,
+            min_value=min_value,
+            nagents=number_agents,
+            agent_ids=ped_ids,
+            evc=False,
+        )
+
     # =================
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
@@ -131,7 +155,7 @@ def run_simulation(
     motivation_model: mm.MotivationModel,
     _simulation_time: float,
     ped_ids: List[int],
-    msg: Any
+    msg: Any,
 ) -> None:
     """Run simulation logic.
 
@@ -152,14 +176,14 @@ def run_simulation(
     for agent_id in ped_ids:
         value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
         simulation.agent(agent_id).model.v0 *= value_agent
-        logging.info(f"{agent_id = }, {value_agent = :.2f}, {simulation.agent(agent_id).model.v0 = :.2f}")
-    print("--------------------")
+
     with open("values.txt", "w", encoding="utf-8") as file_handle:
         while (
             simulation.agent_count() > 0
             and simulation.elapsed_time() < _simulation_time
         ):
             simulation.iterate()
+
             msg.code(f"Agents in the simulation: {simulation.agent_count()}")
             if simulation.iteration_count() % 100 == 0:
                 agents = simulation.agents()
@@ -182,10 +206,10 @@ def run_simulation(
                     )
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap
-                    if agent.id == 1:
-                        logging.info(
-                            f"Agents: {agent.id},{v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
-                        )
+                    # if agent.id == 1:
+                    # logging.info(
+                    #     f"Agents: {agent.id},{v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
+                    # )
                     write_value_to_file(
                         file_handle,
                         f"{position[0]} {position[1]} {motivation_i} {v_0} {time_gap} {distance}",
@@ -199,9 +223,9 @@ def main(
     _simulation_time: float,
     _data: Dict[str, Any],
     _trajectory_path: pathlib.Path,
-    msg
+    msg: Any,
 ) -> float:
-    """Main simulation loop.
+    """Implement simulation loop.
 
     :param fps:
     :param dt:
@@ -209,9 +233,7 @@ def main(
     :param trajectory_file:
     :returns:
     """
-    simulation = init_simulation(
-        _data, _time_step, _fps, _trajectory_path
-    )
+    simulation = init_simulation(_data, _time_step, _fps, _trajectory_path)
     way_points = parse_way_points(_data)
     destinations_dict = parse_destinations(_data)
     destinations = list(destinations_dict.values())
@@ -270,7 +292,7 @@ if __name__ == "__main__":
         simulation_time = parse_simulation_time(data)
         dummy = ""
         if fps and time_step:
-            main(
+            evac_time = main(
                 number_agents,
                 fps,
                 time_step,
@@ -279,3 +301,4 @@ if __name__ == "__main__":
                 pathlib.Path(sys.argv[2]),
                 dummy,
             )
+        print(f"{evac_time = }")

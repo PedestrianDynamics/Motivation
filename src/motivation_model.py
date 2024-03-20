@@ -24,15 +24,14 @@ class MotivationStrategy(ABC):
         pass
 
     @abstractmethod
-    def name()->str:
+    def name() -> str:
         pass
 
     @abstractmethod
     def get_value(self, **kwargs) -> float:
         pass
 
-    def motivation(self, params: dict[str, Any]) -> float:
-        pass
+
 @dataclass
 class DefaultMotivationStrategy(MotivationStrategy):
     """Default strategy for motivation calculation based on distance."""
@@ -91,6 +90,7 @@ class EVCStrategy(MotivationStrategy):
     min_value: float = 0
     max_value: float = 1
     nagents: int = 10
+    evc: bool = True
 
     def __post_init__(self) -> None:
         if self.seed is not None:
@@ -150,9 +150,10 @@ class EVCStrategy(MotivationStrategy):
         got_reward = self.max_reward - number_agents_in_simulation
         if "seed" not in params:
             params["seed"] = None
+
+        value = self.pedestrian_value[agent_id] if self.evc else 1.0
         return float(
-            #            EVCStrategy.value(self.min_value, self.max_value, params["seed"])
-            self.pedestrian_value[agent_id]
+            value
             * EVCStrategy.competition(got_reward, self.max_reward)
             * EVCStrategy.expectancy(
                 distance,

@@ -126,8 +126,8 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
         c1, c2 = st.columns(2)
         motivation_strategy = model.selectbox(
             "Select model",
-            ["default", "EVC"],
-            help="Model 2: M = M(dist). Model 3: M = V.E, Model4: M=V.E.C",
+            ["default", "EVC", "EC-V"],
+            help="Default: M = M(dist). EVC: M = EVC, EC-V: M=(E.C).V",
         )
         data["motivation_parameters"]["width"] = c1.number_input(
             "Width",

@@ -53,11 +53,11 @@
         "motivation_strategy": "default",
         "normal_v_0": 1.2,
         "normal_time_gap": 1.0,
-        "width": "1.0",
-        "height": "1.0",
-        "seed": "1.0",
-        "max_value": "1.0",
-        "min_value": "0.1",
+        "width": 1.0,
+        "height": 1.0,
+        "seed": 1.0,
+        "max_value": 1.0,
+        "min_value": 0.1,
         "motivation_doors": [
             {
                 "id": 1,

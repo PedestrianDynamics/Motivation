@@ -59,14 +59,8 @@ if __name__ == "__main__":
 
     if "all_files" not in st.session_state:
         st.session_state.all_files = ["files/bottleneck.json"]
-        # User will select from these files to do simulations
 
     tab = init_sidebar()
-
-    # tab1, tab2, tab3 = st.tabs(["Initialisation", "Simulation", "Analysis"])
-    # st.sidebar.info(f"{jps.__version__ = }")
-    # st.sidebar.info(f"{pedpy.__version__ = }")
-
     if tab == "Simulation":
         with st.sidebar.expander("Save/load config"):
             column_1, column_2 = st.columns((1, 1))
@@ -101,12 +95,6 @@ if __name__ == "__main__":
         )
         new_json_file = Path(new_json_name)
         save_json(new_json_file, data)
-        # if column_1.button(
-        #    "Save config",
-        #    help=f"After changing the values, you can save the configs in a separate file ({new_json_name})",
-        # ):
-        #    save_json(new_json_file, data)
-        #    st.sidebar.info(f"Saved file as {new_json_name}")
         st.session_state.all_files.append(new_json_name)
 
         if column_2.button("Delete files", help="Delete all trajectory files"):
@@ -193,6 +181,18 @@ if __name__ == "__main__":
                     max_value=max_value,
                     min_value=min_value,
                     agent_ids=range(number_agents),
+                    evc=True,
+                )
+            if strategy == "EC-V":
+                motivation_strategy = mm.EVCStrategy(
+                    width=width,
+                    height=height,
+                    max_reward=number_agents,
+                    seed=seed,
+                    max_value=max_value,
+                    min_value=min_value,
+                    agent_ids=range(number_agents),
+                    evc=False,
                 )
 
             with st.expander("(click) to enlarge documentation"):
@@ -244,7 +244,7 @@ if __name__ == "__main__":
                 ### Update agents
                 For an agent $i$ we calculate $m_i$ by one of the methods above and update its parameters as follows:
 
-                $v^0_\text{new} = (1 + m_i)\cdot v^0$ and $T_\text{new} = \frac{T}{1 + m_i}$
+                $\tilde v_i^0 =  v_i^0(1 + m_i)\cdot V_i$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
 
            
                 """)
