@@ -131,9 +131,13 @@ if __name__ == "__main__":
         Here we see that the influence of $V_i$ is squared.
         Therefore, the second variation of the model reads
             
-        <span style='color:red'>**EC-V**</span>
-            
-        $\tilde v_i^0 =  v_i^0(1 + E_i\cdot C_i)\cdot V_i$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
+        ## EC-V
+       $$     
+       \begin{cases}     
+        \tilde v_i^0 =  v_i^0(1 + E_i\cdot C_i)\cdot V_i, \\
+        \tilde T_i = \frac{T_i}{1 + E_i\cdot C_i}.
+       \end{cases}
+        $$
         """,
             unsafe_allow_html=True,
         )
