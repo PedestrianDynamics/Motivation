@@ -311,7 +311,7 @@ class EVCStrategy(MotivationStrategy):
         else:
             title = f"EC-V -  E.C-V (N={self.max_reward:.0f}, seed={self.seed:.0f})"
         ax3.set_title(title)
-        ax3.set_xlabel("Agent ids")
+        ax3.set_xlabel("Distance / m")
         ax3.set_ylabel("Motivation")
 
         return [fig0, fig1, fig2, fig3]
