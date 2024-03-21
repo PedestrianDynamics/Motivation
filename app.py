@@ -61,6 +61,83 @@ if __name__ == "__main__":
         st.session_state.all_files = ["files/bottleneck.json"]
 
     tab = init_sidebar()
+    if tab == "Documentation":
+        st.markdown("""## Default Strategy""")
+        st.markdown(r"""
+        $
+        \textbf{motivation}(distance) = 
+        \begin{cases}
+        0 & \text{if\;} distance  \geq \text{width}, \\
+        e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
+        \end{cases}
+        $
+        
+        ---
+        ---
+        """)
+        st.markdown(r"""
+        ## EVC
+        $\textbf{motivation} = E\cdot V\cdot C,$ where
+        - $E$: expectancy
+        - $V$: value
+        - $C$: competition
+        
+        ---
+        """)
+
+        st.markdown(
+            r"""
+        $
+        \textbf{expectancy}(distance) = 
+        \begin{cases}
+        0 & \text{if\;} distance  \geq \text{width}, \\
+        e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
+        \end{cases}\\
+        $
+        
+        **Note:** this is the same function like default strategy
+        
+        ---
+        $$
+        \textbf{competition} = 
+        \begin{cases} 
+        c_0 & \text{if } N \leq N_0 \\
+        c_0 - \left(\frac{c_0}{\text{percent} \cdot N_{\text{max}} - N_0}\right) \cdot (N - N_0) & \text{if } N_0 < N < \text{percent} \cdot N_{\text{max}} \\
+        0 & \text{if } N \geq \text{percent} \cdot N_{\text{max}},
+        \end{cases}
+        $$
+        with:
+
+        | Parameter    | Meaning|
+        |--------------|:-----:|
+        |$N$ | Agents still in the simulation|
+        |$N_0$ | Number of agents at which the decay of the function starts.|
+        |$N_{\max}$ | The initial number of agents in the simulation|
+        |$c_0$ | Maximal competition|
+        |$p$ | is a percentage number $\in [0, 1]$.|
+        
+        ---
+        $\textbf{value} = random\_number \in [v_{\min}, v_{\max}].$
+        
+        ## Update agents
+        For an agent $i$ we calculate $m_i$ by one of the methods above and update its parameters as follows:
+        
+        $\tilde v_i^0 =  v_i^0(1 + m_i)\cdot V_i$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
+
+        The first part of the equation is equalivalent to
+
+        $\tilde v_i^0 =  v_i^0(1 + E_i\cdot V_i\cdot C_i)\cdot V_i$.
+
+        Here we see that the influence of $V_i$ is squared.
+        Therefore, the second variation of the model reads
+            
+        <span style='color:red'>**EC-V**</span>
+            
+        $\tilde v_i^0 =  v_i^0(1 + E_i\cdot C_i)\cdot V_i$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
+        """,
+            unsafe_allow_html=True,
+        )
+
     if tab == "Simulation":
         with st.sidebar.expander("Save/load config"):
             column_1, column_2 = st.columns((1, 1))
@@ -100,8 +177,6 @@ if __name__ == "__main__":
         if column_2.button("Delete files", help="Delete all trajectory files"):
             delete_txt_files()
 
-    # Run Simulation
-    if tab == "Simulation":
         c1, c2, c3 = st.columns(3)
         msg = st.empty()
         CONFIG_FILE = str(
@@ -206,60 +281,6 @@ if __name__ == "__main__":
                     agent_ids=range(number_agents),
                     evc=False,
                 )
-
-            with st.expander("(click) to enlarge documentation"):
-                st.markdown("""### Default Strategy""")
-                st.markdown(r"""
-                $
-                \textbf{motivation}(distance) = 
-                \begin{cases}
-                0 & \text{if\;} distance  \geq \text{width}, \\
-                e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
-                \end{cases}
-                $
-                
-                ---
-                ---
-                """)
-                st.markdown(r"""
-                ### EVC
-                $\textbf{motivation} = E\cdot V\cdot C,$ where
-                - $E$: expectancy
-                - $V$: value
-                - $C$: competition
-
-                ---
-                """)
-
-                st.markdown(r"""
-                $
-                \textbf{expectancy}(distance) = 
-                \begin{cases}
-                0 & \text{if\;} distance  \geq \text{width}, \\
-                e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
-                \end{cases}\\
-                $
-
-                **Note:** this is the same function like default strategy
-
-                ---
-                
-                $
-                \textbf{competition} = 1 - \frac{N}{N_0},
-                 $
-                
-                $N$: Agents still in the simulation and $N_0$ initial number of agents.
-
-                ---
-                $\textbf{value} = random\_number \in [v_{\min}, v_{\max}].$
-
-                ### Update agents
-                For an agent $i$ we calculate $m_i$ by one of the methods above and update its parameters as follows:
-
-                $\tilde v_i^0 =  v_i^0(1 + m_i)\cdot V_i$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
-
-           
-                """)
 
             figs = motivation_strategy.plot()
             with st.expander("Plot model", expanded=True):

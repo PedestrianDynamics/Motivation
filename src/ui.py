@@ -10,12 +10,11 @@ def init_sidebar() -> Any:
     """Init sidebar and 4 tabs."""
     return option_menu(
         "",
-        ["Simulation", "Analysis"],
+        ["Simulation", "Analysis", "Documentation"],
         icons=[
             "info-square",
-            "pin-map",
             "bar-chart-line",
-            "exclamation-triangle",
+            "book",
         ],
         menu_icon="cast",
         default_index=0,
