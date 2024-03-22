@@ -251,7 +251,6 @@ if __name__ == "__main__":
             ]
             percent = data["motivation_parameters"]["percent"]
             number_agents = int(parse_number_agents(data))
-            st.info(number_agents)
             motivation_strategy: mm.MotivationStrategy
             if strategy == "default":
                 motivation_strategy = mm.DefaultMotivationStrategy(
@@ -265,7 +264,7 @@ if __name__ == "__main__":
                     seed=seed,
                     max_value=max_value,
                     min_value=min_value,
-                    agent_ids=range(number_agents),
+                    agent_ids=list(range(number_agents)),
                     competition_decay_reward=competition_decay_reward,
                     competition_max=competition_max,
                     percent=percent,
@@ -282,7 +281,7 @@ if __name__ == "__main__":
                     competition_decay_reward=competition_decay_reward,
                     competition_max=competition_max,
                     percent=percent,
-                    agent_ids=range(number_agents),
+                    agent_ids=list(range(number_agents)),
                     evc=False,
                 )
 

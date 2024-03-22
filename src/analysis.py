@@ -11,6 +11,7 @@ import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import read_sqlite_file
 from matplotlib.collections import LineCollection
+from matplotlib.colors import Normalize
 from pedpy.column_identifier import FRAME_COL, ID_COL
 
 from .inifile_parser import parse_fps
@@ -207,13 +208,15 @@ def run() -> None:
                     speed_calculation=pedpy.SpeedCalculation.BORDER_SINGLE_SIDED,
                 )
                 data = speed.merge(traj.data, on=[ID_COL, FRAME_COL])
+                df_time_distance["time_seconds"] = (
+                    df_time_distance["time"] / traj.frame_rate
+                )
                 speed = speed.merge(df_time_distance, on=[ID_COL, FRAME_COL])
-                st.dataframe(speed)
                 first_frame_speed = speed.loc[
                     speed[FRAME_COL] == speed[FRAME_COL].min(),
-                    ["speed", "time", "distance"],
+                    ["speed", "time_seconds", "distance"],
                 ]
-                norm = plt.Normalize(speed.min().speed, speed.max().speed)
+                norm = Normalize(speed.min().speed, speed.max().speed)
                 cmap = cm.jet
                 # ---------------
                 trajectory_ids = df_time_distance["id"].unique()
@@ -222,8 +225,7 @@ def run() -> None:
                     traj_data = df_time_distance[df_time_distance[ID_COL] == traj_id]
                     speed_id = speed[speed[ID_COL] == traj_id].speed.to_numpy()
                     # Extract points and speeds for the current trajectory
-                    traj_data["time"] /= traj.frame_rate
-                    points = traj_data[["distance", "time"]].to_numpy()
+                    points = traj_data[["distance", "time_seconds"]].to_numpy()
                     # st.dataframe(points)
                     # st.dataframe(points)
                     # Prepare segments for the current trajectory
@@ -241,7 +243,7 @@ def run() -> None:
 
                 ax.scatter(
                     first_frame_speed["distance"],
-                    first_frame_speed["time"] / traj.frame_rate,
+                    first_frame_speed["time_seconds"] / traj.frame_rate,
                     c=first_frame_speed["speed"],
                     cmap=cmap,
                     norm=norm,
