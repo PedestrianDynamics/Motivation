@@ -194,6 +194,7 @@ class EVCStrategy(MotivationStrategy):
         fig1, ax1 = plt.subplots(ncols=1, nrows=1)
         fig2, ax2 = plt.subplots(ncols=1, nrows=1)
         fig3, ax3 = plt.subplots(ncols=1, nrows=1)
+        fig4, ax4 = plt.subplots(ncols=1, nrows=1)
         distances = np.linspace(0, 10, 100)
         # E
         E = []
@@ -267,30 +268,33 @@ class EVCStrategy(MotivationStrategy):
         logging.info(
             f"id min value {min_value_id}: {self.pedestrian_value[min_value_id]}"
         )
-        N = np.linspace(10, self.max_reward * self.percent, 3)
-        symbols = ["-", "--", "-."]
-        for i, n in enumerate(N):
+        N_three = np.linspace(10, self.max_reward * self.percent, 3)
+        symbols = ["--", "-", "-."]
+        for i, n in enumerate(N_three):
             n = int(n)
-            m_max = []
-            for dist in distances:
-                params = {
-                    "distance": dist,
-                    "number_agents_in_simulation": n,
-                    "seed": self.seed,
-                    "agent_id": max_value_id,
-                }
-                m_max.append(self.motivation(params))
-            ax3.plot(
-                distances,
-                m_max,
-                linestyle=symbols[i % len(symbols)],
-                color="blue",
-                label=f"max value, Nmax={n}",
-            )
-        for i, n in enumerate(N):
+            for id_ in self.agent_ids:
+                m_max = []
+                for dist in distances:
+                    params = {
+                        "distance": dist,
+                        "number_agents_in_simulation": n,
+                        "seed": self.seed,
+                        "agent_id": id_,
+                    }
+                    m_max.append(self.motivation(params))
+                if id_ == max_value_id:
+                    ax3.plot(
+                        distances,
+                        m_max,
+                        linestyle=symbols[i % len(symbols)],
+                        color="blue",
+                        label=f"max value, Nmax={n}",
+                    )
+                else:
+                    ax3.plot(distances, m_max, linestyle="-", color="gray", lw=0.08)
+        for i, n in enumerate(N_three):
             n = int(n)
             m_min = []
-            print(int(N[-1]))
             for dist in distances:
                 params = {
                     "distance": dist,
@@ -299,7 +303,6 @@ class EVCStrategy(MotivationStrategy):
                     "agent_id": min_value_id,
                 }
                 m_min.append(self.motivation(params))
-
             ax3.plot(
                 distances,
                 m_min,
@@ -321,8 +324,29 @@ class EVCStrategy(MotivationStrategy):
         ax3.set_title(title)
         ax3.set_xlabel("Distance / m")
         ax3.set_ylabel("Motivation")
+        #
+        M = []
+        distance = self.width / 2
+        for agent_id, distance in zip(self.agent_ids, distances):
+            params = {
+                "distance": distance,
+                "number_agents_in_simulation": self.max_reward,
+                "seed": self.seed,
+                "agent_id": agent_id,
+            }
+            M.append(self.motivation(params))
 
-        return [fig0, fig1, fig2, fig3]
+        ax4.plot(self.agent_ids, M, ".-")
+        ax4.grid(alpha=0.3)
+        # ax3.set_ylim([-0.1, 3])
+        # ax3.set_xlim([-0.1, 4])
+        ax4.set_title(
+            f"{self.name()} - E.V.C (N={self.max_reward:.0f}). Each id at different distance"
+        )
+        ax4.set_xlabel("Agent ids")
+        ax4.set_ylabel("Motivation")
+
+        return [fig0, fig1, fig2, fig3, fig4]
 
 
 @dataclass
@@ -349,13 +373,120 @@ class MotivationModel:
             self.normal_v_0 = 1.2  # Default value if parsing returns None
 
         if self.normal_time_gap is None:
-            self.normal_time_gap = 1  # Default value if parsing returns None
+            self.normal_time_gap = 1.0  # Default value if parsing returns None
 
-    def calculate_motivation_state(self, motivation_i: float) -> Tuple[float, float]:
+    def calculate_motivation_state(
+        self, motivation_i: float, agent_id: int
+    ) -> Tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
-        v_0 = self.normal_v_0
+        v_0 = self.normal_v_0 * self.motivation_strategy.get_value(agent_id=agent_id)
         time_gap = self.normal_time_gap
         v_0_new = (1 + motivation_i) * v_0
         time_gap_new = time_gap / (1 + motivation_i)
-
         return v_0_new, time_gap_new
+
+    def plot(self) -> Tuple[Figure, Figure]:
+        fig, ax = plt.subplots(ncols=1, nrows=1)
+        fig1, ax1 = plt.subplots(ncols=1, nrows=1)
+        N_three = np.linspace(
+            10,
+            self.motivation_strategy.max_reward * self.motivation_strategy.percent,
+            3,
+        )
+        min_value_id = min(
+            self.motivation_strategy.pedestrian_value,
+            key=lambda k: self.motivation_strategy.pedestrian_value[k],  # type: ignore
+        )
+        max_value_id = max(
+            self.motivation_strategy.pedestrian_value,
+            key=lambda k: self.motivation_strategy.pedestrian_value[k],  # type: ignore
+        )
+        distances = np.linspace(0, 10, 100)
+        symbols = ["-.", "-", "--"]
+        for i, n in enumerate(N_three):
+            n = int(n)
+            for id_ in self.motivation_strategy.agent_ids:
+                v0_list = []
+                T_list = []
+                for dist in distances:
+                    params = {
+                        "distance": dist,
+                        "number_agents_in_simulation": n,
+                        "seed": self.motivation_strategy.seed,
+                        "agent_id": id_,
+                    }
+                    motiv = self.motivation_strategy.motivation(params)
+                    v_0, time_gap = self.calculate_motivation_state(motiv, id_)
+                    # logging.info(f"{n = }, {dist = }")
+                    # logging.info(f"{id_ = }, {motiv = }, {v_0 = }, {time_gap = }")
+                    v0_list.append(v_0)
+                    T_list.append(time_gap)
+
+                if id_ == max_value_id:
+                    ax.plot(
+                        distances,
+                        v0_list,
+                        linestyle=symbols[i % len(symbols)],
+                        color="blue",
+                        label=f"max value, Nmax={n}",
+                    )
+                    ax1.plot(
+                        distances,
+                        T_list,
+                        linestyle=symbols[i % len(symbols)],
+                        color="blue",
+                        label=f"max value, Nmax={n}",
+                    )
+                else:
+                    ax.plot(distances, v0_list, linestyle="-", color="gray", lw=0.03)
+                    ax1.plot(distances, T_list, linestyle="-", color="gray", lw=0.03)
+
+        for i, n in enumerate(N_three):
+            n = int(n)
+            # v01 = v0 * self.motivation_strategy.get_value(agent_id=i)
+            v0_list = []
+            T_list = []
+            for dist in distances:
+                params = {
+                    "distance": dist,
+                    "number_agents_in_simulation": n,
+                    "seed": self.motivation_strategy.seed,
+                    "agent_id": min_value_id,
+                }
+                motiv = self.motivation_strategy.motivation(params)
+                v_0, time_gap = self.calculate_motivation_state(motiv, min_value_id)
+                v0_list.append(v_0)
+                T_list.append(time_gap)
+
+            ax.plot(
+                distances,
+                v0_list,
+                linestyle=symbols[i % len(symbols)],
+                color="red",
+                label=f"min value, Nmax={n}",
+            )
+            ax1.plot(
+                distances,
+                T_list,
+                linestyle=symbols[i % len(symbols)],
+                color="red",
+                label=f"min value, Nmax={n}",
+            )
+
+        ax.grid(alpha=0.3)
+        ax.set_title(
+            rf"{self.motivation_strategy.name()} - new $v_0$. id at different distance"
+        )
+        ax.set_xlabel("Distance / m")
+        ax.set_ylabel(r"$\tilde v_0$ / m/s")
+        ax.legend()
+        # ====
+        ax1.grid(alpha=0.3)
+        ax1.set_title(
+            rf"{self.motivation_strategy.name()} - new $T$. id at different distance"
+        )
+        ax1.set_xlabel("Distance / m")
+        ax1.set_ylabel(r"$\tilde T$ / s")
+        ax1.legend()
+
+        return fig, fig1

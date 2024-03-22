@@ -12,28 +12,23 @@ from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
 
 import _io
 import jupedsim as jps
+import streamlit as st
 from jupedsim.distributions import distribute_by_number
 
 from src import motivation_model as mm
-from src.inifile_parser import (
-    parse_accessible_areas,
-    parse_destinations,
-    parse_distribution_polygons,
-    parse_fps,
-    parse_motivation_doors,
-    parse_motivation_parameter,
-    parse_motivation_strategy,
-    parse_normal_time_gap,
-    parse_normal_v_0,
-    parse_number_agents,
-    parse_radius,
-    parse_simulation_time,
-    parse_time_step,
-    parse_velocity_init_parameters,
-    parse_way_points,
-)
+from src.inifile_parser import (parse_accessible_areas, parse_destinations,
+                                parse_distribution_polygons, parse_fps,
+                                parse_motivation_doors,
+                                parse_motivation_parameter,
+                                parse_motivation_strategy,
+                                parse_normal_time_gap, parse_normal_v_0,
+                                parse_number_agents, parse_radius,
+                                parse_simulation_time, parse_time_step,
+                                parse_velocity_init_parameters,
+                                parse_way_points)
 from src.logger_config import init_logger, log_debug, log_error
-from src.utilities import build_geometry, distribute_and_add_agents, init_journey
+from src.utilities import (build_geometry, distribute_and_add_agents,
+                           init_journey)
 
 # import cProfile
 # import pstats
@@ -120,7 +115,8 @@ def init_motivation_model(
         normal_time_gap=normal_time_gap,
         motivation_strategy=motivation_strategy,
     )
-
+    fig = motivation_model.plot()
+    st.pyplot(fig)
     motivation_model.print_details()
     return motivation_model
 
@@ -212,7 +208,8 @@ def run_simulation(
                         params
                     )
                     v_0, time_gap = motivation_model.calculate_motivation_state(
-                        motivation_i
+                        motivation_i,
+                        agent_id
                     )
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap

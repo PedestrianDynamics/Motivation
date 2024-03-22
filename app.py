@@ -16,20 +16,14 @@ from jupedsim.internal.notebook_utils import animate, read_sqlite_file
 from simulation import main
 from src import motivation_model as mm
 from src.analysis import run
-from src.inifile_parser import (
-    parse_fps,
-    parse_motivation_strategy,
-    parse_number_agents,
-    parse_simulation_time,
-    parse_time_step,
-)
+from src.inifile_parser import (parse_fps, parse_motivation_doors,
+                                parse_motivation_strategy,
+                                parse_normal_time_gap, parse_normal_v_0,
+                                parse_number_agents, parse_simulation_time,
+                                parse_time_step)
 from src.logger_config import init_logger
-from src.ui import (
-    init_sidebar,
-    ui_motivation_parameters,
-    ui_simulation_parameters,
-    ui_velocity_model_parameters,
-)
+from src.ui import (init_sidebar, ui_motivation_parameters,
+                    ui_simulation_parameters, ui_velocity_model_parameters)
 from src.utilities import delete_txt_files, load_json, save_json
 
 
@@ -106,27 +100,37 @@ if __name__ == "__main__":
         0 & \text{if } N \geq \text{percent} \cdot N_{\text{max}},
         \end{cases}
         $$
-        with:
+        with $N$  the number of agents still in the simulation. See also table.
 
-        | Parameter    | Meaning|
-        |--------------|:-----:|
-        |$N$ | Agents still in the simulation|
-        |$N_0$ | Number of agents at which the decay of the function starts.|
-        |$N_{\max}$ | The initial number of agents in the simulation|
-        |$c_0$ | Maximal competition|
-        |$p$ | is a percentage number $\in [0, 1]$.|
         
         ---
         $\textbf{value} = random\_number \in [v_{\min}, v_{\max}].$
-        
+
+        ---
+        ## Parameters
+
+        | Parameter    | Meaning| Function|
+        |--------------|:-----:|:-----:|
+        |$N_0$ | Number of agents at which the decay of the function starts.| Competition|
+        |$N_{\max}$ | Initial number of agents in the simulation|Competition|
+        |$c_0$ | Maximal competition|Competition|
+        |$p$ | Percentage number $\in [0, 1]$.|Competition|
+        |
+        |$v_{\min}$| Mimimum value | Value|
+        |$v_{\max}$| Maximum value | Value|    
+        |    
+        |width| Range of influence | Expectancy|
+        |height| Amplitude of influence | Expectancy|
+            
+            
         ## Update agents
         For an agent $i$ we calculate $m_i$ by one of the methods above and update its parameters as follows:
         
-        $\tilde v_i^0 =  v_i^0(1 + m_i)\cdot V_i$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
+        $\tilde v_i^0 =  (v_i^0\cdot V_i)(1 + m_i)$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
 
         The first part of the equation is equalivalent to
 
-        $\tilde v_i^0 =  v_i^0(1 + E_i\cdot V_i\cdot C_i)\cdot V_i$.
+        $\tilde v_i^0 =  v_i^0\cdot V_i(1 + E_i\cdot V_i\cdot C_i)$.
 
         Here we see that the influence of $V_i$ is squared.
         Therefore, the second variation of the model reads
@@ -251,6 +255,10 @@ if __name__ == "__main__":
             ]
             percent = data["motivation_parameters"]["percent"]
             number_agents = int(parse_number_agents(data))
+            normal_v_0 = parse_normal_v_0(data)
+            normal_time_gap = parse_normal_time_gap(data)
+            motivation_doors = parse_motivation_doors(data)
+
             motivation_strategy: mm.MotivationStrategy
             if strategy == "default":
                 motivation_strategy = mm.DefaultMotivationStrategy(
@@ -284,8 +292,18 @@ if __name__ == "__main__":
                     agent_ids=list(range(number_agents)),
                     evc=False,
                 )
-
-            figs = motivation_strategy.plot()
+            motivation_model = mm.MotivationModel(
+                door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
+                door_point2=(motivation_doors[0][1][0], motivation_doors[0][1][1]),
+                normal_v_0=normal_v_0,
+                normal_time_gap=normal_time_gap,
+                motivation_strategy=motivation_strategy,
+            )
+            figs = motivation_model.motivation_strategy.plot()
+            if strategy != "default":
+                fig1, fig2 = motivation_model.plot()
+                figs.append(fig1)
+                figs.append(fig2)
             with st.expander("Plot model", expanded=True):
                 for fig in figs:
                     st.pyplot(fig)
