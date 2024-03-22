@@ -12,7 +12,6 @@ from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
 
 import _io
 import jupedsim as jps
-import streamlit as st
 from jupedsim.distributions import distribute_by_number
 
 from src import motivation_model as mm
@@ -115,8 +114,6 @@ def init_motivation_model(
         normal_time_gap=normal_time_gap,
         motivation_strategy=motivation_strategy,
     )
-    fig = motivation_model.plot()
-    st.pyplot(fig)
     motivation_model.print_details()
     return motivation_model
 
