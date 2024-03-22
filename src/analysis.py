@@ -3,15 +3,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from matplotlib.collections import LineCollection
-
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import read_sqlite_file
+from matplotlib.collections import LineCollection
 from pedpy.column_identifier import FRAME_COL, ID_COL
 
 from .inifile_parser import parse_fps

@@ -1,16 +1,16 @@
 """Module for motivational model."""
 
+import logging
 import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple, TypeAlias, Dict
+from typing import Any, Dict, List, Optional, Tuple, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
 from .logger_config import log_debug
-import logging
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -25,11 +25,11 @@ class MotivationStrategy(ABC):
         pass
 
     @abstractmethod
-    def name() -> str:
+    def name(self) -> str:
         pass
 
     @abstractmethod
-    def get_value(self, **kwargs) -> float:
+    def get_value(self, **kwargs: Any) -> float:
         pass
 
 
@@ -45,7 +45,7 @@ class DefaultMotivationStrategy(MotivationStrategy):
         """Give back name of strategy."""
         return "DefaultStrategy"
 
-    def get_value(self, **kwargs) -> float:
+    def get_value(self, **kwargs: Any) -> float:
         """Random value in interval."""
         return 1.0
 
@@ -82,7 +82,7 @@ class DefaultMotivationStrategy(MotivationStrategy):
 class EVCStrategy(MotivationStrategy):
     """Motivation theory based on E.V.C (model4)."""
 
-    agent_ids: List[str] = field(default_factory=list)
+    agent_ids: List[int] = field(default_factory=list)
     pedestrian_value: Dict[int, float] = field(default_factory=dict)
     width: float = 1.0
     height: float = 1.0
@@ -144,10 +144,15 @@ class EVCStrategy(MotivationStrategy):
         else:
             return 0
 
-    def get_value(self, **kwargs) -> float:
+    def get_value(self, **kwargs: Any) -> float:
         """Random value in interval."""
         ped_id = kwargs.get("agent_id")
-        return self.pedestrian_value[ped_id]
+
+        if isinstance(ped_id, int):
+            return self.pedestrian_value[ped_id]
+        else:
+            logging.error("Something went south in get_value returning 0.0!")
+            return 0.0
 
     @staticmethod
     def value(min_v: float, max_v: float, seed: Optional[float] = None) -> float:
@@ -216,9 +221,9 @@ class EVCStrategy(MotivationStrategy):
         ax1.set_ylabel("Value")
         # C
         C = []
-        N = np.arange(0, self.max_reward + 1)
+        Nrange = np.arange(0, self.max_reward + 1)
 
-        for n in N:
+        for n in Nrange:
             C.append(
                 self.competition(
                     N=n,
@@ -229,7 +234,7 @@ class EVCStrategy(MotivationStrategy):
                 )
             )
 
-        ax2.plot(N, C, ".-")
+        ax2.plot(Nrange, C, ".-")
         ax2.grid(alpha=0.3)
         ax2.set_xlim([0, self.max_reward + 1])
         ax2.set_ylim([-0.1, self.competition_max + 1])
@@ -250,8 +255,12 @@ class EVCStrategy(MotivationStrategy):
             f"{self.name()} - C ({self.percent*100:.0f}% of max reward {self.max_reward:.0f})"
         )
         # M
-        max_value_id = max(self.pedestrian_value, key=self.pedestrian_value.get)
-        min_value_id = min(self.pedestrian_value, key=self.pedestrian_value.get)
+        max_value_id = max(
+            self.pedestrian_value, key=lambda k: self.pedestrian_value[k]
+        )
+        min_value_id = min(
+            self.pedestrian_value, key=lambda k: self.pedestrian_value[k]
+        )
         logging.info(
             f"id max value {max_value_id}: {self.pedestrian_value[max_value_id]}"
         )
@@ -263,7 +272,6 @@ class EVCStrategy(MotivationStrategy):
         for i, n in enumerate(N):
             n = int(n)
             m_max = []
-            print(int(N[-1]))
             for dist in distances:
                 params = {
                     "distance": dist,
