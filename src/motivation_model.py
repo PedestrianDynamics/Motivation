@@ -16,20 +16,26 @@ Point: TypeAlias = Tuple[float, float]
 
 
 class MotivationStrategy(ABC):
+    """Abstract class for strategy model."""
+
     @abstractmethod
     def motivation(self, params: dict[str, Any]) -> float:
+        """Return the motivation value."""
         pass
 
     @abstractmethod
     def plot(self) -> List[Figure]:
+        """Plot internal functions for debugging purpose."""
         pass
 
     @abstractmethod
     def name(self) -> str:
+        """Return name of the model."""
         pass
 
     @abstractmethod
     def get_value(self, **kwargs: Any) -> float:
+        """Get value of agents."""
         pass
 
 
@@ -62,6 +68,7 @@ class DefaultMotivationStrategy(MotivationStrategy):
         return float(np.exp(expr) * np.e * self.height)
 
     def plot(self) -> List[Figure]:
+        """Plot functions of the strategy model."""
         fig = plt.figure()
         distances = np.linspace(0, 10, 100)
         m = []
@@ -97,6 +104,7 @@ class EVCStrategy(MotivationStrategy):
     evc: bool = True
 
     def __post_init__(self) -> None:
+        """Intialise array pedestrian_value with random values in min max interval."""
         if self.seed is not None:
             random.seed(self.seed)
 
@@ -123,8 +131,9 @@ class EVCStrategy(MotivationStrategy):
     @staticmethod
     def competition(N: int, c0: float, N0: float, percent: float, Nmax: float) -> float:
         """
-        Computes the value of a function that starts with a constant value c0,
-        then linearly decays to zero starting from N0 and reaching zero at Nmax.
+        Compute the value of a function that starts with a constant value c0.
+
+        Then linearly decays to zero starting from N0 and reaching zero at Nmax.
 
         Parameters:
         - N (int): input value for which the function is evaluated.
@@ -262,12 +271,12 @@ class EVCStrategy(MotivationStrategy):
         min_value_id = min(
             self.pedestrian_value, key=lambda k: self.pedestrian_value[k]
         )
-        logging.info(
-            f"id max value {max_value_id}: {self.pedestrian_value[max_value_id]}"
-        )
-        logging.info(
-            f"id min value {min_value_id}: {self.pedestrian_value[min_value_id]}"
-        )
+        # logging.info(
+        #     f"id max value {max_value_id}: {self.pedestrian_value[max_value_id]}"
+        # )
+        # logging.info(
+        #     f"id min value {min_value_id}: {self.pedestrian_value[min_value_id]}"
+        # )
         N_three = np.linspace(10, self.max_reward * self.percent, 3)
         symbols = ["--", "-", "-."]
         for i, n in enumerate(N_three):
@@ -386,6 +395,7 @@ class MotivationModel:
         return v_0_new, time_gap_new
 
     def plot(self) -> Tuple[Figure, Figure]:
+        """Plot model."""
         fig, ax = plt.subplots(ncols=1, nrows=1)
         fig1, ax1 = plt.subplots(ncols=1, nrows=1)
         N_three = np.linspace(
@@ -395,13 +405,13 @@ class MotivationModel:
         )
         min_value_id = min(
             self.motivation_strategy.pedestrian_value,
-            key=lambda k: self.motivation_strategy.pedestrian_value[k],  # type: ignore
+            key=lambda k: self.motivation_strategy.pedestrian_value[k],
         )
         max_value_id = max(
             self.motivation_strategy.pedestrian_value,
-            key=lambda k: self.motivation_strategy.pedestrian_value[k],  # type: ignore
+            key=lambda k: self.motivation_strategy.pedestrian_value[k],
         )
-        distances = np.linspace(0, 10, 100)
+        distances = np.linspace(0, 10, 4)
         symbols = ["-.", "-", "--"]
         for i, n in enumerate(N_three):
             n = int(n)

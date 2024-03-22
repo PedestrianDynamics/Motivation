@@ -16,14 +16,23 @@ from jupedsim.internal.notebook_utils import animate, read_sqlite_file
 from simulation import main
 from src import motivation_model as mm
 from src.analysis import run
-from src.inifile_parser import (parse_fps, parse_motivation_doors,
-                                parse_motivation_strategy,
-                                parse_normal_time_gap, parse_normal_v_0,
-                                parse_number_agents, parse_simulation_time,
-                                parse_time_step)
+from src.inifile_parser import (
+    parse_fps,
+    parse_motivation_doors,
+    parse_motivation_strategy,
+    parse_normal_time_gap,
+    parse_normal_v_0,
+    parse_number_agents,
+    parse_simulation_time,
+    parse_time_step,
+)
 from src.logger_config import init_logger
-from src.ui import (init_sidebar, ui_motivation_parameters,
-                    ui_simulation_parameters, ui_velocity_model_parameters)
+from src.ui import (
+    init_sidebar,
+    ui_motivation_parameters,
+    ui_simulation_parameters,
+    ui_velocity_model_parameters,
+)
 from src.utilities import delete_txt_files, load_json, save_json
 
 
@@ -59,7 +68,7 @@ if __name__ == "__main__":
         st.markdown("""## Default Strategy""")
         st.markdown(r"""
         $
-        \textbf{motivation}(distance) = 
+        \textbf{motivation}(distance) =
         \begin{cases}
         0 & \text{if\;} distance  \geq \text{width}, \\
         e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
@@ -156,10 +165,6 @@ if __name__ == "__main__":
                 sorted(list(set(st.session_state.all_files)), reverse=True),
             )
         )
-
-        # file_name = column_1.text_input(
-        #     "Load", value="files/bottleneck.json", help="Load config file"
-        # )
         json_file = Path(file_name)
         data = {}
         if not json_file.exists():

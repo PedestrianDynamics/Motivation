@@ -15,12 +15,21 @@ from matplotlib.colors import Normalize
 from pedpy.column_identifier import FRAME_COL, ID_COL
 
 from .inifile_parser import parse_fps
-from .plotting import (plot_density_time_series, plot_flow_time_series,
-                       plot_speed_time_series, plotly_nt_series)
+from .plotting import (
+    plot_density_time_series,
+    plot_flow_time_series,
+    plot_speed_time_series,
+    plotly_nt_series,
+)
 from .ui import ui_measurement_parameters
-from .utilities import (add_heatmap_trace, add_polygon_traces,
-                        calculate_heatmap_values, create_empty_figure,
-                        customize_fig_layout, update_figure_layout)
+from .utilities import (
+    add_heatmap_trace,
+    add_polygon_traces,
+    calculate_heatmap_values,
+    create_empty_figure,
+    customize_fig_layout,
+    update_figure_layout,
+)
 
 # from shapely import Polygon
 # from shapely.ops import unary_union
@@ -208,7 +217,7 @@ def run() -> None:
                     ["speed", "time_seconds", "distance"],
                 ]
                 norm = Normalize(speed.min().speed, speed.max().speed)
-                cmap = cm.jet
+                cmap = cm.jet  # type: ignore
                 # ---------------
                 trajectory_ids = df_time_distance["id"].unique()
                 fig, ax = plt.subplots()
