@@ -1,7 +1,7 @@
 """Init ui."""
 
 from typing import Any, Dict
-
+import numpy as np
 import streamlit as st
 from streamlit_option_menu import option_menu
 
@@ -118,6 +118,90 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
         )
 
 
+def ui_value_parameters(data: Dict[str, Any]) -> None:
+    """Set Value function."""
+    with st.sidebar.expander("Value Parameters", expanded=True):
+        c1, c2 = st.columns(2)
+        min_value_high, max_value_high = st.select_slider(
+            "**Value high**",
+            key="value_high",
+            options=np.arange(
+                1.0,  # float(data["motivation_parameters"]["min_value_high"]),
+                5.0,  # float(data["motivation_parameters"]["max_value_high"]),
+                0.1,
+            ),
+            value=[
+                2.0,  # float(data["motivation_parameters"]["min_value_high"] + 0.2),
+                4.0,  # float(data["motivation_parameters"]["max_value_high"] - 0.2),
+            ],
+            format_func=lambda x: f"{x:.2f}",
+            help="Upper/Lower limit of high Value people.",
+        )
+        data["motivation_parameters"]["min_value_high"] = min_value_high
+        data["motivation_parameters"]["max_value_high"] = max_value_high
+        min_value_low, max_value_low = st.select_slider(
+            "**Value low**",
+            key="value_low",
+            options=np.arange(
+                0.1,  # float(data["motivation_parameters"]["min_value_low"]),
+                1.0,  # float(data["motivation_parameters"]["max_value_low"]),
+                0.1,
+            ),
+            value=[
+                0.2,  # float(data["motivation_parameters"]["min_value_low"] + 0.2),
+                0.8,  # float(data["motivation_parameters"]["max_value_low"] - 0.2),
+            ],
+            help="Upper/Lower limit of low Value people.",
+            format_func=lambda x: f"{x:.2f}",
+        )
+        # st.info((min_value_low, max_value_low))
+        data["motivation_parameters"]["min_value_low"] = min_value_low
+        data["motivation_parameters"]["max_value_low"] = max_value_low
+
+        data["motivation_parameters"]["number_high_value"] = st.slider(
+            "Number of high **Value** people",
+            key="num_high_value",
+            step=10,
+            min_value=0,
+            max_value=int(data["simulation_parameters"]["number_agents"]),
+            value=int(data["motivation_parameters"]["number_high_value"]),
+            help="Number of high Value people.",
+        )
+
+
+def ui_competition_parameters(data: Dict[str, Any]) -> None:
+    """Set competition function"""
+    with st.sidebar.expander("Competition Parameters", expanded=True):
+        c1, c2 = st.columns(2)
+        data["motivation_parameters"]["competition_max"] = c1.number_input(
+            "Competition max",
+            key="comp_max",
+            step=1.0,
+            min_value=0.5,
+            max_value=5.0,
+            value=float(data["motivation_parameters"]["competition_max"]),
+            help="Maximum of competition",
+        )
+
+        data["motivation_parameters"]["competition_decay_reward"] = c2.number_input(
+            "Competition decay",
+            key="comp_dec",
+            step=10,
+            min_value=1,
+            value=int(data["motivation_parameters"]["competition_decay_reward"]),
+            help="Start of decay of competition",
+        )
+        data["motivation_parameters"]["percent"] = c1.number_input(
+            "Competition percent",
+            key="comp_perc",
+            step=0.1,
+            min_value=0.1,
+            max_value=1.0,
+            value=float(data["motivation_parameters"]["percent"]),
+            help="Percent of competition max",
+        )
+
+
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section."""
     c1, c2 = st.sidebar.columns(2)
@@ -169,54 +253,8 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             help="Height of function defining distance dependency",
         )
     if motivation_strategy != "default":
-        with st.sidebar.expander("Value Parameters", expanded=True):
-            c1, c2 = st.columns(2)
-            data["motivation_parameters"]["max_value"] = c1.number_input(
-                "Max_value",
-                key="max_value",
-                step=0.5,
-                value=float(data["motivation_parameters"]["max_value"]),
-                help="Max Value",
-            )
-
-            data["motivation_parameters"]["min_value"] = c2.number_input(
-                "Min_value",
-                key="min_value",
-                step=0.5,
-                min_value=0.1,
-                value=float(data["motivation_parameters"]["min_value"]),
-                help="Min Value",
-            )
-
-        with st.sidebar.expander("Competition Parameters", expanded=True):
-            c1, c2 = st.columns(2)
-            data["motivation_parameters"]["competition_max"] = c1.number_input(
-                "Competition max",
-                key="comp_max",
-                step=1.0,
-                min_value=0.5,
-                max_value=5.0,
-                value=float(data["motivation_parameters"]["competition_max"]),
-                help="Maximum of competition",
-            )
-
-            data["motivation_parameters"]["competition_decay_reward"] = c2.number_input(
-                "Competition decay",
-                key="comp_dec",
-                step=10,
-                min_value=1,
-                value=int(data["motivation_parameters"]["competition_decay_reward"]),
-                help="Start of decay of competition",
-            )
-            data["motivation_parameters"]["percent"] = c1.number_input(
-                "Competition percent",
-                key="comp_perc",
-                step=0.1,
-                min_value=0.1,
-                max_value=1.0,
-                value=float(data["motivation_parameters"]["percent"]),
-                help="Percent of competition max",
-            )
+        ui_value_parameters(data)
+        ui_competition_parameters(data)
 
     st.sidebar.write("**At this line the motivation is maximal**")
     with st.sidebar.expander(label="Motivation line"):

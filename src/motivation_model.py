@@ -98,8 +98,11 @@ class EVCStrategy(MotivationStrategy):
     competition_max: float = 1
     competition_decay_reward: float = 5
     seed: int = 0
-    min_value: float = 0
-    max_value: float = 1
+    min_value_high: float = 0.5
+    max_value_high: float = 1
+    min_value_low: float = 0
+    max_value_low: float = 0.5
+    number_high_value: int = 10
     nagents: int = 10
     evc: bool = True
 
@@ -108,8 +111,18 @@ class EVCStrategy(MotivationStrategy):
         if self.seed is not None:
             random.seed(self.seed)
 
+        high_value_agents = set(random.sample(self.agent_ids, self.number_high_value))
         for n in self.agent_ids:
-            self.pedestrian_value[n] = self.value(self.min_value, self.max_value)
+            if n in high_value_agents:
+                # This agent gets a high value
+                self.pedestrian_value[n] = self.value(
+                    self.min_value_high, self.max_value_high
+                )
+            else:
+                # This agent gets a low value
+                self.pedestrian_value[n] = self.value(
+                    self.min_value_low, self.max_value_low
+                )
 
     @staticmethod
     def name() -> str:
