@@ -6,17 +6,23 @@ import numpy as np
 import streamlit as st
 from streamlit_option_menu import option_menu
 
+# Define tab names and icons in a centralized list or dictionary
+TAB_INFO = [
+    {"name": "Simulation", "icon": "info-square"},
+    {"name": "Analysis", "icon": "bar-chart-line"},
+    {"name": "Documentation", "icon": "book"},
+]
+
 
 def init_sidebar() -> Any:
-    """Init sidebar and 4 tabs."""
+    """Init sidebar and tabs using centralized tab info."""
+    tab_names = [tab["name"] for tab in TAB_INFO]
+    tab_icons = [tab["icon"] for tab in TAB_INFO]
+
     return option_menu(
         "",
-        ["Simulation", "Analysis", "Documentation"],
-        icons=[
-            "info-square",
-            "bar-chart-line",
-            "book",
-        ],
+        tab_names,
+        icons=tab_icons,
         menu_icon="cast",
         default_index=0,
         orientation="horizontal",
