@@ -182,13 +182,16 @@ def ui_competition_parameters(data: Dict[str, Any]) -> None:
             value=float(data["motivation_parameters"]["competition_max"]),
             help="Maximum of competition",
         )
-
+        decay = int(data["motivation_parameters"]["competition_decay_reward"])
+        if decay >= data["simulation_parameters"]["number_agents"]:
+            decay = data["simulation_parameters"]["number_agents"] - 1
         data["motivation_parameters"]["competition_decay_reward"] = c2.number_input(
             "Competition decay",
             key="comp_dec",
             step=10,
             min_value=1,
-            value=int(data["motivation_parameters"]["competition_decay_reward"]),
+            max_value=data["simulation_parameters"]["number_agents"],
+            value=decay,
             help="Start of decay of competition",
         )
         data["motivation_parameters"]["percent"] = c1.number_input(
@@ -207,7 +210,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     c1, c2 = st.sidebar.columns(2)
     motivation_strategy = st.sidebar.selectbox(
         "Select model",
-        ["default", "EVC", "EC-V"],
+        ["EVC", "default", "EC-V"],
         help="Default: M = M(dist). EVC: M = EVC, EC-V: M=(E.C).V",
     )
     data["motivation_parameters"]["normal_v_0"] = c1.number_input(

@@ -92,7 +92,7 @@ def init_motivation_model(
             min_value_high=float(_data["motivation_parameters"]["min_value_high"]),
             max_value_low=float(_data["motivation_parameters"]["max_value_low"]),
             min_value_low=float(_data["motivation_parameters"]["min_value_low"]),
-            number_high_value=int(_Data["motivation_parameters"]["number_high_value"]),
+            number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
             nagents=number_agents,
             agent_ids=ped_ids,
             competition_decay_reward=competition_decay_reward,
