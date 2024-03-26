@@ -120,15 +120,40 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
 
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section."""
-    with st.sidebar.expander("Motivation Parameters", expanded=True):
-        model = st.empty()
-        c1, c2 = st.columns(2)
-        motivation_strategy = model.selectbox(
-            "Select model",
-            ["default", "EVC", "EC-V"],
-            help="Default: M = M(dist). EVC: M = EVC, EC-V: M=(E.C).V",
-        )
+    c1, c2 = st.sidebar.columns(2)
+    motivation_strategy = st.sidebar.selectbox(
+        "Select model",
+        ["default", "EVC", "EC-V"],
+        help="Default: M = M(dist). EVC: M = EVC, EC-V: M=(E.C).V",
+    )
+    data["motivation_parameters"]["normal_v_0"] = c1.number_input(
+        "Normal V0:",
+        min_value=0.1,
+        max_value=2.5,
+        value=float(data["motivation_parameters"]["normal_v_0"]),
+    )
+    data["motivation_parameters"]["normal_time_gap"] = c2.number_input(
+        "Normal Time Gap:",
+        min_value=0.1,
+        max_value=3.0,
+        step=0.1,
+        value=float(data["motivation_parameters"]["normal_time_gap"]),
+    )
+    data["motivation_parameters"]["seed"] = c1.number_input(
+        "Seed",
+        key="seed",
+        step=1.0,
+        value=float(data["motivation_parameters"]["seed"]),
+        help="Seed for random generator for value",
+    )
 
+    data["motivation_parameters"]["motivation_strategy"] = motivation_strategy
+    if motivation_strategy == "default":
+        title = "Motivation Parameters"
+    else:
+        title = "Expectancy Parameters"
+    with st.sidebar.expander(title, expanded=True):
+        c1, c2 = st.columns(2)
         data["motivation_parameters"]["width"] = c1.number_input(
             "Width",
             key="width",
@@ -143,73 +168,55 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             value=float(data["motivation_parameters"]["height"]),
             help="Height of function defining distance dependency",
         )
+    if motivation_strategy != "default":
+        with st.sidebar.expander("Value Parameters", expanded=True):
+            c1, c2 = st.columns(2)
+            data["motivation_parameters"]["max_value"] = c1.number_input(
+                "Max_value",
+                key="max_value",
+                step=0.5,
+                value=float(data["motivation_parameters"]["max_value"]),
+                help="Max Value",
+            )
 
-        data["motivation_parameters"]["max_value"] = c1.number_input(
-            "Max_value",
-            key="max_value",
-            step=0.5,
-            value=float(data["motivation_parameters"]["max_value"]),
-            help="Max Value",
-        )
+            data["motivation_parameters"]["min_value"] = c2.number_input(
+                "Min_value",
+                key="min_value",
+                step=0.5,
+                min_value=0.1,
+                value=float(data["motivation_parameters"]["min_value"]),
+                help="Min Value",
+            )
 
-        data["motivation_parameters"]["min_value"] = c2.number_input(
-            "Min_value",
-            key="min_value",
-            step=0.5,
-            min_value=0.1,
-            value=float(data["motivation_parameters"]["min_value"]),
-            help="Min Value",
-        )
+        with st.sidebar.expander("Competition Parameters", expanded=True):
+            c1, c2 = st.columns(2)
+            data["motivation_parameters"]["competition_max"] = c1.number_input(
+                "Competition max",
+                key="comp_max",
+                step=1.0,
+                min_value=0.5,
+                max_value=5.0,
+                value=float(data["motivation_parameters"]["competition_max"]),
+                help="Maximum of competition",
+            )
 
-        data["motivation_parameters"]["competition_max"] = c1.number_input(
-            "Competition max",
-            key="comp_max",
-            step=1.0,
-            min_value=0.5,
-            max_value=5.0,
-            value=float(data["motivation_parameters"]["competition_max"]),
-            help="Maximum of competition",
-        )
-
-        data["motivation_parameters"]["competition_decay_reward"] = c2.number_input(
-            "Competition decay",
-            key="comp_dec",
-            step=10,
-            min_value=1,
-            value=int(data["motivation_parameters"]["competition_decay_reward"]),
-            help="Start of decay of competition",
-        )
-        data["motivation_parameters"]["percent"] = c1.number_input(
-            "Competition percent",
-            key="comp_perc",
-            step=0.1,
-            min_value=0.1,
-            max_value=1.0,
-            value=float(data["motivation_parameters"]["percent"]),
-            help="Percent of competition max",
-        )
-
-        data["motivation_parameters"]["motivation_strategy"] = motivation_strategy
-        data["motivation_parameters"]["normal_v_0"] = c1.number_input(
-            "Normal V0:",
-            min_value=0.1,
-            max_value=2.5,
-            value=float(data["motivation_parameters"]["normal_v_0"]),
-        )
-        data["motivation_parameters"]["normal_time_gap"] = c2.number_input(
-            "Normal Time Gap:",
-            min_value=0.1,
-            max_value=3.0,
-            step=0.1,
-            value=float(data["motivation_parameters"]["normal_time_gap"]),
-        )
-        data["motivation_parameters"]["seed"] = st.number_input(
-            "Seed",
-            key="seed",
-            step=1.0,
-            value=float(data["motivation_parameters"]["seed"]),
-            help="Seed for random generator for value",
-        )
+            data["motivation_parameters"]["competition_decay_reward"] = c2.number_input(
+                "Competition decay",
+                key="comp_dec",
+                step=10,
+                min_value=1,
+                value=int(data["motivation_parameters"]["competition_decay_reward"]),
+                help="Start of decay of competition",
+            )
+            data["motivation_parameters"]["percent"] = c1.number_input(
+                "Competition percent",
+                key="comp_perc",
+                step=0.1,
+                min_value=0.1,
+                max_value=1.0,
+                value=float(data["motivation_parameters"]["percent"]),
+                help="Percent of competition max",
+            )
 
     st.sidebar.write("**At this line the motivation is maximal**")
     with st.sidebar.expander(label="Motivation line"):
