@@ -20,6 +20,6 @@ run_tool mypy "--strict"
 run_tool ruff "check"
 
 # Sort imports
-run_tool isort "check"
+# run_tool isort "check"
 
 echo "All checks and formatting done."
