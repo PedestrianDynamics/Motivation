@@ -188,6 +188,11 @@ def run_simulation(
     y_door = 0.5 * (motivation_model.door_point1[1] + motivation_model.door_point2[1])
     door = [x_door, y_door]
     logging.info("init initial speed")
+    # to generate some initial frames with speed = 0, since pedpy can not calculate 0 speeds.
+    for agent_id in ped_ids:
+        simulation.agent(agent_id).model.v0 = 0
+    simulation.iterate(1000)
+
     for agent_id in ped_ids:
         value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
         simulation.agent(agent_id).model.v0 *= value_agent
@@ -201,15 +206,14 @@ def run_simulation(
 
             msg.code(f"Agents in the simulation: {simulation.agent_count()}")
             if simulation.iteration_count() % 100 == 0:
-                agents = simulation.agents()
                 number_agents_in_simulation = simulation.agent_count()
-                for agent_id, agent in zip(ped_ids, agents):
+                for agent in simulation.agents():
                     position = agent.position
                     distance = (
                         (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
                     ) ** 0.5
                     params = {
-                        "agent_id": agent_id,
+                        "agent_id": agent.id,
                         "distance": distance,
                         "number_agents_in_simulation": number_agents_in_simulation,
                     }
@@ -217,14 +221,15 @@ def run_simulation(
                         params
                     )
                     v_0, time_gap = motivation_model.calculate_motivation_state(
-                        motivation_i, agent_id
+                        motivation_i, agent.id
                     )
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap
                     # if agent.id == 1:
-                    # logging.info(
-                    #     f"Agents: {agent.id},{v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
-                    # )
+                    logging.info(
+                        f"{simulation.iteration_count()}, Agent={agent.id}, {v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
+                    )
+                    print(motivation_model.motivation_strategy.pedestrian_value)
                     write_value_to_file(
                         file_handle,
                         f"{position[0]} {position[1]} {motivation_i} {v_0} {time_gap} {distance}",

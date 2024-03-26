@@ -106,7 +106,7 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
             "Number of Agents:",
             value=data["simulation_parameters"]["number_agents"],
             step=10,
-            min_value=10,
+            min_value=2,
             max_value=150,
         )
         data["simulation_parameters"]["simulation_time"] = st.number_input(
@@ -161,7 +161,7 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         data["motivation_parameters"]["number_high_value"] = st.slider(
             "Number of high **Value** people",
             key="num_high_value",
-            step=10,
+            step=1,
             min_value=0,
             max_value=int(data["simulation_parameters"]["number_agents"]),
             value=int(data["motivation_parameters"]["number_high_value"]),
