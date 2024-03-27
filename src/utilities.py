@@ -16,7 +16,6 @@ from plotly.graph_objs import Figure
 from scipy import stats
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-
 from .logger_config import log_error, log_info
 
 Point: TypeAlias = Tuple[float, float]
@@ -215,7 +214,6 @@ def add_polygon_traces(fig: Figure, walkable_area: pedpy.WalkableArea) -> None:
         fig (go.Figure): The Plotly figure.
         polygons (dict): Dictionary of polygons representing accessible areas.
     """
-
     x, y = walkable_area.polygon.exterior.xy
     x = np.array(x)
     y = np.array(y)
@@ -241,7 +239,6 @@ def customize_fig_layout(fig: Figure) -> None:
 
 def load_json(filename: Path) -> Any:
     """Load json file."""
-
     try:
         with open(filename, "r", encoding="utf-8") as file:
             data = json.load(file)

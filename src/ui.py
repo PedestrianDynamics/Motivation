@@ -1,12 +1,15 @@
 """Init ui."""
 
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Tuple
 
 import numpy as np
+import pandas as pd
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-# Define tab names and icons in a centralized list or dictionary
+from .utilities import load_json, save_json
+
 TAB_INFO = [
     {"name": "Simulation", "icon": "info-square"},
     {"name": "Analysis", "icon": "bar-chart-line"},
@@ -37,6 +40,92 @@ def init_sidebar() -> Any:
             },
         },
     )
+
+
+def ui_simulation_controls(data: dict) -> Tuple[str, str, int]:
+    """
+    Display UI elements for controlling the simulation.
+
+    Including a configuration file,
+    specifying an output file, and setting the frames per second (fps).
+
+    Args:
+        data: The data dictionary containing simulation parameters, specifically used to determine
+              the strategy for naming the output file.
+
+    Returns:
+        A tuple containing the path to the configuration file selected by the user, the output file
+        name as specified by the user, and the fps setting as an integer.
+    """
+    # Setup UI elements for simulation control
+    c1, c2, c3 = st.columns(3)
+    CONFIG_FILE = str(
+        c2.selectbox(
+            "Select config file",
+            sorted(list(set(st.session_state.all_files)), reverse=True),
+        )
+    )
+
+    # Extract strategy from the loaded data for naming the output file
+    strategy = data.get("motivation_parameters", {}).get(
+        "motivation_strategy", "default"
+    )
+    name, extension = CONFIG_FILE.rsplit(".", 1)
+    sqlite_filename = f"{name}_{strategy}.{extension.replace('json', 'sqlite')}"
+
+    OUTPUT_FILE = c1.text_input("Result: ", value=sqlite_filename)
+
+    fps = c3.number_input(
+        "fps", min_value=1, max_value=32, value=8, help="Show every nth frame"
+    )
+
+    return CONFIG_FILE, OUTPUT_FILE, fps
+
+
+def simulation_tab() -> pd.DataFrame:
+    """Handle the Simulation tab."""
+    file_name, new_json_name = ui_load_save_config()
+
+    json_file = Path(file_name)
+    if not json_file.exists():
+        st.error(f"File: {file_name} does not exist!")
+        st.stop()
+
+    data = load_json(json_file)
+
+    # Display UI for simulation parameters
+    ui_velocity_model_parameters(data)
+    ui_simulation_parameters(data)
+    ui_motivation_parameters(data)
+
+    save_json(Path(new_json_name), data)
+
+    st.session_state.all_files.append(file_name)
+    st.session_state.all_files.append(new_json_name)
+    return data
+
+
+def ui_load_save_config() -> Tuple[str, str]:
+    """Display UI elements for loading and saving configurations.
+
+    Returns:
+        A tuple containing the file names for loading and saving configurations.
+    """
+    with st.sidebar.expander("Save/load config"):
+        column_1, column_2 = st.columns((1, 1))
+        file_name = str(
+            column_1.selectbox(
+                "Load", sorted(list(set(st.session_state.all_files)), reverse=True)
+            )
+        )
+        new_json_name = column_2.text_input(
+            "Save", help="Save config file: ", value="files/bottleneck2.json"
+        )
+
+        if column_2.button("Delete files", help="Delete all trajectory files"):
+            delete_txt_files()
+
+        return file_name, new_json_name
 
 
 def ui_measurement_parameters(data: Dict[str, Any]) -> None:
