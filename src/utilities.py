@@ -16,6 +16,7 @@ from plotly.graph_objs import Figure
 from scipy import stats
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
+
 from .logger_config import log_error, log_info
 
 Point: TypeAlias = Tuple[float, float]

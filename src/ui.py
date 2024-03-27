@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from .utilities import load_json, save_json
+from .utilities import delete_txt_files, load_json, save_json
 
 TAB_INFO = [
     {"name": "Simulation", "icon": "info-square"},
@@ -42,7 +42,7 @@ def init_sidebar() -> Any:
     )
 
 
-def ui_simulation_controls(data: dict) -> Tuple[str, str, int]:
+def ui_simulation_controls(data: Dict[str, Any]) -> Tuple[str, str, int]:
     """
     Display UI elements for controlling the simulation.
 
@@ -75,8 +75,10 @@ def ui_simulation_controls(data: dict) -> Tuple[str, str, int]:
 
     OUTPUT_FILE = c1.text_input("Result: ", value=sqlite_filename)
 
-    fps = c3.number_input(
-        "fps", min_value=1, max_value=32, value=8, help="Show every nth frame"
+    fps = int(
+        c3.number_input(
+            "fps", min_value=1, max_value=32, value=4, help="Show every nth frame"
+        )
     )
 
     return CONFIG_FILE, OUTPUT_FILE, fps

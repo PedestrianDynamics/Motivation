@@ -6,7 +6,7 @@ Module is also used for testing
 
 import json
 import sys
-from typing import Any, Dict, List, Optional, Tuple, TypeAlias
+from typing import Any, Dict, List, Tuple, TypeAlias
 
 import jsonschema
 import shapely
@@ -249,7 +249,7 @@ def parse_grid_time_gap_step(json_data: Dict[str, Any]) -> float:
 
 
 def parse_number_agents(json_data: Dict[str, Any]) -> int:
-    """Get number_agents if found in file, otherwise 1"""
+    """Get number_agents if found in file, otherwise 0."""
 
     if (
         "simulation_parameters" in json_data
@@ -260,8 +260,8 @@ def parse_number_agents(json_data: Dict[str, Any]) -> int:
     return 0
 
 
-def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:
-    """Get time_step if found, otherwise None"""
+def parse_time_step(json_data: Dict[str, Any]) -> float:
+    """Get time_step if found, otherwise 0.001."""
 
     if (
         "simulation_parameters" in json_data
@@ -269,11 +269,11 @@ def parse_time_step(json_data: Dict[str, Any]) -> Optional[float]:
     ):
         return float(json_data["simulation_parameters"]["time_step"])
 
-    return None
+    return 0.001
 
 
 def parse_simulation_time(json_data: Dict[str, Any]) -> float:
-    """Get simulation if found, otherwise None"""
+    """Get simulation if found, otherwise None."""
 
     if (
         "simulation_parameters" in json_data

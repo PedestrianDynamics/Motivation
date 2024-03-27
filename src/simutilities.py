@@ -3,19 +3,14 @@ from pathlib import Path
 from typing import Any, Dict
 
 import streamlit as st
-from simulation import main
 
+from simulation import main
 from src import motivation_model as mm
-from src.inifile_parser import (
-    parse_fps,
-    parse_motivation_doors,
-    parse_motivation_strategy,
-    parse_normal_time_gap,
-    parse_normal_v_0,
-    parse_number_agents,
-    parse_simulation_time,
-    parse_time_step,
-)
+from src.inifile_parser import (parse_fps, parse_motivation_doors,
+                                parse_motivation_strategy,
+                                parse_normal_time_gap, parse_normal_v_0,
+                                parse_number_agents, parse_simulation_time,
+                                parse_time_step)
 
 
 def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -50,7 +45,7 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
     return extracted_params
 
 
-def call_simulation(config_file: str, output_file: str, data: dict) -> None:
+def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) -> None:
     """Run the simulation based on the provided configuration and data.
 
     Args:

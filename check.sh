@@ -16,10 +16,11 @@ run_tool() {
 # Static type checker
 run_tool mypy "--strict"
 
+# Sort imports
+run_tool isort "check"
+
 # Fast, extensible Python linter
 run_tool ruff "check"
 
-# Sort imports
-# run_tool isort "check"
 
 echo "All checks and formatting done."
