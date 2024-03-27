@@ -1,4 +1,5 @@
-![build-badge](https://github.com/PedestrianDynamics/Motivation/actions/workflows/pylint.yml/badge.svg)
+[![motivation-app](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
+  
 # Motivation  
 
 ## Usage
