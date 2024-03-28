@@ -1,0 +1,25 @@
+name: Schedule New Commit
+
+on:
+  schedule:
+    - cron:  '0 0 * * *'  # Runs at midnight UTC every day
+
+jobs:
+  commit-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      
+      - name: Configure user
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+      - name: Update time file
+        run: |
+          echo "Updated on $(date -u)" > time.txt
+          git add time.txt
+          git commit -m "Update time file"
+          # Push changes to the repository
+          git push
