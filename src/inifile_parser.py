@@ -45,7 +45,6 @@ def parse_velocity_init_parameters(
     return a_ped, d_ped, a_wall, d_Wall
     """
     if "velocity_init_parameters" in json_data:
-        print(json_data["velocity_init_parameters"])
         a_ped = float(json_data["velocity_init_parameters"]["a_ped"])
         d_ped = float(json_data["velocity_init_parameters"]["d_ped"])
         a_wall = float(json_data["velocity_init_parameters"]["a_wall"])

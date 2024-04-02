@@ -44,10 +44,10 @@ def build_geometry(
     :returns: a geometry builder
 
     """
-    log_info("Build geometry")
+    # log_info("Build geometry")
     polygons = []
     for accessible_area in accessible_areas.values():
-        log_info(f"> {accessible_area=}")
+        # log_info(f"> {accessible_area=}")
         polygons.append(Polygon(accessible_area))
 
     # Combine polygons into a single geometry
@@ -69,15 +69,15 @@ def init_journey(
     :returns: journey id and stage id
 
     """
-    log_info("Init journey with: ")
-    log_info(f"{ way_points= }")
-    log_info(f"{ exits= }")
+    # log_info("Init journey with: ")
+    # log_info(f"{ way_points= }")
+    # log_info(f"{ exits= }")
     exit_ids = []
     wp_ids = []
     journey = jps.JourneyDescription()
     distance = 1
     for way_point in way_points:
-        log_info(f"add way_point: {way_point}")
+        # log_info(f"add way_point: {way_point}")
         wp_id = simulation.add_waypoint_stage((way_point[0], way_point[1]), distance)
         wp_ids.append(wp_id)
         journey.add(wp_id)
@@ -110,7 +110,7 @@ def distribute_and_add_agents(
     :returns:
 
     """
-    log_info("Distribute and Add Agent")
+    # log_info("Distribute and Add Agent")
     ped_ids = []
     for pos_x, pos_y in positions:
         agent_parameters.position = (pos_x, pos_y)

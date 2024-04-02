@@ -15,19 +15,25 @@ import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 
 from src import motivation_model as mm
-from src.inifile_parser import (parse_accessible_areas, parse_destinations,
-                                parse_distribution_polygons, parse_fps,
-                                parse_motivation_doors,
-                                parse_motivation_parameter,
-                                parse_motivation_strategy,
-                                parse_normal_time_gap, parse_normal_v_0,
-                                parse_number_agents, parse_radius,
-                                parse_simulation_time, parse_time_step,
-                                parse_velocity_init_parameters,
-                                parse_way_points)
+from src.inifile_parser import (
+    parse_accessible_areas,
+    parse_destinations,
+    parse_distribution_polygons,
+    parse_fps,
+    parse_motivation_doors,
+    parse_motivation_parameter,
+    parse_motivation_strategy,
+    parse_normal_time_gap,
+    parse_normal_v_0,
+    parse_number_agents,
+    parse_radius,
+    parse_simulation_time,
+    parse_time_step,
+    parse_velocity_init_parameters,
+    parse_way_points,
+)
 from src.logger_config import init_logger, log_debug, log_error
-from src.utilities import (build_geometry, distribute_and_add_agents,
-                           init_journey)
+from src.utilities import build_geometry, distribute_and_add_agents, init_journey
 
 # import cProfile
 # import pstats
@@ -179,7 +185,7 @@ def run_simulation(
     x_door = 0.5 * (motivation_model.door_point1[0] + motivation_model.door_point2[0])
     y_door = 0.5 * (motivation_model.door_point1[1] + motivation_model.door_point2[1])
     door = [x_door, y_door]
-    logging.info("init initial speed")
+    # logging.info("init initial speed")
     # to generate some initial frames with speed = 0, since pedpy can not calculate 0 speeds.
     for agent_id in ped_ids:
         simulation.agent(agent_id).model.v0 = 0
@@ -196,7 +202,7 @@ def run_simulation(
         ):
             simulation.iterate()
 
-            msg.code(f"Agents in the simulation: {simulation.agent_count()}")
+            # msg.code(f"Agents in the simulation: {simulation.agent_count()}")
             if simulation.iteration_count() % 100 == 0:
                 number_agents_in_simulation = simulation.agent_count()
                 for agent in simulation.agents():
@@ -218,10 +224,10 @@ def run_simulation(
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap
                     # if agent.id == 1:
-                    logging.info(
-                        f"{simulation.iteration_count()}, Agent={agent.id}, {v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
-                    )
-                    print(motivation_model.motivation_strategy.pedestrian_value)
+                    # logging.info(
+                    #     f"{simulation.iteration_count()}, Agent={agent.id}, {v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
+                    # )
+
                     write_value_to_file(
                         file_handle,
                         f"{position[0]} {position[1]} {motivation_i} {v_0} {time_gap} {distance}",
@@ -290,14 +296,9 @@ def main(
     return float(simulation.iteration_count() * _time_step)
 
 
-if __name__ == "__main__":
-    init_logger()
-    if len(sys.argv) < 3:
-        sys.exit(f"usage: {sys.argv[0]} inifile.json trajectory.txt")
-
-    with open(sys.argv[1], "r", encoding="utf8") as f:
-        json_str = f.read()
-        data = json.loads(json_str)
+def start_simulation(config_path, output_path):
+    with open(config_path, "r", encoding="utf8") as f:
+        data = json.load(f)
         fps = parse_fps(data)
         time_step = parse_time_step(data)
         number_agents = parse_number_agents(data)
@@ -310,7 +311,40 @@ if __name__ == "__main__":
                 time_step,
                 simulation_time,
                 data,
-                pathlib.Path(sys.argv[2]),
+                pathlib.Path(output_path),
                 dummy,
             )
-        print(f"{evac_time = }")
+        return evac_time
+
+
+def modify_and_save_config(base_config, modification_dict, new_config_path):
+    """Modify base configuration and save as a new JSON file."""
+    config = base_config.copy()
+    for key, value in modification_dict.items():
+        config[key] = value
+    with open(new_config_path, "w", encoding="utf8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=4)
+
+
+if __name__ == "__main__":
+    init_logger()
+    base_config = "files/bottleneck.json"
+    # Load base configuration
+    with open(base_config, "r", encoding="utf8") as f:
+        base_config = json.load(f)
+
+    variations = [
+        {"number_agents": 10, "fps": 30},
+        {"number_agents": 20, "fps": 30},
+    ]
+    # Run simulations with variations
+    for i, variation in enumerate(variations, start=1):
+        logging.info(f"running simulation with {i}: {variation}")
+        new_config_path = f"config_variation_{i}.json"
+        output_path = f"trajectory_variation_{i}.sqlite"
+
+        # Modify and save the new configuration
+        modify_and_save_config(base_config, variation, new_config_path)
+
+        evac_time = start_simulation(new_config_path, output_path)
+        print(f"Variation {i}: {evac_time = }")
