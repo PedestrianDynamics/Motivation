@@ -22,6 +22,7 @@ def plot_density_time_series(df_data: pd.DataFrame) -> None:
         xaxis_title="Time Steps",
         yaxis_title="Density (1/m/m)",
     )
+    fig_density.update_yaxes(range=[0, 12])
 
     st.plotly_chart(fig_density)
 

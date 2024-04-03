@@ -4,7 +4,8 @@ import glob
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, TypeAlias
+from typing import Any, Dict, List, Tuple, TypeAlias, Union
+from types import SimpleNamespace
 
 import jupedsim as jps
 import numpy as np
@@ -16,10 +17,36 @@ from plotly.graph_objs import Figure
 from scipy import stats
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-
 from .logger_config import log_error, log_info
 
 Point: TypeAlias = Tuple[float, float]
+
+
+def parse(data: Union[List, Dict, Any]) -> Union[List, SimpleNamespace, Any]:
+    """
+    Recursively converts a nested structure of lists and dictionaries into
+    a structure of lists and SimpleNamespace objects. Other data types are left unchanged.
+
+    Parameters:
+    - data (Union[List, Dict, Any]): The input data to parse. This can be a list,
+      dictionary, or any other data type. If it's a list or dictionary, the function
+      will recursively parse its content.
+
+    Returns:
+    - Union[List, SimpleNamespace, Any]: The parsed data where dictionaries are
+      converted to SimpleNamespace objects, lists are recursively parsed, and
+      other data types are returned unchanged.
+
+    """
+    if isinstance(data, list):
+        return list(map(parse, data))
+    elif isinstance(data, dict):
+        sns = SimpleNamespace()
+        for key, value in data.items():
+            setattr(sns, key, parse(value))
+        return sns
+    else:
+        return data
 
 
 def delete_txt_files() -> None:
@@ -82,24 +109,27 @@ def init_journey(
         wp_ids.append(wp_id)
         journey.add(wp_id)
 
-    exit_id = simulation.add_exit_stage(exits)
-    exit_ids.append(exit_id)
-    journey.add(exit_id)
+    for e in exits:
+        exit_id = simulation.add_exit_stage(e)
+        exit_ids.append(exit_id)
+        journey.add(exit_id)
 
-    # todo: using only one exit here
-    stage_id = exit_ids[0]
-    for wp_id in wp_ids:
-        journey.set_transition_for_stage(
-            wp_id, jps.Transition.create_fixed_transition(stage_id)
-        )
+    # chosen_id = random.choice(exit_ids)
+    # logging.info(f"{chosen_id}, {exit_ids}")
+    # stage_id = chosen_id
+    # # todo these wp id are not needed and not properly initialized
+    # for wp_id in wp_ids:
+    #     journey.set_transition_for_stage(
+    #         wp_id, jps.Transition.create_fixed_transition(stage_id)
+    #     )
 
     journey_id = int(simulation.add_journey(journey))
-    return journey_id, stage_id
+    return journey_id, exit_ids
 
 
 def distribute_and_add_agents(
     simulation: jps.Simulation,
-    agent_parameters: jps.CollisionFreeSpeedModelAgentParameters,
+    agent_parameters_list: List[jps.CollisionFreeSpeedModelAgentParameters],
     positions: List[Point],
 ) -> List[int]:
     """Initialize positions of agents and insert them into the simulation.
@@ -112,7 +142,9 @@ def distribute_and_add_agents(
     """
     # log_info("Distribute and Add Agent")
     ped_ids = []
-    for pos_x, pos_y in positions:
+    size = len(agent_parameters_list)
+    for i, (pos_x, pos_y) in enumerate(positions):
+        agent_parameters = agent_parameters_list[i % size]
         agent_parameters.position = (pos_x, pos_y)
         ped_id = simulation.add_agent(agent_parameters)
         ped_ids.append(ped_id)

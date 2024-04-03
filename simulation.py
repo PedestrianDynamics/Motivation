@@ -6,10 +6,9 @@ import contextlib
 import json
 import logging
 import pathlib
-import sys
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
-
+import sys
 import _io
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
@@ -21,7 +20,6 @@ from src.inifile_parser import (
     parse_distribution_polygons,
     parse_fps,
     parse_motivation_doors,
-    parse_motivation_parameter,
     parse_motivation_strategy,
     parse_normal_time_gap,
     parse_normal_v_0,
@@ -60,9 +58,9 @@ def init_motivation_model(
     _data: Dict[str, Any], ped_ids: List[int]
 ) -> mm.MotivationModel:
     """Init motuvation model based on parsed streategy."""
-    width = parse_motivation_parameter(_data, "width")
-    height = parse_motivation_parameter(_data, "height")
-    seed = parse_motivation_parameter(_data, "seed")
+    width = _data["motivation_parameters"]["width"]
+    height = _data["motivation_parameters"]["height"]
+    seed = _data["motivation_parameters"]["seed"]
     motivation_doors = parse_motivation_doors(_data)
     if not motivation_doors:
         log_error("json file does not contain any motivation door")
@@ -81,6 +79,7 @@ def init_motivation_model(
     if choose_motivation_strategy == "default":
         motivation_strategy = mm.DefaultMotivationStrategy(width=width, height=height)
     if choose_motivation_strategy == "EVC":
+        logging.info(f"init EVC with {width = }, {height = }")
         motivation_strategy = mm.EVCStrategy(
             width=width,
             height=height,
@@ -201,8 +200,6 @@ def run_simulation(
             and simulation.elapsed_time() < _simulation_time
         ):
             simulation.iterate()
-
-            # msg.code(f"Agents in the simulation: {simulation.agent_count()}")
             if simulation.iteration_count() % 100 == 0:
                 number_agents_in_simulation = simulation.agent_count()
                 for agent in simulation.agents():
@@ -255,13 +252,13 @@ def main(
     way_points = parse_way_points(_data)
     destinations_dict = parse_destinations(_data)
     destinations = list(destinations_dict.values())
-    journey_id, stage_id = init_journey(simulation, way_points, destinations[0])
+    journey_id, exit_ids = init_journey(simulation, way_points, destinations)
     distribution_polygons = parse_distribution_polygons(_data)
     positions = []
 
     total_agents = _number_agents
     for s_polygon in distribution_polygons.values():
-        logging.info(f"Distribute {total_agents} agents in {s_polygon}")
+        logging.info(f"Distribute {total_agents} agents")
         pos = distribute_by_number(
             polygon=s_polygon,
             number_of_agents=total_agents,
@@ -277,16 +274,21 @@ def main(
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
     radius = parse_radius(_data)
-    agent_parameters = jps.CollisionFreeSpeedModelAgentParameters(
-        journey_id=journey_id,
-        stage_id=stage_id,
-        radius=radius,
-        v0=normal_v_0,
-        time_gap=normal_time_gap,
-    )
-    ped_ids = distribute_and_add_agents(simulation, agent_parameters, positions)
+    agent_parameters_list = []
+    for exit_id in exit_ids:
+        agent_parameters = jps.CollisionFreeSpeedModelAgentParameters(
+            journey_id=journey_id,
+            stage_id=exit_id,
+            radius=radius,
+            v0=normal_v_0,
+            time_gap=normal_time_gap,
+        )
+        agent_parameters_list.append(agent_parameters)
+
+    ped_ids = distribute_and_add_agents(simulation, agent_parameters_list, positions)
     motivation_model = init_motivation_model(_data, ped_ids)
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
+    logging.info(f"{motivation_model.motivation_strategy.width = }")
     run_simulation(simulation, motivation_model, _simulation_time, ped_ids, msg)
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"
@@ -319,32 +321,52 @@ def start_simulation(config_path, output_path):
 
 def modify_and_save_config(base_config, modification_dict, new_config_path):
     """Modify base configuration and save as a new JSON file."""
-    config = base_config.copy()
+    config = json.loads(json.dumps(base_config))  # Deep copy
     for key, value in modification_dict.items():
-        config[key] = value
+        nested_keys = key.split("/")
+        last_key = nested_keys.pop()
+        temp = config
+        for nk in nested_keys:
+            temp = temp[nk]
+        temp[last_key] = value
     with open(new_config_path, "w", encoding="utf8") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":
     init_logger()
-    base_config = "files/bottleneck.json"
+    base_config = "files/inifile.json"
     # Load base configuration
     with open(base_config, "r", encoding="utf8") as f:
         base_config = json.load(f)
 
     variations = [
-        {"number_agents": 10, "fps": 30},
-        {"number_agents": 20, "fps": 30},
+        {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 1.0},
+        {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 300.0},
+        {"motivation_parameters/height": 0.5, "motivation_parameters/seed": 300.0},
+        {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 1.0},
+        {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 300.0},
+        {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 1.0},
+        {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 300.0},
+        {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 200.0},
+        {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 300.0},
+        {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 200.0},
+        {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
+        {"motivation_parameters/width": 1.2, "motivation_parameters/seed": 300.0},
     ]
+    file_path = "files/variations/variations.json"
+
+    # Write the list of dictionaries to a JSON file
+    with open(file_path, "w") as f:
+        json.dump(variations, f, indent=4)
     # Run simulations with variations
     for i, variation in enumerate(variations, start=1):
-        logging.info(f"running simulation with {i}: {variation}")
-        new_config_path = f"config_variation_{i}.json"
-        output_path = f"trajectory_variation_{i}.sqlite"
+        logging.info(f"running variation {i:03d}: {variation}")
+        new_config_path = f"config_variation_{i:03d}.json"
+        output_path = f"files/trajectory_variation_{i:03d}.sqlite"
 
         # Modify and save the new configuration
         modify_and_save_config(base_config, variation, new_config_path)
 
         evac_time = start_simulation(new_config_path, output_path)
-        print(f"Variation {i}: {evac_time = }")
+        logging.info(f"Variation {i:03d}: {evac_time = }")
