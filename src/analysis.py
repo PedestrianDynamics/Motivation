@@ -201,6 +201,9 @@ def run() -> None:
                 fig2 = plt.gcf()
                 st.pyplot(fig2)
             if selected == "Distance to entrance":
+                c1, c2 = st.columns(2)
+                yaxis_max = c1.number_input("Max y-Axis: ", value=1.0, step=0.1)
+                colorbar_max = c2.number_input("Max colorbar: ", value=2.0, step=0.1)
                 df_time_distance = pedpy.compute_time_distance_line(
                     traj_data=traj, measurement_line=measurement_line
                 )
@@ -260,4 +263,7 @@ def run() -> None:
                 plt.grid(alpha=0.3)
                 ax.set_xlabel("Distance / m")
                 ax.set_ylabel("Time / s")
+                ax.set_ylim(top=yaxis_max)
+
+                line.set_clim(vmax=colorbar_max)
                 st.pyplot(fig)
