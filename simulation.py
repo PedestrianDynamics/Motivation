@@ -144,14 +144,8 @@ def init_simulation(
     accessible_areas = parse_accessible_areas(_data)
     geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
-    a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
     simulation = jps.Simulation(
-        model=jps.CollisionFreeSpeedModel(
-            strength_neighbor_repulsion=a_ped,
-            range_neighbor_repulsion=d_ped,
-            strength_geometry_repulsion=a_wall,
-            range_geometry_repulsion=d_wall,
-        ),
+        model=jps.CollisionFreeSpeedModelV2(),
         geometry=geometry,
         dt=_time_step,
         trajectory_writer=jps.SqliteTrajectoryWriter(
@@ -186,13 +180,16 @@ def run_simulation(
     door = [x_door, y_door]
     # logging.info("init initial speed")
     # to generate some initial frames with speed = 0, since pedpy can not calculate 0 speeds.
-    for agent_id in ped_ids:
-        simulation.agent(agent_id).model.v0 = 0
-    simulation.iterate(1000)
 
     for agent_id in ped_ids:
         value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
         simulation.agent(agent_id).model.v0 *= value_agent
+        simulation.agent(agent_id).model.strength_neighbor_repulsion *= value_agent
+        # print(
+        #     value_agent,
+        #     simulation.agent(agent_id).model.v0,
+        #     simulation.agent(agent_id).model.strength_neighbor_repulsion,
+        # )
 
     with open("values.txt", "w", encoding="utf-8") as file_handle:
         while (
@@ -218,12 +215,14 @@ def run_simulation(
                     v_0, time_gap = motivation_model.calculate_motivation_state(
                         motivation_i, agent.id
                     )
+                    # agent.a_ped
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap
-                    # if agent.id == 1:
-                    # logging.info(
-                    #     f"{simulation.iteration_count()}, Agent={agent.id}, {v_0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
-                    # )
+
+                    if agent.id == -1:
+                        logging.info(
+                            f"{simulation.iteration_count()}, Agent={agent.id}, {agent.model.strength_neighbor_repulsion =},  {agent.model.v0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
+                        )
 
                     write_value_to_file(
                         file_handle,
@@ -255,6 +254,7 @@ def main(
     journey_id, exit_ids = init_journey(simulation, way_points, destinations)
     distribution_polygons = parse_distribution_polygons(_data)
     positions = []
+    seed = int(_data["motivation_parameters"]["seed"])
 
     total_agents = _number_agents
     for s_polygon in distribution_polygons.values():
@@ -264,7 +264,7 @@ def main(
             number_of_agents=total_agents,
             distance_to_agents=0.4,
             distance_to_polygon=0.2,
-            seed=45131502,
+            seed=seed,
         )
         total_agents -= _number_agents
         positions += pos
@@ -275,13 +275,19 @@ def main(
     normal_time_gap = parse_normal_time_gap(_data)
     radius = parse_radius(_data)
     agent_parameters_list = []
+    a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
+
     for exit_id in exit_ids:
-        agent_parameters = jps.CollisionFreeSpeedModelAgentParameters(
+        agent_parameters = jps.CollisionFreeSpeedModelV2AgentParameters(
             journey_id=journey_id,
             stage_id=exit_id,
             radius=radius,
             v0=normal_v_0,
             time_gap=normal_time_gap,
+            strength_neighbor_repulsion=a_ped,
+            range_neighbor_repulsion=d_ped,
+            strength_geometry_repulsion=a_wall,
+            range_geometry_repulsion=d_wall,
         )
         agent_parameters_list.append(agent_parameters)
 
@@ -341,18 +347,18 @@ if __name__ == "__main__":
         base_config = json.load(f)
 
     variations = [
-        {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 1.0},
-        {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 300.0},
-        {"motivation_parameters/height": 0.5, "motivation_parameters/seed": 300.0},
-        {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 1.0},
-        {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 1.0},
+        # {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/height": 0.5, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 1.0},
+        # {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 300.0},
         {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 1.0},
-        {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 300.0},
-        {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 200.0},
-        {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 300.0},
-        {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 200.0},
-        {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
-        {"motivation_parameters/width": 1.2, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 200.0},
+        # {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 200.0},
+        # {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 1.2, "motivation_parameters/seed": 300.0},
     ]
     file_path = "files/variations/variations.json"
 
