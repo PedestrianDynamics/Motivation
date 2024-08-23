@@ -184,7 +184,8 @@ def run_simulation(
     for agent_id in ped_ids:
         value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
         simulation.agent(agent_id).model.v0 *= value_agent
-        simulation.agent(agent_id).model.strength_neighbor_repulsion *= value_agent
+        # TODO:
+        # simulation.agent(agent_id).model.strength_neighbor_repulsion *= value_agent
         # print(
         #     value_agent,
         #     simulation.agent(agent_id).model.v0,
