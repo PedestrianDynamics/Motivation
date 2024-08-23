@@ -6,11 +6,16 @@ import streamlit as st
 
 from simulation import main
 from src import motivation_model as mm
-from src.inifile_parser import (parse_fps, parse_motivation_doors,
-                                parse_motivation_strategy,
-                                parse_normal_time_gap, parse_normal_v_0,
-                                parse_number_agents, parse_simulation_time,
-                                parse_time_step)
+from src.inifile_parser import (
+    parse_fps,
+    parse_motivation_doors,
+    parse_motivation_strategy,
+    parse_normal_time_gap,
+    parse_normal_v_0,
+    parse_number_agents,
+    parse_simulation_time,
+    parse_time_step,
+)
 
 
 def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:

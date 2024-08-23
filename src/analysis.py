@@ -15,12 +15,21 @@ from matplotlib.colors import Normalize
 from pedpy.column_identifier import FRAME_COL, ID_COL
 
 from .inifile_parser import parse_fps
-from .plotting import (plot_density_time_series, plot_flow_time_series,
-                       plot_speed_time_series, plotly_nt_series)
+from .plotting import (
+    plot_density_time_series,
+    plot_flow_time_series,
+    plot_speed_time_series,
+    plotly_nt_series,
+)
 from .ui import ui_measurement_parameters
-from .utilities import (add_heatmap_trace, add_polygon_traces,
-                        calculate_heatmap_values, create_empty_figure,
-                        customize_fig_layout, update_figure_layout)
+from .utilities import (
+    add_heatmap_trace,
+    add_polygon_traces,
+    calculate_heatmap_values,
+    create_empty_figure,
+    customize_fig_layout,
+    update_figure_layout,
+)
 
 # from shapely import Polygon
 # from shapely.ops import unary_union
@@ -78,7 +87,6 @@ def run() -> None:
     with open("files/bottleneck.json", "r", encoding="utf8") as f:
         json_str = f.read()
         json_data = json.loads(json_str)
-    ui_measurement_parameters(json_data)
 
     if selected == "Heatmap":
         heatmap_files = glob.glob("*Heatmap.*")
@@ -124,6 +132,7 @@ def run() -> None:
                 plotly_nt_series(nt)
 
             if selected == "Speed":
+                ui_measurement_parameters(json_data)
                 individual_speed = pedpy.compute_individual_speed(
                     traj_data=traj,
                     frame_step=5,
@@ -137,6 +146,7 @@ def run() -> None:
                 plot_speed_time_series(mean_speed)
 
             if selected == "Flow":
+                ui_measurement_parameters(json_data)
                 nt, crossing_frames = pedpy.compute_n_t(
                     traj_data=traj,
                     measurement_line=measurement_line,
@@ -155,6 +165,7 @@ def run() -> None:
                 plot_flow_time_series(flow_speed)
 
             if selected == "Density":
+                ui_measurement_parameters(json_data)
                 individual = pedpy.compute_individual_voronoi_polygons(
                     traj_data=traj, walkable_area=walkable_area
                 )

@@ -12,6 +12,7 @@ import numpy as np
 import numpy.typing as npt
 import pedpy
 import plotly.graph_objects as go
+
 import streamlit as st
 from plotly.graph_objs import Figure
 from scipy import stats
