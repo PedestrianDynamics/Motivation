@@ -202,7 +202,7 @@ def run() -> None:
                 st.pyplot(fig2)
             if selected == "Distance to entrance":
                 c1, c2 = st.columns(2)
-                yaxis_max = c1.number_input("Max y-Axis: ", value=1.0, step=0.1)
+                yaxis_max = c1.number_input("Max y-Axis: ", value=10.0, step=0.1)
                 colorbar_max = c2.number_input("Max colorbar: ", value=2.0, step=0.1)
                 df_time_distance = pedpy.compute_time_distance_line(
                     traj_data=traj, measurement_line=measurement_line
