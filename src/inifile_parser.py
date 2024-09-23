@@ -47,11 +47,24 @@ def parse_velocity_init_parameters(
     if "velocity_init_parameters" in json_data:
         a_ped = float(json_data["velocity_init_parameters"]["a_ped"])
         d_ped = float(json_data["velocity_init_parameters"]["d_ped"])
+        a_ped_min = float(json_data["velocity_init_parameters"]["a_ped_min"])
+        a_ped_max = float(json_data["velocity_init_parameters"]["a_ped_max"])
+        d_ped_min = float(json_data["velocity_init_parameters"]["d_ped_min"])
+        d_ped_max = float(json_data["velocity_init_parameters"]["d_ped_max"])
         a_wall = float(json_data["velocity_init_parameters"]["a_wall"])
         d_wall = float(json_data["velocity_init_parameters"]["d_wall"])
-        return (a_ped, d_ped, a_wall, d_wall)
+        return (
+            a_ped,
+            d_ped,
+            a_wall,
+            d_wall,
+            a_ped_min,
+            a_ped_max,
+            d_ped_min,
+            d_ped_max,
+        )
     else:
-        return (8.0, 0.1, 5.0, 0.02)
+        return (8.0, 0.1, 5.0, 0.02, 0.1, 8.0, 0.1, 0.8)
 
 
 def parse_radius(

@@ -156,18 +156,43 @@ def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
     """Set velocity Parameters Section."""
     with st.sidebar.expander("Velocity model Parameters", expanded=False):
         c1, c2 = st.columns(2)
-        data["velocity_init_parameters"]["a_ped"] = c1.number_input(
-            "a_ped:",
+        # data["velocity_init_parameters"]["a_ped"] = c1.number_input(
+        #     "a_ped:",
+        #     min_value=0.0,
+        #     max_value=10.0,
+        #     value=data["velocity_init_parameters"]["a_ped"],
+        # )
+        # data["velocity_init_parameters"]["d_ped"] = c2.number_input(
+        #     "d_ped:",
+        #     min_value=0.01,
+        #     max_value=1.0,
+        #     value=data["velocity_init_parameters"]["d_ped"],
+        # )
+        data["velocity_init_parameters"]["a_ped_min"] = c1.number_input(
+            "a_ped_min:",
             min_value=0.0,
             max_value=10.0,
-            value=data["velocity_init_parameters"]["a_ped"],
+            value=data["velocity_init_parameters"]["a_ped_min"],
         )
-        data["velocity_init_parameters"]["d_ped"] = c2.number_input(
-            "d_ped:",
-            min_value=0.01,
-            max_value=1.0,
-            value=data["velocity_init_parameters"]["d_ped"],
+        data["velocity_init_parameters"]["a_ped_max"] = c2.number_input(
+            "a_ped_max:",
+            min_value=0.0,
+            max_value=10.0,
+            value=data["velocity_init_parameters"]["a_ped_max"],
         )
+        data["velocity_init_parameters"]["d_ped_min"] = c1.number_input(
+            "d_ped_min:",
+            min_value=0.0,
+            max_value=10.0,
+            value=data["velocity_init_parameters"]["d_ped_min"],
+        )
+        data["velocity_init_parameters"]["d_ped_max"] = c2.number_input(
+            "d_ped_max:",
+            min_value=0.0,
+            max_value=10.0,
+            value=data["velocity_init_parameters"]["d_ped_max"],
+        )
+
         data["velocity_init_parameters"]["a_wall"] = c1.number_input(
             "a_wall:",
             min_value=0.0,

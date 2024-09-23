@@ -103,11 +103,11 @@ def init_motivation_model(
             height=height,
             max_reward=number_agents,
             seed=seed,
-            max_value_high=float(data["motivation_parameters"]["max_value_high"]),
-            min_value_high=float(data["motivation_parameters"]["min_value_high"]),
-            max_value_low=float(data["motivation_parameters"]["max_value_low"]),
-            min_value_low=float(data["motivation_parameters"]["min_value_low"]),
-            number_high_value=int(data["motivation_parameters"]["number_high_value"]),
+            max_value_high=float(_data["motivation_parameters"]["max_value_high"]),
+            min_value_high=float(_data["motivation_parameters"]["min_value_high"]),
+            max_value_low=float(_data["motivation_parameters"]["max_value_low"]),
+            min_value_low=float(_data["motivation_parameters"]["min_value_low"]),
+            number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
             nagents=number_agents,
             agent_ids=ped_ids,
             competition_decay_reward=competition_decay_reward,
@@ -156,12 +156,32 @@ def init_simulation(
     return simulation
 
 
+def adjust_parameter_linearly(
+    motivation_i, min_value=0.01, default_value=0.5, max_value=1.0
+):
+    """
+    Adjust the a parameter based on agent's motivation level (0 < motivation_i < 1).
+
+    :param motivation_i: The agent's motivation level, expected to be a positive value less than 1.
+    :param min_value: Minimum repulsion range for very low motivation.
+    :param default_value: Default repulsion range for mid motivation.
+    :param max_value: Maximum repulsion range for high motivation.
+    :return: Adjusted range_neighbor_repulsion value.
+    """
+    # Linear interpolation between min_value and max_value based on motivation_i
+    return min_value + (max_value - min_value) * motivation_i
+
+
 def run_simulation(
     simulation: jps.Simulation,
     motivation_model: mm.MotivationModel,
     _simulation_time: float,
     ped_ids: List[int],
     msg: Any,
+    a_ped_min: float,
+    a_ped_max: float,
+    d_ped_min: float,
+    d_ped_max: float,
 ) -> None:
     """Run simulation logic.
 
@@ -185,13 +205,18 @@ def run_simulation(
         value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
         simulation.agent(agent_id).model.v0 *= value_agent
         # TODO:
-        # simulation.agent(agent_id).model.strength_neighbor_repulsion *= value_agent
-        # print(
-        #     value_agent,
-        #     simulation.agent(agent_id).model.v0,
-        #     simulation.agent(agent_id).model.strength_neighbor_repulsion,
-        # )
+        #        simulation.agent(agent_id).model.strength_neighbor_repulsion = 0.22
+        default_range = simulation.agent(agent_id).model.range_neighbor_repulsion
+        default_strength = simulation.agent(agent_id).model.strength_neighbor_repulsion
+    #        print(f"{simulation.agent(agent_id).model.strength_neighbor_repulsion =}")
+    #        print(f"{simulation.agent(agent_id).model.range_neighbor_repulsion =}")
 
+    # print(
+    #     value_agent,
+    #     simulation.agent(agent_id).model.v0,
+    #     simulation.agent(agent_id).model.strength_neighbor_repulsion,
+    # )
+    logging.info(f"{default_range=}")
     with open("values.txt", "w", encoding="utf-8") as file_handle:
         while (
             simulation.agent_count() > 0
@@ -213,13 +238,32 @@ def run_simulation(
                     motivation_i = motivation_model.motivation_strategy.motivation(
                         params
                     )
+                    # d_ped =
                     v_0, time_gap = motivation_model.calculate_motivation_state(
                         motivation_i, agent.id
                     )
-                    # agent.a_ped
+
+                    agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
+                        motivation_i=motivation_i,
+                        min_value=a_ped_min,
+                        default_value=default_strength,
+                        max_value=a_ped_max,
+                    )
+                    print(
+                        f"{ agent.model.strength_neighbor_repulsion=}, {a_ped_min=}, {a_ped_max=}\n"
+                    )
+                    # # D
+                    agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
+                        motivation_i=motivation_i,
+                        min_value=d_ped_min,
+                        default_value=default_range,
+                        max_value=d_ped_max,
+                    )
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap
-
+                    print(
+                        f"{ agent.model.range_neighbor_repulsion=}, {d_ped_min=}, {d_ped_max}"
+                    )
                     if agent.id == -1:
                         logging.info(
                             f"{simulation.iteration_count()}, Agent={agent.id}, {agent.model.strength_neighbor_repulsion =},  {agent.model.v0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
@@ -276,7 +320,9 @@ def main(
     normal_time_gap = parse_normal_time_gap(_data)
     radius = parse_radius(_data)
     agent_parameters_list = []
-    a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
+    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
+        parse_velocity_init_parameters(_data)
+    )
 
     for exit_id in exit_ids:
         agent_parameters = jps.CollisionFreeSpeedModelV2AgentParameters(
@@ -296,7 +342,17 @@ def main(
     motivation_model = init_motivation_model(_data, ped_ids)
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
     logging.info(f"{motivation_model.motivation_strategy.width = }")
-    run_simulation(simulation, motivation_model, _simulation_time, ped_ids, msg)
+    run_simulation(
+        simulation,
+        motivation_model,
+        _simulation_time,
+        ped_ids,
+        msg,
+        a_ped_min=a_ped_min,
+        a_ped_max=a_ped_max,
+        d_ped_min=d_ped_min,
+        d_ped_max=d_ped_max,
+    )
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"
     )
