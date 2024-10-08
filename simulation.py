@@ -249,9 +249,9 @@ def run_simulation(
                         default_value=default_strength,
                         max_value=a_ped_max,
                     )
-                    print(
-                        f"{ agent.model.strength_neighbor_repulsion=}, {a_ped_min=}, {a_ped_max=}\n"
-                    )
+                    # print(
+                    #     f"{ agent.model.strength_neighbor_repulsion=}, {a_ped_min=}, {a_ped_max=}\n"
+                    # )
                     # # D
                     agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
                         motivation_i=motivation_i,
@@ -261,9 +261,9 @@ def run_simulation(
                     )
                     agent.model.v0 = v_0
                     agent.model.time_gap = time_gap
-                    print(
-                        f"{ agent.model.range_neighbor_repulsion=}, {d_ped_min=}, {d_ped_max}"
-                    )
+                    # print(
+                    #     f"{ agent.model.range_neighbor_repulsion=}, {d_ped_min=}, {d_ped_max}"
+                    # )
                     if agent.id == -1:
                         logging.info(
                             f"{simulation.iteration_count()}, Agent={agent.id}, {agent.model.strength_neighbor_repulsion =},  {agent.model.v0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
