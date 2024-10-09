@@ -405,14 +405,14 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
                         value=float(vertex[0]),
                         key=x_key,
                         step=1.0,
-                        min_value=47.0,
-                        max_value=65.0,
+                        min_value=-3.0,
+                        max_value=3.0,
                     )
                     vertex[1] = column_2.number_input(
                         "Point Y:",
                         value=float(vertex[1]),
                         key=y_key,
                         step=1.0,
-                        min_value=100.0,
-                        max_value=104.0,
+                        min_value=10.0,
+                        max_value=19.0,
                     )

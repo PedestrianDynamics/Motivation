@@ -5,81 +5,89 @@
     ],
     "version": 0.1,
     "velocity_init_parameters": {
-        "a_ped": 0.4,
-        "d_ped": 0.1,
-        "a_wall": 0.6,
-        "d_wall": 0.2,
-        "a_ped_min": 0.4,
-        "a_ped_max": 0.4,
+        "a_ped": 0.1,
+        "d_ped": 0.4,
+        "a_ped_min": 0.1,
+        "a_ped_max": 1.0,
         "d_ped_min": 0.1,
-        "d_ped_max": 0.1,
+        "d_ped_max": 1.0,
+        "a_wall": 0.4,
+        "d_wall": 0.2,
         "radius": 0.10
     },
     "simulation_parameters": {
         "fps": 60,
-        "time_step": 0.002,
+        "time_step": 0.001,
         "number_agents": 50,
-        "simulation_time": 200
+        "simulation_time": 100
     },
     "measurement_line": {
         "vertices": [
             [
-                60,
-                101.7
+                1.47,
+                19.57
             ],
             [
-                60,
-                102.3
+                -1.52,
+                19.57
             ]
         ]
     },
     "measurement_area": {
         "vertices": [
             [
-                60,
-                101.6
+                3.57,
+                -0.89
             ],
             [
-                60,
-                102.4
+                3.64,
+                19.57
             ],
             [
-                59,
-                102.4
+                1.47,
+                19.57
+            ],          
+            [
+                -1.52,
+                19.57
             ],
             [
-                59,
-                101.6
+                -3.57,
+                19.57
+            ],
+            [
+                -3.54,
+                -1.13
             ]
         ]
     },
     "motivation_parameters": {
-        "motivation_strategy": "default",
+        "motivation_strategy": "EVC",
         "normal_v_0": 1.2,
         "normal_time_gap": 1.0,
-        "width": 1.0,
-        "height": 1.0,
+        "width": 2.0,
+        "height": 2.0,
         "seed": 1.0,
         "max_value_high": 1.0,
-        "min_value_high": 0.5,
+        "min_value_high": 0.8,
         "max_value_low": 0.5,
-        "min_value_low": 0.0,
-        "number_high_value":10,
+        "min_value_low": 0.2,
+        "number_high_value": 30,
         "competition_max": 1,
-        "competition_decay_reward": 10,
-        "percent": 1,
+        "competition_decay_reward": 5,
+        "percent": 0.8,
         "motivation_doors": [
             {
                 "id": 1,
                 "label": "door",
                 "vertices": [
                     [
-                        58,
-                        102.3
+                        -2.5,
+                        18.0
                     ],
                     [
-                        58,
-                        101.7
+                        2.5,
+                        18.0
                     ]
                 ]
             }
@@ -155,21 +163,67 @@
             "id": 1,
             "label": "exit",
             "vertices": [
+                  [
+                    -5.0,
+                    23.0
+                  ],
                 [
-                    64.5,
-                    102.6
+                    -6,
+                    23.0
                 ],
                 [
-                    64.5,
-                    101.4
+                    -6,
+                    22.0
                 ],
                 [
-                    65,
-                    101.4
+                    -5,
+                    22.0
+                ]
+                ]
+            }
+        ,
+        {
+            "id": 2,
+            "label": "exit",
+            "vertices": [
+                [
+                    5.0,
+                    23.0
                 ],
                 [
-                    65,
-                    102.6
+                    6.0,
+                    23.0
+                ],
+                [
+                    6.0,
+                    22.0
+                ],
+                [
+                    5.0,
+                    22.0
+                ]
+            ]
+            
+        },
+        {
+            "id": 3,
+            "label": "exit",
+            "vertices": [
+                [
+                    -0.2,
+                    25.0
+                ],
+                [
+                    0.2,
+                    25.0
+                ],
+                [
+                    0.2,
+                    24.0
+                ],
+                [
+                    -0.2,
+                    24.0
                 ]
             ]
         }

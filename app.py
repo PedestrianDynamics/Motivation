@@ -28,7 +28,7 @@ if __name__ == "__main__":
         st.session_state.data = {}
 
     if "all_files" not in st.session_state:
-        st.session_state.all_files = ["files/bottleneck.json"]
+        st.session_state.all_files = ["files/inifile.json"]
 
     tab = init_sidebar()
 

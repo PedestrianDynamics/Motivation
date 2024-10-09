@@ -111,6 +111,7 @@ def init_journey(
         journey.add(wp_id)
 
     for e in exits:
+        log_info(f"add {e}")
         exit_id = simulation.add_exit_stage(e)
         exit_ids.append(exit_id)
         journey.add(exit_id)

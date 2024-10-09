@@ -9,10 +9,11 @@ import pathlib
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
 import sys
+import csv
 import _io
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
-
+from shapely import from_wkt
 from src import motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
@@ -132,6 +133,7 @@ def init_simulation(
     _time_step: float,
     _fps: int,
     _trajectory_path: pathlib.Path,
+    from_file: bool = True,
 ) -> Any:
     """Initialise geometry.
 
@@ -141,8 +143,14 @@ def init_simulation(
     :type time_step: float
     :returns:
     """
+
     accessible_areas = parse_accessible_areas(_data)
-    geometry = build_geometry(accessible_areas)
+    if from_file:
+        geometry = from_wkt(
+            "POLYGON ((-8.88 -7.63, 8.3 -7.63, 8.3 27.95, -8.88 27.95, -8.88 -7.63), (-3.54 -1.13, -3.57 19.57, -1.52 19.57, -1.37 19.71, -1.37 21.09, -1.52 21.23, -1.67 21.23, -1.67 21.18, -1.545 21.18, -1.4200000000000002 21.065, -1.4200000000000002 19.735, -1.545 19.62, -3.6199999999999997 19.62, -3.59 -1.13, -3.54 -1.13), (3.57 -0.89, 3.64 19.64, 1.47 19.57, 1.32 19.71, 1.32 21.09, 1.47 21.23, 1.62 21.23, 1.62 21.18, 1.4949999999999999 21.18, 1.37 21.065, 1.37 19.735, 1.4949999999999999 19.62, 3.69 19.69, 3.6199999999999997 -0.89, 3.57 -0.89), (0.67 19.57, 0.82 19.71, 0.82 21.09, 0.67 21.23, 0.38 21.23, 0.23 21.09, 0.23 19.71, 0.38 19.57, 0.67 19.57), (-0.42 19.57, -0.27 19.71, -0.27 21.09, -0.42 21.23, -0.72 21.23, -0.87 21.09, -0.87 19.71, -0.72 19.57, -0.42 19.57))"
+        )
+    else:
+        geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     simulation = jps.Simulation(
         model=jps.CollisionFreeSpeedModelV2(),
@@ -177,11 +185,8 @@ def run_simulation(
     motivation_model: mm.MotivationModel,
     _simulation_time: float,
     ped_ids: List[int],
+    _data,
     msg: Any,
-    a_ped_min: float,
-    a_ped_max: float,
-    d_ped_min: float,
-    d_ped_max: float,
 ) -> None:
     """Run simulation logic.
 
@@ -200,6 +205,9 @@ def run_simulation(
     door = [x_door, y_door]
     # logging.info("init initial speed")
     # to generate some initial frames with speed = 0, since pedpy can not calculate 0 speeds.
+    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
+        parse_velocity_init_parameters(_data)
+    )
 
     for agent_id in ped_ids:
         value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
@@ -218,10 +226,7 @@ def run_simulation(
     # )
     logging.info(f"{default_range=}")
     with open("values.txt", "w", encoding="utf-8") as file_handle:
-        while (
-            simulation.agent_count() > 0
-            and simulation.elapsed_time() < _simulation_time
-        ):
+        while simulation.elapsed_time() < _simulation_time:
             simulation.iterate()
             if simulation.iteration_count() % 100 == 0:
                 number_agents_in_simulation = simulation.agent_count()
@@ -275,6 +280,93 @@ def run_simulation(
                     )
 
 
+def create_agent_parameters(
+    _data: Dict[str, Any], simulation: jps.Simulation
+) -> List[jps.CollisionFreeSpeedModelAgentParameters]:
+    """Create the model parameters."""
+    way_points = parse_way_points(_data)
+    destinations_dict = parse_destinations(_data)
+    destinations = list(destinations_dict.values())
+    journey_id, exit_ids = init_journey(simulation, way_points, destinations)
+
+    normal_v_0 = parse_normal_v_0(_data)
+    normal_time_gap = parse_normal_time_gap(_data)
+    radius = parse_radius(_data)
+    agent_parameters_list = []
+    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
+        parse_velocity_init_parameters(_data)
+    )
+    for exit_id in exit_ids:
+        agent_parameters = jps.CollisionFreeSpeedModelV2AgentParameters(
+            journey_id=journey_id,
+            stage_id=exit_id,
+            radius=radius,
+            v0=normal_v_0,
+            time_gap=normal_time_gap,
+            strength_neighbor_repulsion=a_ped,
+            range_neighbor_repulsion=d_ped,
+            strength_geometry_repulsion=a_wall,
+            range_geometry_repulsion=d_wall,
+        )
+        agent_parameters_list.append(agent_parameters)
+
+    return agent_parameters_list
+
+
+def init_positions(_data: Dict[str, Any], _number_agents: int) -> List[Point]:
+    """Randomly create positions for distribution of pedestrians."""
+    distribution_polygons = parse_distribution_polygons(_data)
+    positions = []
+    seed = int(_data["motivation_parameters"]["seed"])
+    total_agents = _number_agents
+    for s_polygon in distribution_polygons.values():
+        logging.info(f"Distribute {total_agents} agents")
+        pos = distribute_by_number(
+            polygon=s_polygon,
+            number_of_agents=total_agents,
+            distance_to_agents=0.4,
+            distance_to_polygon=0.2,
+            seed=seed,
+        )
+        total_agents -= _number_agents
+        positions += pos
+        if not total_agents:
+            break
+    distribution_polygons = parse_distribution_polygons(_data)
+    positions = []
+    seed = int(_data["motivation_parameters"]["seed"])
+    total_agents = _number_agents
+    for s_polygon in distribution_polygons.values():
+        logging.info(f"Distribute {total_agents} agents")
+        pos = distribute_by_number(
+            polygon=s_polygon,
+            number_of_agents=total_agents,
+            distance_to_agents=0.4,
+            distance_to_polygon=0.2,
+            seed=seed,
+        )
+        total_agents -= _number_agents
+        positions += pos
+        if not total_agents:
+            break
+
+    return positions
+
+
+def read_positions_from_csv(file_path="points.csv"):
+    """Read positions generated by notebook from a CSV file if it exists."""
+    path = pathlib.Path(file_path)
+
+    if not path.is_file():
+        raise FileNotFoundError(f"The file {file_path} does not exist yet.")
+
+    with path.open("r") as f:
+        reader = csv.reader(f)
+        tuple_list = [tuple(map(float, row)) for row in reader]
+
+    return tuple_list
+
+
 def main(
     _number_agents: int,
     _fps: int,
@@ -293,51 +385,12 @@ def main(
     :returns:
     """
     simulation = init_simulation(_data, _time_step, _fps, _trajectory_path)
-    way_points = parse_way_points(_data)
-    destinations_dict = parse_destinations(_data)
-    destinations = list(destinations_dict.values())
-    journey_id, exit_ids = init_journey(simulation, way_points, destinations)
-    distribution_polygons = parse_distribution_polygons(_data)
-    positions = []
-    seed = int(_data["motivation_parameters"]["seed"])
-
-    total_agents = _number_agents
-    for s_polygon in distribution_polygons.values():
-        logging.info(f"Distribute {total_agents} agents")
-        pos = distribute_by_number(
-            polygon=s_polygon,
-            number_of_agents=total_agents,
-            distance_to_agents=0.4,
-            distance_to_polygon=0.2,
-            seed=seed,
-        )
-        total_agents -= _number_agents
-        positions += pos
-        if not total_agents:
-            break
-
-    normal_v_0 = parse_normal_v_0(_data)
-    normal_time_gap = parse_normal_time_gap(_data)
-    radius = parse_radius(_data)
-    agent_parameters_list = []
     a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
         parse_velocity_init_parameters(_data)
     )
-
-    for exit_id in exit_ids:
-        agent_parameters = jps.CollisionFreeSpeedModelV2AgentParameters(
-            journey_id=journey_id,
-            stage_id=exit_id,
-            radius=radius,
-            v0=normal_v_0,
-            time_gap=normal_time_gap,
-            strength_neighbor_repulsion=a_ped,
-            range_neighbor_repulsion=d_ped,
-            strength_geometry_repulsion=a_wall,
-            range_geometry_repulsion=d_wall,
-        )
-        agent_parameters_list.append(agent_parameters)
-
+    agent_parameters_list = create_agent_parameters(_data, simulation)
+    # positions = init_positions(_data, _number_agents)
+    positions = read_positions_from_csv(file_path="1C060_frame_3951.csv")
     ped_ids = distribute_and_add_agents(simulation, agent_parameters_list, positions)
     motivation_model = init_motivation_model(_data, ped_ids)
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
@@ -347,11 +400,8 @@ def main(
         motivation_model,
         _simulation_time,
         ped_ids,
+        _data,
         msg,
-        a_ped_min=a_ped_min,
-        a_ped_max=a_ped_max,
-        d_ped_min=d_ped_min,
-        d_ped_max=d_ped_max,
     )
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"
@@ -362,6 +412,7 @@ def main(
 
 
 def start_simulation(config_path, output_path):
+    """Call main function."""
     with open(config_path, "r", encoding="utf8") as f:
         data = json.load(f)
         fps = parse_fps(data)
@@ -427,7 +478,7 @@ if __name__ == "__main__":
         logging.info(f"running variation {i:03d}: {variation}")
         new_config_path = f"config_variation_{i:03d}.json"
         output_path = f"files/trajectory_variation_{i:03d}.sqlite"
-
+        logging.info(f"{output_path = }")
         # Modify and save the new configuration
         modify_and_save_config(base_config, variation, new_config_path)
 
