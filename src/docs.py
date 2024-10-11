@@ -73,21 +73,16 @@ def main() -> None:
         ## Update agents
         For an agent $i$ we calculate $m_i$ by one of the methods above and update its parameters as follows:
         
-        $\tilde v_i^0 =  (v_i^0\cdot V_i)(1 + m_i)$ and $\tilde T_i = \frac{T_i}{1 + m_i}$
-
-        The first part of the equation is equalivalent to
-
-        $\tilde v_i^0 =  v_i^0\cdot V_i(1 + E_i\cdot V_i\cdot C_i)$.
-
-        Here we see that the influence of $V_i$ is squared.
-        Therefore, the second variation of the model reads
-            
-        ## EC-V
-       $$     
-       \begin{cases}     
-        \tilde v_i^0 =  v_i^0(1 + E_i\cdot C_i)\cdot V_i, \\
-        \tilde T_i = \frac{T_i}{1 + E_i\cdot C_i}.
-       \end{cases}
+        $$
+        \tilde v_i^0 =  2\cdot v_i^0\cdot V_i\cdot\sigma(m_i)
+        $$
+        and
+        $$
+        \tilde T_i = 2T_i\Big(1-\sigma(m_i)\Big),
+        $$
+        where $\sigma$ is the logistic function:
+        $$
+        \sigma(m) = \frac{1}{1 + e^{-m}}
         $$
         """,
         unsafe_allow_html=True,

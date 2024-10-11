@@ -8,11 +8,44 @@ from typing import Any, Dict, List, Optional, Tuple, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from matplotlib.figure import Figure
 
 from .logger_config import log_debug
 
 Point: TypeAlias = Tuple[float, float]
+
+
+def shifted_logistic(
+    x: float, M_max: float = 1.0, k: float = 1.0, shift: float = 0.0
+) -> np.ndarray:
+    """
+    Computes the shifted logistic function.
+
+    This function serves as a mean to normalize the motivation values to the range [0, 1].
+
+    The shifted logistic function is defined as:
+
+    .. math::
+        \\text{motivation} = \\frac{M_{max}}{1 + e^{-k \\cdot (x - \\text{shift})}}
+
+    Parameters:
+    ----------
+    x : float
+        Input value for which to compute the shifted logistic function.
+    M_max : float, optional
+        The maximum value of the logistic function. Default is 1.0.
+    k : float, optional
+        The steepness of the curve. Default is 1.0.
+    shift : float, optional
+        The value to shift the input by. Default is 5.0.
+
+    Returns:
+    -------
+    float
+        The computed value of the shifted logistic function for the input `x`.
+    """
+    return M_max / (1 + np.exp(-k * (x - shift)))
 
 
 class MotivationStrategy(ABC):
@@ -107,7 +140,7 @@ class EVCStrategy(MotivationStrategy):
     evc: bool = True
 
     def __post_init__(self) -> None:
-        """Intialise array pedestrian_value with random values in min max interval."""
+        """Initialize array pedestrian_value with random values in min max interval."""
         if self.seed is not None:
             random.seed(self.seed)
 
@@ -194,7 +227,7 @@ class EVCStrategy(MotivationStrategy):
             params["seed"] = None
 
         value = self.pedestrian_value[agent_id] if self.evc else 1.0
-        return float(
+        M = float(
             value
             * EVCStrategy.competition(
                 N=got_reward,
@@ -209,6 +242,7 @@ class EVCStrategy(MotivationStrategy):
                 self.height,
             )
         )
+        return shifted_logistic(M)
 
     def plot(self) -> List[Figure]:
         """Plot functions for inspection."""
@@ -403,8 +437,8 @@ class MotivationModel:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
         v_0 = self.normal_v_0 * self.motivation_strategy.get_value(agent_id=agent_id)
         time_gap = self.normal_time_gap
-        v_0_new = (1 + motivation_i) * v_0
-        time_gap_new = time_gap / (1 + motivation_i)
+        v_0_new = 2 * v_0 * motivation_i
+        time_gap_new = time_gap / (2 * motivation_i)
         return v_0_new, time_gap_new
 
     def plot(self) -> Tuple[Figure, Figure]:

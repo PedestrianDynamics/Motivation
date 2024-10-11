@@ -249,13 +249,15 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
             "**Value high**",
             key="value_high",
             options=np.arange(
-                1.0,  # float(data["motivation_parameters"]["min_value_high"]),
-                5.0,  # float(data["motivation_parameters"]["max_value_high"]),
+                1.0,
+                2.6,
                 0.1,
             ),
+            #
+            #
             value=[
-                2.0,  # float(data["motivation_parameters"]["min_value_high"] + 0.2),
-                4.0,  # float(data["motivation_parameters"]["max_value_high"] - 0.2),
+                float(data["motivation_parameters"]["max_value_high"]),
+                float(data["motivation_parameters"]["min_value_high"]),
             ],
             format_func=lambda x: f"{x:.2f}",
             help="Upper/Lower limit of high Value people.",
@@ -271,8 +273,8 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
                 0.1,
             ),
             value=[
-                0.2,  # float(data["motivation_parameters"]["min_value_low"] + 0.2),
-                0.8,  # float(data["motivation_parameters"]["max_value_low"] - 0.2),
+                float(data["motivation_parameters"]["min_value_low"]),
+                float(data["motivation_parameters"]["max_value_low"]),
             ],
             help="Upper/Lower limit of low Value people.",
             format_func=lambda x: f"{x:.2f}",

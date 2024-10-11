@@ -243,20 +243,19 @@ def run_simulation(
                     motivation_i = motivation_model.motivation_strategy.motivation(
                         params
                     )
-                    # d_ped =
+                    if motivation_i > 1:
+                        logging.info(
+                            f"{simulation.iteration_count()}: {agent.id}: {motivation_i = }"
+                        )
                     v_0, time_gap = motivation_model.calculate_motivation_state(
                         motivation_i, agent.id
                     )
-
                     agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
                         motivation_i=motivation_i,
                         min_value=a_ped_min,
                         default_value=default_strength,
                         max_value=a_ped_max,
                     )
-                    # print(
-                    #     f"{ agent.model.strength_neighbor_repulsion=}, {a_ped_min=}, {a_ped_max=}\n"
-                    # )
                     # # D
                     agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
                         motivation_i=motivation_i,
@@ -269,10 +268,10 @@ def run_simulation(
                     # print(
                     #     f"{ agent.model.range_neighbor_repulsion=}, {d_ped_min=}, {d_ped_max}"
                     # )
-                    if agent.id == -1:
-                        logging.info(
-                            f"{simulation.iteration_count()}, Agent={agent.id}, {agent.model.strength_neighbor_repulsion =},  {agent.model.v0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
-                        )
+                    # if agent.id == -3:
+                    #     logging.info(
+                    #         f"{simulation.iteration_count()}, Agent={agent.id}, {agent.model.strength_neighbor_repulsion =},  {agent.model.v0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
+                    #     )
 
                     write_value_to_file(
                         file_handle,
@@ -310,7 +309,7 @@ def create_agent_parameters(
         )
         agent_parameters_list.append(agent_parameters)
 
-    return agent_parameters_list
+    return agent_parameters_list, destinations
 
 
 def init_positions(_data: Dict[str, Any], _number_agents: int) -> List[Point]:
@@ -388,11 +387,16 @@ def main(
     a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
         parse_velocity_init_parameters(_data)
     )
-    agent_parameters_list = create_agent_parameters(_data, simulation)
+    agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
     # positions = init_positions(_data, _number_agents)
-    # positions = read_positions_from_csv(file_path="1C060_frame_3951.csv")
-    positions = read_positions_from_csv(file_path="debug.csv")
-    ped_ids = distribute_and_add_agents(simulation, agent_parameters_list, positions)
+    positions = read_positions_from_csv(file_path="1C060_frame_3951.csv")
+    # positions = read_positions_from_csv(file_path="debug.csv")
+    ped_ids = distribute_and_add_agents(
+        simulation=simulation,
+        agent_parameters_list=agent_parameters_list,
+        positions=positions,
+        exit_positions=exit_positions,
+    )
     motivation_model = init_motivation_model(_data, ped_ids)
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
     logging.info(f"{motivation_model.motivation_strategy.width = }")
@@ -451,6 +455,7 @@ def modify_and_save_config(base_config, modification_dict, new_config_path):
 if __name__ == "__main__":
     init_logger()
     base_config = "files/inifile.json"
+    logging.info(f"{base_config = }")
     # Load base configuration
     with open(base_config, "r", encoding="utf8") as f:
         base_config = json.load(f)

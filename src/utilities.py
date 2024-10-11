@@ -19,6 +19,7 @@ from scipy import stats
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
 from .logger_config import log_error, log_info
+from math import sqrt
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -104,11 +105,11 @@ def init_journey(
     wp_ids = []
     journey = jps.JourneyDescription()
     distance = 1
-    for way_point in way_points:
-        # log_info(f"add way_point: {way_point}")
-        wp_id = simulation.add_waypoint_stage((way_point[0], way_point[1]), distance)
-        wp_ids.append(wp_id)
-        journey.add(wp_id)
+    # for way_point in way_points:
+    #     # log_info(f"add way_point: {way_point}")
+    #     wp_id = simulation.add_waypoint_stage((way_point[0], way_point[1]), distance)
+    #     wp_ids.append(wp_id)
+    #     journey.add(wp_id)
 
     for e in exits:
         log_info(f"add {e}")
@@ -129,24 +130,46 @@ def init_journey(
     return journey_id, exit_ids
 
 
+def calculate_distance(p1: Point, p2: Point) -> float:
+    """Calculate Euclidean distance between two points."""
+    return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+
+def calculate_centroid(points: List[Point]) -> Point:
+    """Calculate the centroid of a polygon (list of points)."""
+    x_coords = [p[0] for p in points]
+    y_coords = [p[1] for p in points]
+    centroid_x = sum(x_coords) / len(points)
+    centroid_y = sum(y_coords) / len(points)
+    return (centroid_x, centroid_y)
+
+
 def distribute_and_add_agents(
     simulation: jps.Simulation,
-    agent_parameters_list: List[jps.CollisionFreeSpeedModelAgentParameters],
+    agent_parameters_list: List[jps.CollisionFreeSpeedModelV2AgentParameters],
     positions: List[Point],
+    exit_positions: List[List[Point]],
 ) -> List[int]:
-    """Initialize positions of agents and insert them into the simulation.
+    """Initialize positions of agents, assign each one to the nearest exit (based on centroid).
 
-    :param simulation:
-    :param agent_parameters:
-    :param positions:
-    :returns:
+    and insert them into the simulation.
 
+    :param simulation: The simulation object.
+    :param agent_parameters_list: List of agent parameters to be used for each agent.
+    :param positions: List of initial positions for agents.
+    :param exit_positions: List of positions for each exit (as polygons).
+    :returns: List of pedestrian IDs after being added to the simulation.
     """
-    # log_info("Distribute and Add Agent")
     ped_ids = []
-    size = len(agent_parameters_list)
+    exit_centroids = [calculate_centroid(exit_points) for exit_points in exit_positions]
+
     for i, (pos_x, pos_y) in enumerate(positions):
-        agent_parameters = agent_parameters_list[i % size]
+        agent_position = (pos_x, pos_y)
+        nearest_exit_index = min(
+            range(len(exit_centroids)),
+            key=lambda j: calculate_distance(agent_position, exit_centroids[j]),
+        )
+        agent_parameters = agent_parameters_list[nearest_exit_index]
         agent_parameters.position = (pos_x, pos_y)
         ped_id = simulation.add_agent(agent_parameters)
         ped_ids.append(ped_id)
