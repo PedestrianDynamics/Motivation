@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Tuple, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 from matplotlib.figure import Figure
 
 from .logger_config import log_debug
@@ -19,8 +18,8 @@ Point: TypeAlias = Tuple[float, float]
 def shifted_logistic(
     x: float, M_max: float = 1.0, k: float = 1.0, shift: float = 0.0
 ) -> np.ndarray:
-    """
-    Computes the shifted logistic function.
+    r"""
+    Compute the shifted logistic function.
 
     This function serves as a mean to normalize the motivation values to the range [0, 1].
 
@@ -164,7 +163,7 @@ class EVCStrategy(MotivationStrategy):
 
     @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
-        """Calculate Expectancy depends on the distance to the entrance."""
+        """Calculate Expectancy depending on the distance to the entrance."""
         if _distance >= _width:
             return 0.0
 
@@ -206,7 +205,7 @@ class EVCStrategy(MotivationStrategy):
         if isinstance(ped_id, int):
             return self.pedestrian_value[ped_id]
         else:
-            logging.error("Something went south in get_value returning 0.0!")
+            logging.error("Something went south in get_value: returning 0.0!")
             return 0.0
 
     @staticmethod

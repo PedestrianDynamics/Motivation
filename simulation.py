@@ -8,7 +8,6 @@ import logging
 import pathlib
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
-import sys
 import csv
 import _io
 import jupedsim as jps
