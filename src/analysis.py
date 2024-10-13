@@ -2,7 +2,7 @@ import glob
 import json
 from pathlib import Path
 from typing import Any
-
+import pandas as pd
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,6 +102,12 @@ def run() -> None:
     else:
         fps = parse_fps(json_data)
         if SELECTED_OUTPUT_FILE:
+            output_path = Path(SELECTED_OUTPUT_FILE)
+            motivation_file = output_path.with_name(
+                output_path.stem + "_motivation.txt"
+            )
+            print(f"{motivation_file = }")
+
             parsed_measurement_line = json_data["measurement_line"]["vertices"]
             measurement_area = pedpy.MeasurementArea(
                 json_data["measurement_area"]["vertices"]
@@ -201,38 +207,73 @@ def run() -> None:
                 fig2 = plt.gcf()
                 st.pyplot(fig2)
             if selected == "Distance to entrance":
-                c1, c2 = st.columns(2)
-                yaxis_max = c1.number_input("Max y-Axis: ", value=10.0, step=0.1)
-                colorbar_max = c2.number_input("Max colorbar: ", value=2.0, step=0.1)
+                c1, c2, c3 = st.columns(3)
+                yaxis_max = c1.number_input("Max y-Axis: ", value=200, step=5)
                 df_time_distance = pedpy.compute_time_distance_line(
                     traj_data=traj, measurement_line=measurement_line
                 )
-                speed = pedpy.compute_individual_speed(
-                    traj_data=traj,
-                    frame_step=5,
-                    speed_calculation=pedpy.SpeedCalculation.BORDER_SINGLE_SIDED,
+                st.dataframe(traj.data)
+                color_by_speed = c3.radio(
+                    "Select parameter to color by:", ("Motivation", "Speed")
                 )
-                data = speed.merge(traj.data, on=[ID_COL, FRAME_COL])
+
+                # Set a flag based on the selection
+                if color_by_speed == "Speed":
+                    color_by_speed = True
+                else:
+                    color_by_speed = False
+
+                if color_by_speed:
+                    speed = pedpy.compute_individual_speed(
+                        traj_data=traj,
+                        frame_step=5,
+                        speed_calculation=pedpy.SpeedCalculation.BORDER_SINGLE_SIDED,
+                    )
+                    colorbar_max = c2.number_input(
+                        "Max colorbar: ", value=2.0, step=0.1
+                    )
+                    unit_text = "Speed / m/s"
+                else:  # by Motivation
+                    speed = pd.read_csv(
+                        motivation_file,
+                        names=[FRAME_COL, ID_COL, "time", "speed", "x", "y"],
+                        dtype={ID_COL: "int64", FRAME_COL: "int64"},
+                    )
+                    colorbar_max = c2.number_input(
+                        "Max colorbar: ", value=1.0, step=0.1
+                    )
+                    unit_text = "Motivation"
+
                 df_time_distance["time_seconds"] = (
-                    df_time_distance["time"] / traj.frame_rate
+                    df_time_distance["time"] / 1.0  # traj.frame_rate
                 )
+                c1.info("Motivation")
+                c2.info("Time distance")
+                c3.info("Merged")
+                c1.dataframe(speed)
+                c2.dataframe(df_time_distance)
                 speed = speed.merge(df_time_distance, on=[ID_COL, FRAME_COL])
+                c3.dataframe(speed)
                 first_frame_speed = speed.loc[
                     speed[FRAME_COL] == speed[FRAME_COL].min(),
                     ["speed", "time_seconds", "distance"],
                 ]
                 norm = Normalize(speed.min().speed, speed.max().speed)
+                st.info(
+                    f"Min: {speed.min().speed}, Max: {speed.max().speed}, first frame: {speed[FRAME_COL].min()}"
+                )
+
                 cmap = cm.jet  # type: ignore
                 # ---------------
                 trajectory_ids = df_time_distance["id"].unique()
                 fig, ax = plt.subplots()
                 for traj_id in trajectory_ids:
+                    if traj_id != 44:
+                        continue
                     traj_data = df_time_distance[df_time_distance[ID_COL] == traj_id]
                     speed_id = speed[speed[ID_COL] == traj_id].speed.to_numpy()
                     # Extract points and speeds for the current trajectory
                     points = traj_data[["distance", "time_seconds"]].to_numpy()
-                    # st.dataframe(points)
-                    # st.dataframe(points)
                     # Prepare segments for the current trajectory
                     segments = [
                         [
@@ -241,22 +282,22 @@ def run() -> None:
                         ]
                         for i in range(len(points) - 1)
                     ]
-                    lc = LineCollection(segments, cmap="jet", alpha=0.7, norm=norm)
+                    lc = LineCollection(segments, cmap="jet", alpha=1, norm=norm)
                     lc.set_array(speed_id)
                     lc.set_linewidth(0.5)
                     line = ax.add_collection(lc)
 
-                ax.scatter(
-                    first_frame_speed["distance"],
-                    first_frame_speed["time_seconds"],
-                    c=first_frame_speed["speed"],
-                    cmap=cmap,
-                    norm=norm,
-                    s=10,
-                )
+                # ax.scatter(
+                #     first_frame_speed["distance"],
+                #     first_frame_speed["time_seconds"],
+                #     c=first_frame_speed["speed"],
+                #     cmap=cmap,
+                #     norm=norm,
+                #     s=10,
+                # )
 
                 cbar = fig.colorbar(line, ax=ax)
-                cbar.set_label("Speed / m/s")
+                cbar.set_label(unit_text)
                 ax.autoscale()
                 ax.margins(0.1)
                 ax.set_title("Distance to entrance/Time to entrance")

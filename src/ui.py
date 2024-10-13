@@ -214,7 +214,7 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
         data["simulation_parameters"]["fps"] = st.number_input(
             "FPS:",
             min_value=1,
-            max_value=60,
+            max_value=100,
             value=data["simulation_parameters"]["fps"],
         )
         data["simulation_parameters"]["time_step"] = st.number_input(

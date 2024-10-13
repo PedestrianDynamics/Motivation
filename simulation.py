@@ -32,7 +32,12 @@ from src.inifile_parser import (
     parse_way_points,
 )
 from src.logger_config import init_logger, log_debug, log_error
-from src.utilities import build_geometry, distribute_and_add_agents, init_journey
+from src.utilities import (
+    build_geometry,
+    distribute_and_add_agents,
+    init_journey,
+    calculate_distance,
+)
 
 # import cProfile
 # import pstats
@@ -135,7 +140,7 @@ def init_simulation(
     _trajectory_path: pathlib.Path,
     from_file: bool = True,
 ) -> Any:
-    """Initialise geometry.
+    """Initialize geometry.
 
     :param data:
     :type data: str
@@ -143,7 +148,6 @@ def init_simulation(
     :type time_step: float
     :returns:
     """
-
     accessible_areas = parse_accessible_areas(_data)
     if from_file:
         geometry = from_wkt(
@@ -184,106 +188,103 @@ def adjust_parameter_linearly(
     return min_value + (max_value - min_value) * motivation_i
 
 
-def run_simulation(
+def process_agent(
+    agent: jps.Agent,
+    door: List[float],
     simulation: jps.Simulation,
     motivation_model: mm.MotivationModel,
-    _simulation_time: float,
-    ped_ids: List[int],
-    _data,
-    msg: Any,
-) -> None:
-    """Run simulation logic.
+    a_ped_min: float,
+    a_ped_max: float,
+    d_ped_min: float,
+    d_ped_max: float,
+    default_strength: float,
+    default_range: float,
+    file_handle: _io.TextIOWrapper,
+    frame_to_write: int,
+):
+    """Process an individual agent by calculating motivation and updating model parameters."""
+    position = agent.position
+    distance = calculate_distance(position, door)
 
-    :param simulation:
-    :type simulation:
-    :param writer:
-    :type writer:
-    :returns:
+    params = {
+        "agent_id": agent.id,
+        "distance": distance,
+        "number_agents_in_simulation": simulation.agent_count(),
+    }
 
-    """
-    # profiler = cProfile.Profile()
-    # profiler.enable()
-    # deltas = []
-    x_door = 0.5 * (motivation_model.door_point1[0] + motivation_model.door_point2[0])
-    y_door = 0.5 * (motivation_model.door_point1[1] + motivation_model.door_point2[1])
-    door = [x_door, y_door]
-    # logging.info("init initial speed")
-    # to generate some initial frames with speed = 0, since pedpy can not calculate 0 speeds.
-    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
-        parse_velocity_init_parameters(_data)
+    motivation_i = motivation_model.motivation_strategy.motivation(params)
+
+    if motivation_i > 1:
+        logging.error(f"{simulation.iteration_count()}: {agent.id}: {motivation_i = }")
+
+    v_0, time_gap = motivation_model.calculate_motivation_state(motivation_i, agent.id)
+
+    # Adjust agent parameters based on motivation
+    agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
+        motivation_i=motivation_i,
+        min_value=a_ped_min,
+        default_value=default_strength,
+        max_value=a_ped_max,
     )
 
-    for agent_id in ped_ids:
-        value_agent = motivation_model.motivation_strategy.get_value(agent_id=agent_id)
-        simulation.agent(agent_id).model.v0 *= value_agent
-        # TODO:
-        #        simulation.agent(agent_id).model.strength_neighbor_repulsion = 0.22
-        default_range = simulation.agent(agent_id).model.range_neighbor_repulsion
-        default_strength = simulation.agent(agent_id).model.strength_neighbor_repulsion
-    #        print(f"{simulation.agent(agent_id).model.strength_neighbor_repulsion =}")
-    #        print(f"{simulation.agent(agent_id).model.range_neighbor_repulsion =}")
+    agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
+        motivation_i=motivation_i,
+        min_value=d_ped_min,
+        default_value=default_range,
+        max_value=d_ped_max,
+    )
 
-    # print(
-    #     value_agent,
-    #     simulation.agent(agent_id).model.v0,
-    #     simulation.agent(agent_id).model.strength_neighbor_repulsion,
-    # )
-    logging.info(f"{default_range=}")
-    with open("values.txt", "w", encoding="utf-8") as file_handle:
+    agent.model.v0 = v_0
+    agent.model.time_gap = time_gap
+
+    # Write the processed data to the file
+    write_value_to_file(
+        file_handle,
+        f"{frame_to_write}, {agent.id}, {simulation.elapsed_time()}, {motivation_i}, {position[0]}, {position[1]}",
+    )
+
+
+def run_simulation_loop(
+    simulation: jps.Simulation,
+    door: List[float],
+    motivation_model: mm.MotivationModel,
+    simulation_time: float,
+    a_ped_min: float,
+    a_ped_max: float,
+    d_ped_min: float,
+    d_ped_max: float,
+    default_strength: float,
+    default_range: float,
+    every_nth_frame: int,
+    motivation_file: pathlib.Path,
+) -> None:
+    """Run the main simulation loop and write motivation data to a file."""
+    with open(motivation_file, "w", encoding="utf-8") as file_handle:
+        frame_to_write = 0
+
         while (
-            simulation.elapsed_time() < _simulation_time
-            and simulation.agent_count() > 0
+            simulation.elapsed_time() < simulation_time and simulation.agent_count() > 0
         ):
-            simulation.iterate()
-            if simulation.iteration_count() % 100 == 0:
-                number_agents_in_simulation = simulation.agent_count()
-                for agent in simulation.agents():
-                    position = agent.position
-                    distance = (
-                        (position[0] - door[0]) ** 2 + (position[1] - door[1]) ** 2
-                    ) ** 0.5
-                    params = {
-                        "agent_id": agent.id,
-                        "distance": distance,
-                        "number_agents_in_simulation": number_agents_in_simulation,
-                    }
-                    motivation_i = motivation_model.motivation_strategy.motivation(
-                        params
-                    )
-                    if motivation_i > 1:
-                        logging.error(
-                            f"{simulation.iteration_count()}: {agent.id}: {motivation_i = }"
-                        )
-                    v_0, time_gap = motivation_model.calculate_motivation_state(
-                        motivation_i, agent.id
-                    )
-                    agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
-                        motivation_i=motivation_i,
-                        min_value=a_ped_min,
-                        default_value=default_strength,
-                        max_value=a_ped_max,
-                    )
-                    # # D
-                    agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
-                        motivation_i=motivation_i,
-                        min_value=d_ped_min,
-                        default_value=default_range,
-                        max_value=d_ped_max,
-                    )
-                    agent.model.v0 = v_0
-                    agent.model.time_gap = time_gap
-                    # print(
-                    #     f"{ agent.model.range_neighbor_repulsion=}, {d_ped_min=}, {d_ped_max}"
-                    # )
-                    # if agent.id == -3:
-                    #     logging.info(
-                    #         f"{simulation.iteration_count()}, Agent={agent.id}, {agent.model.strength_neighbor_repulsion =},  {agent.model.v0 = :.2f}, {time_gap = :.2f}, {motivation_i = }, Pos: {position[0]:.2f} {position[1]:.2f}"
-                    #     )
+            print(f"time: {simulation.elapsed_time():.2f}", end="\r")
 
-                    write_value_to_file(
+            if simulation.iteration_count() % every_nth_frame == 0:
+                for agent in simulation.agents():
+                    process_agent(
+                        agent,
+                        door,
+                        simulation,
+                        motivation_model,
+                        a_ped_min,
+                        a_ped_max,
+                        d_ped_min,
+                        d_ped_max,
+                        default_strength,
+                        default_range,
                         file_handle,
-                        f"{position[0]} {position[1]} {motivation_i} {v_0} {time_gap} {distance}",
+                        frame_to_write,
                     )
+                frame_to_write += 1
+            simulation.iterate()
 
 
 def create_agent_parameters(
@@ -390,6 +391,10 @@ def main(
     :param trajectory_file:
     :returns:
     """
+    motivation_file = _trajectory_path.with_name(
+        _trajectory_path.stem + "_motivation.txt"
+    )
+    logging.info(f"{motivation_file}")
     simulation = init_simulation(_data, _time_step, _fps, _trajectory_path)
     a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
         parse_velocity_init_parameters(_data)
@@ -397,6 +402,7 @@ def main(
     agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
     # positions = init_positions(_data, _number_agents)
     positions = read_positions_from_csv(file_path="1C060_frame_3951.csv")
+    logging.info(f"Number of Agents {len(positions)}")
     # positions = read_positions_from_csv(file_path="debug.csv")
     ped_ids = distribute_and_add_agents(
         simulation=simulation,
@@ -405,15 +411,24 @@ def main(
         exit_positions=exit_positions,
     )
     motivation_model = init_motivation_model(_data, ped_ids)
+    x_door = 0.5 * (motivation_model.door_point1[0] + motivation_model.door_point2[0])
+    y_door = 0.5 * (motivation_model.door_point1[1] + motivation_model.door_point2[1])
+    motivation_door = [x_door, y_door]
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
     logging.info(f"{motivation_model.motivation_strategy.width = }")
-    run_simulation(
-        simulation,
-        motivation_model,
-        _simulation_time,
-        ped_ids,
-        _data,
-        msg,
+    run_simulation_loop(
+        simulation=simulation,
+        door=motivation_door,
+        motivation_model=motivation_model,
+        simulation_time=_simulation_time,
+        a_ped_min=a_ped_min,
+        a_ped_max=a_ped_max,
+        d_ped_min=d_ped_min,
+        d_ped_max=d_ped_max,
+        default_strength=a_ped,
+        default_range=d_ped,
+        every_nth_frame=_data["simulation_parameters"]["fps"],
+        motivation_file=motivation_file,
     )
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"

@@ -10,16 +10,16 @@
         "a_ped_min": 0.1,
         "a_ped_max": 0.5,
         "d_ped_min": 0.4,
-        "d_ped_max": 0.6,
+        "d_ped_max": 0.4,
         "a_wall": 0.4,
         "d_wall": 0.2,
         "radius": 0.10
     },
     "simulation_parameters": {
-        "fps": 60,
+        "fps": 100,
         "time_step": 0.001,
-        "number_agents": 50,
-        "simulation_time": 500
+        "number_agents": 82,
+        "simulation_time": 200
     },
     "measurement_line": {
         "vertices": [

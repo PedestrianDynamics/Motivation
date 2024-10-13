@@ -43,7 +43,7 @@ if __name__ == "__main__":
             if c1.button("Run Simulation"):
                 call_simulation(CONFIG_FILE, OUTPUT_FILE, data)
 
-            if c2.button("Visualisation"):
+            if c2.button("Visualization"):
                 output_path = Path(OUTPUT_FILE)
                 if output_path.exists():
                     trajectory_data, walkable_area = read_sqlite_file(OUTPUT_FILE)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
                     x1 = 0.5 * (vertices[0][0] + vertices[1][0]) + width
                     y1 = 0.5 * (vertices[1][1] + vertices[1][1]) + width
 
-                    st.info(f"{x0=}, {y0=}, {x1=}, {y1=}")
+                    st.info(f"Motivation door:  {x0=}, {y0=}, {x1=}, {y1=}")
                     anm = animate(
                         data_with_speed,
                         walkable_area,
