@@ -77,6 +77,7 @@ class DefaultMotivationStrategy(MotivationStrategy):
 
     width: float = 1.0
     height: float = 1.0
+    alpha: float = 1.0
 
     @staticmethod
     def name() -> str:
@@ -137,6 +138,7 @@ class EVCStrategy(MotivationStrategy):
     number_high_value: int = 10
     nagents: int = 10
     evc: bool = True
+    alpha = 1.0
 
     def __post_init__(self) -> None:
         """Initialize array pedestrian_value with random values in min max interval."""
@@ -226,22 +228,22 @@ class EVCStrategy(MotivationStrategy):
             params["seed"] = None
 
         value = self.pedestrian_value[agent_id] if self.evc else 1.0
-        M = float(
-            value
-            * EVCStrategy.competition(
-                N=got_reward,
-                c0=self.competition_max,
-                N0=self.competition_decay_reward,
-                percent=self.percent,
-                Nmax=self.max_reward,
-            )
-            * EVCStrategy.expectancy(
-                distance,
-                self.width,
-                self.height,
-            )
+        V_unit = value / self.max_value_high
+        C_unit = EVCStrategy.competition(
+            N=got_reward,
+            c0=self.competition_max,
+            N0=self.competition_decay_reward,
+            percent=self.percent,
+            Nmax=self.max_reward,
         )
-        return shifted_logistic(M)
+        E_unit = EVCStrategy.expectancy(
+            distance,
+            self.width,
+            self.height,
+        )
+
+        M = V_unit * E_unit * C_unit
+        return M
 
     def plot(self) -> List[Figure]:
         """Plot functions for inspection."""
@@ -434,10 +436,12 @@ class MotivationModel:
         self, motivation_i: float, agent_id: int
     ) -> Tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
+
         v_0 = self.normal_v_0 * self.motivation_strategy.get_value(agent_id=agent_id)
+
         time_gap = self.normal_time_gap
-        v_0_new = 2 * v_0 * motivation_i
-        time_gap_new = time_gap / (2 * motivation_i)
+        v_0_new = v_0 * (1 + self.motivation_strategy.alpha * motivation_i)
+        time_gap_new = time_gap / (1 + self.motivation_strategy.alpha * motivation_i)
         return v_0_new, time_gap_new
 
     def plot(self) -> Tuple[Figure, Figure]:

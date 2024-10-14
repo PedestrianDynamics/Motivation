@@ -321,9 +321,9 @@ def handle_distance_to_entrance(traj, measurement_line, motivation_file) -> None
         ["speed", "time_seconds", "distance"],
     ]
     norm = Normalize(speed.min().speed, speed.max().speed)
-    st.info(
-        f"Min: {speed.min().speed}, Max: {speed.max().speed}, first frame: {speed[FRAME_COL].min()}"
-    )
+    # st.info(
+    #     f"Min: {speed.min().speed}, Max: {speed.max().speed}, first frame: {speed[FRAME_COL].min()}"
+    # )
 
     cmap = cm.jet  # type: ignore
     # ---------------
