@@ -2,17 +2,19 @@
 
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
+import _io
 import contextlib
+import csv
 import json
 import logging
 import pathlib
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
-import csv
-import _io
+
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 from shapely import from_wkt
+
 from src import motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
@@ -33,9 +35,9 @@ from src.inifile_parser import (
 from src.logger_config import init_logger, log_debug, log_error
 from src.utilities import (
     build_geometry,
+    calculate_distance,
     distribute_and_add_agents,
     init_journey,
-    calculate_distance,
 )
 
 # import cProfile
@@ -391,7 +393,7 @@ def main(
     :returns:
     """
     motivation_file = _trajectory_path.with_name(
-        _trajectory_path.stem + "_motivation.txt"
+        _trajectory_path.stem + "_motivation.csv"
     )
     logging.info(f"{motivation_file}")
     simulation = init_simulation(_data, _time_step, _fps, _trajectory_path)
