@@ -14,7 +14,7 @@ from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
 from shapely import from_wkt
-
+from src.logger_config import init_logger
 from src import motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
@@ -32,7 +32,7 @@ from src.inifile_parser import (
     parse_velocity_init_parameters,
     parse_way_points,
 )
-from src.logger_config import init_logger, log_debug, log_error
+
 from src.utilities import (
     build_geometry,
     calculate_distance,
@@ -58,19 +58,19 @@ def profile_function(name: str) -> Iterator[None]:
     start_time = time.perf_counter_ns()
     yield  # <-- your code will execute here
     total_time = time.perf_counter_ns() - start_time
-    log_debug(f"{name}: {total_time / 1000000.0:.4f} ms")
+    logging.info(f"{name}: {total_time / 1000000.0:.4f} ms")
 
 
 def init_motivation_model(
     _data: Dict[str, Any], ped_ids: List[int]
 ) -> mm.MotivationModel:
-    """Init motuvation model based on parsed streategy."""
+    """Init motivation model based on parsed strategy."""
     width = _data["motivation_parameters"]["width"]
     height = _data["motivation_parameters"]["height"]
     seed = _data["motivation_parameters"]["seed"]
     motivation_doors = parse_motivation_doors(_data)
     if not motivation_doors:
-        log_error("json file does not contain any motivation door")
+        logging.info("json file does not contain any motivation door.")
 
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
@@ -237,12 +237,7 @@ def process_agent(
 
     agent.model.v0 = v_0
     agent.model.time_gap = time_gap
-
-    # Write the processed data to the file
-    write_value_to_file(
-        file_handle,
-        f"{frame_to_write}, {agent.id}, {simulation.elapsed_time()}, {motivation_i}, {position[0]}, {position[1]}",
-    )
+    return f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {position[0]:.2f}, {position[1]:.2f}"
 
 
 def run_simulation_loop(
@@ -259,7 +254,26 @@ def run_simulation_loop(
     every_nth_frame: int,
     motivation_file: pathlib.Path,
 ) -> None:
-    """Run the main simulation loop and write motivation data to a file."""
+    """Run the simulation loop to process agents and write motivation information to a CSV file.
+
+    Args:
+        simulation (jps.Simulation): The simulation instance.
+        door (List[float]): The coordinates of the door.
+        motivation_model (mm.MotivationModel): The motivation model used for agents.
+        simulation_time (float): The total simulation time.
+        a_ped_min (float): Minimum value for adjusting agent strength based on motivation.
+        a_ped_max (float): Maximum value for adjusting agent strength based on motivation.
+        d_ped_min (float): Minimum value for adjusting agent range based on motivation.
+        d_ped_max (float): Maximum value for adjusting agent range based on motivation.
+        default_strength (float): Default strength value for agents.
+        default_range (float): Default range value for agents.
+        every_nth_frame (int): Write to file every nth frame.
+        motivation_file (pathlib.Path): Path to the motivation file to write.
+
+    Returns:
+        None
+    """
+    buffer = []
     with open(motivation_file, "w", encoding="utf-8") as file_handle:
         frame_to_write = 0
 
@@ -270,7 +284,7 @@ def run_simulation_loop(
 
             if simulation.iteration_count() % every_nth_frame == 0:
                 for agent in simulation.agents():
-                    process_agent(
+                    ret = process_agent(
                         agent,
                         door,
                         simulation,
@@ -284,8 +298,13 @@ def run_simulation_loop(
                         file_handle,
                         frame_to_write,
                     )
+                    buffer.append(ret)
                 frame_to_write += 1
             simulation.iterate()
+
+        with profile_function("Writing to csv file"):
+            for items in buffer:
+                write_value_to_file(file_handle, items)
 
 
 def create_agent_parameters(
@@ -402,7 +421,9 @@ def main(
     )
     agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
     # positions = init_positions(_data, _number_agents)
-    positions = read_positions_from_csv(file_path="1C060_frame_3951.csv")
+    positions = read_positions_from_csv(
+        file_path="../trajectories_croma/1C060_frame_3951.csv"
+    )
     logging.info(f"Number of Agents {len(positions)}")
     # positions = read_positions_from_csv(file_path="debug.csv")
     ped_ids = distribute_and_add_agents(
@@ -417,6 +438,7 @@ def main(
     motivation_door = [x_door, y_door]
     logging.info(f"Running simulation for {len(ped_ids)} agents:")
     logging.info(f"{motivation_model.motivation_strategy.width = }")
+    start_time = time.time()
     run_simulation_loop(
         simulation=simulation,
         door=motivation_door,
@@ -431,10 +453,12 @@ def main(
         every_nth_frame=_data["simulation_parameters"]["fps"],
         motivation_file=motivation_file,
     )
+    end_time = time.time()
+    logging.info(f"Run time: {end_time - start_time:.2f} seconds")
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"
     )
-    logging.info(f"simulation time: {simulation.iteration_count()*_time_step} [s]")
+    logging.info(f"simulation time: {simulation.iteration_count()*_time_step:.2f} [s]")
     # logging.info(f"Trajectory: {_trajectory_path}")
     return float(simulation.iteration_count() * _time_step)
 
@@ -484,18 +508,13 @@ if __name__ == "__main__":
         base_config = json.load(f)
 
     variations = [
-        # {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 1.0},
-        # {"motivation_parameters/width": 0.5, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/height": 0.5, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 1.0},
-        # {"motivation_parameters/width": 0.1, "motivation_parameters/seed": 300.0},
         {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 1.0},
-        # {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 200.0},
-        # {"motivation_parameters/width": 1.5, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 200.0},
         # {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/width": 1.2, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 3.0, "motivation_parameters/seed": 200.0},
+        # {"motivation_parameters/width": 4.0, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 5.0, "motivation_parameters/seed": 200.0},
+        # {"motivation_parameters/width": 6.0, "motivation_parameters/seed": 300.0},
+        # {"motivation_parameters/width": 7.0, "motivation_parameters/seed": 300.0},
     ]
     file_path = "files/variations/variations.json"
 
