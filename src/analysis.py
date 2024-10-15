@@ -14,6 +14,7 @@ from jupedsim.internal.notebook_utils import read_sqlite_file
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from pedpy.column_identifier import FRAME_COL, ID_COL
+from typing import Dict
 import numpy as np
 from .inifile_parser import parse_fps
 from .plotting import (
@@ -97,7 +98,7 @@ def run() -> None:
         "Select file", sorted(list(set(glob.glob("files/*.sqlite"))), reverse=True)
     )
     traj, walkable_area = read_sqlite_file(SELECTED_OUTPUT_FILE)
-
+    print("HHHHHHHH", type(traj))
     json_data = load_json_data("files/inifile.json")
 
     if selected == "Heatmap":
@@ -165,7 +166,19 @@ def handle_analysis(
         elif selected == "Voronoi polygons":
             handle_voronoi(traj, walkable_area)
         elif selected == "Distance to entrance":
-            handle_distance_to_entrance(traj, measurement_line, motivation_file)
+            original_positions_file = Path(json_data["init_trajectories_file"])
+            original_traj = pedpy.load_trajectory_from_txt(
+                trajectory_file=original_positions_file,
+            )
+            fig = handle_distance_to_entrance(
+                traj, measurement_line, motivation_file, prefix="traj"
+            )
+            fig2 = handle_distance_to_entrance(
+                original_traj, measurement_line, motivation_file, prefix="orig"
+            )
+            c1, c2 = st.columns(2)
+            c1.pyplot(fig)
+            c2.pyplot(fig2)
 
 
 def plot_measurement_setup(
@@ -275,67 +288,111 @@ def handle_voronoi(traj, walkable_area) -> None:
     st.pyplot(fig2)
 
 
-def handle_distance_to_entrance(traj, measurement_line, motivation_file) -> None:
-    """Handle distance to entrance plotting."""
+# UI handling
+def get_user_inputs(prefix=""):
+    """Get inputs from the user for the plot configuration with unique keys."""
     c1, c2, c3 = st.columns(3)
-    yaxis_max = c1.number_input("Max y-Axis: ", value=200, step=5)
-    df_time_distance = pedpy.compute_time_distance_line(
-        traj_data=traj, measurement_line=measurement_line
-    )
-    color_by_speed = c3.radio("Select parameter to color by:", ("Motivation", "Speed"))
-    # Set a flag based on the selection
-    if color_by_speed == "Speed":
-        color_by_speed = True
-    else:
-        color_by_speed = False
 
+    # Add unique keys using the prefix argument
+    yaxis_max = c1.number_input(
+        f"{prefix}Max y-Axis: ", value=200, step=5, key=f"{prefix}_yaxis_max"
+    )
+    if prefix != "orig":
+        color_by_speed = c3.radio(
+            f"{prefix}Select parameter to color by:",
+            ("Motivation", "Speed"),
+            key=f"{prefix}_color_by_speed",
+        )
+    else:
+        color_by_speed = "Speed"
+    colorbar_max = c2.number_input(
+        f"{prefix}Max colorbar: ",
+        value=(2.0 if color_by_speed == "Speed" else 1.0),
+        step=0.1,
+        key=f"{prefix}_colorbar_max",
+    )
+    unit_text = "Speed / m/s" if color_by_speed == "Speed" else "Motivation"
+
+    return yaxis_max, color_by_speed == "Speed", colorbar_max, unit_text
+
+
+# Logic handling
+def compute_speed_or_motivation(traj, motivation_file, color_by_speed):
+    """Compute either speed or motivation data based on user input."""
     if color_by_speed:
+        # Compute speed
         speed = pedpy.compute_individual_speed(
             traj_data=traj,
             frame_step=5,
             speed_calculation=pedpy.SpeedCalculation.BORDER_SINGLE_SIDED,
         )
-        colorbar_max = c2.number_input("Max colorbar: ", value=2.0, step=0.1)
-        unit_text = "Speed / m/s"
-    else:  # by Motivation
+    else:
+        # Read motivation from file
         speed = pd.read_csv(
             motivation_file,
             names=[FRAME_COL, ID_COL, "time", "speed", "x", "y"],
             dtype={ID_COL: "int64", FRAME_COL: "int64"},
         )
-        colorbar_max = c2.number_input("Max colorbar: ", value=1.0, step=0.1)
-        unit_text = "Motivation"
+    return speed
+
+
+def process_data(traj, measurement_line, motivation_file, color_by_speed):
+    """Process and merge the data required for plotting."""
+    # Compute time distance line
+    df_time_distance = pedpy.compute_time_distance_line(
+        traj_data=traj, measurement_line=measurement_line
+    )
+    # Compute speed or motivation
+    speed = compute_speed_or_motivation(traj, motivation_file, color_by_speed)
 
     df_time_distance["time_seconds"] = (
-        df_time_distance["time"] / 1.0  # traj.frame_rate
-    )
+        df_time_distance["time"] / 1.0
+    )  # Assuming traj.frame_rate is 1
+    # Merge speed/motivation with time distance data
     speed = speed.merge(df_time_distance, on=[ID_COL, FRAME_COL])
+
     first_frame_speed = speed.loc[
         speed[FRAME_COL] == speed[FRAME_COL].min(),
         ["speed", "time_seconds", "distance"],
     ]
-    norm = Normalize(speed.min().speed, speed.max().speed)
-    cmap = cm.jet  # type: ignore
-    # ---------------
-    trajectory_ids = df_time_distance["id"].unique()
+
+    return speed, df_time_distance, first_frame_speed
+
+
+# Plotting function
+@st.cache_data
+def plot_distance_to_entrance(
+    df_time_distance,
+    speed,
+    first_frame_speed,
+    color_by_speed,
+    yaxis_max,
+    colorbar_max,
+    unit_text,
+):
+    """Plot the distance to entrance with speed or motivation coloring."""
+    norm = Normalize(speed["speed"].min(), speed["speed"].max())
+    cmap = cm.jet
+
+    # Create the figure and axis
     fig, ax = plt.subplots()
+
+    # Plot each trajectory
+    trajectory_ids = df_time_distance[ID_COL].unique()
     for traj_id in trajectory_ids:
         traj_data = df_time_distance[df_time_distance[ID_COL] == traj_id]
-        speed_id = speed[speed[ID_COL] == traj_id].speed.to_numpy()
-        # Extract points and speeds for the current trajectory
+        speed_id = speed[speed[ID_COL] == traj_id]["speed"].to_numpy()
         points = traj_data[["distance", "time_seconds"]].to_numpy()
-        # Prepare segments for the current trajectory
         segments = [
-            [
-                (points[i, 0], points[i, 1]),
-                (points[i + 1, 0], points[i + 1, 1]),
-            ]
+            [(points[i, 0], points[i, 1]), (points[i + 1, 0], points[i + 1, 1])]
             for i in range(len(points) - 1)
         ]
-        lc = LineCollection(segments, cmap="jet", alpha=1, norm=norm)
+        lc = LineCollection(segments, cmap=cmap, alpha=1, norm=norm)
         lc.set_array(speed_id)
         lc.set_linewidth(0.5)
         line = ax.add_collection(lc)
+
+    # Scatter plot of first frame speeds
     ax.scatter(
         first_frame_speed["distance"],
         first_frame_speed["time_seconds"],
@@ -345,8 +402,11 @@ def handle_distance_to_entrance(traj, measurement_line, motivation_file) -> None
         s=10,
     )
 
+    # Add colorbar and labels
     cbar = fig.colorbar(line, ax=ax)
     cbar.set_label(unit_text)
+
+    # Set plot properties
     ax.autoscale()
     ax.margins(0.1)
     ax.set_title("Distance to entrance/Time to entrance")
@@ -354,6 +414,29 @@ def handle_distance_to_entrance(traj, measurement_line, motivation_file) -> None
     ax.set_xlabel("Distance / m")
     ax.set_ylabel("Time / s")
     ax.set_ylim(top=yaxis_max)
-
     line.set_clim(vmax=colorbar_max)
-    st.pyplot(fig)
+
+    return fig
+
+
+# Main handler function
+def handle_distance_to_entrance(traj, measurement_line, motivation_file, prefix=""):
+    """Handle distance to entrance plotting."""
+    # Get user inputs
+    yaxis_max, color_by_speed, colorbar_max, unit_text = get_user_inputs(prefix)
+
+    # Process the data
+    speed, df_time_distance, first_frame_speed = process_data(
+        traj, measurement_line, motivation_file, color_by_speed
+    )
+
+    fig = plot_distance_to_entrance(
+        df_time_distance,
+        speed,
+        first_frame_speed,
+        color_by_speed,
+        yaxis_max,
+        colorbar_max,
+        unit_text,
+    )
+    return fig

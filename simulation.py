@@ -421,9 +421,9 @@ def main(
     )
     agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
     # positions = init_positions(_data, _number_agents)
-    positions = read_positions_from_csv(
-        file_path="../trajectories_croma/1C060_frame_3951.csv"
-    )
+    positions_file = _data["init_positions_file"]
+    print("parsed json file: ", _data["init_positions_file"])
+    positions = read_positions_from_csv(file_path=positions_file)
     logging.info(f"Number of Agents {len(positions)}")
     # positions = read_positions_from_csv(file_path="debug.csv")
     ped_ids = distribute_and_add_agents(

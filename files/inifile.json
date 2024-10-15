@@ -4,6 +4,8 @@
         "to start a jupedsim simulation with the motivation model"
     ],
     "version": 0.1,
+    "init_trajectories_file": "../trajectories_croma/1C060_cam6_cam5_frameshift0_Combined.txt",
+    "init_positions_file": "../trajectories_croma/1C060_frame_3951.csv",
     "velocity_init_parameters": {
         "a_ped": 0.1,
         "d_ped": 0.4,
@@ -25,11 +27,11 @@
         "vertices": [
             [
                 -0.42,
-                19.57
+                19.9
             ],
             [
                 0.38,
-                19.57
+                19.9
             ]
         ]
     },

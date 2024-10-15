@@ -23,7 +23,7 @@ from src.ui import init_sidebar, simulation_tab, ui_simulation_controls
 
 if __name__ == "__main__":
     init_logger()
-    st.sidebar.code(f"jupedsim: {jps.__version__}")
+    st.sidebar.code(f"jupedsim: {jps.__version__}\npedpy: {pedpy.__version__}")
     if "data" not in st.session_state:
         st.session_state.data = {}
 
