@@ -295,7 +295,7 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
 
 
 def ui_competition_parameters(data: Dict[str, Any]) -> None:
-    """Set competition function"""
+    """Set competition function."""
     with st.sidebar.expander("Competition Parameters", expanded=True):
         c1, c2 = st.columns(2)
         data["motivation_parameters"]["competition_max"] = c1.number_input(

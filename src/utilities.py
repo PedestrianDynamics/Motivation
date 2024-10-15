@@ -6,19 +6,12 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, TypeAlias, Union
 from types import SimpleNamespace
-
+import logging
 import jupedsim as jps
-import numpy as np
-import numpy.typing as npt
-import pedpy
-import plotly.graph_objects as go
 
 import streamlit as st
-from plotly.graph_objs import Figure
-from scipy import stats
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-from .logger_config import log_error, log_info
 from math import sqrt
 
 Point: TypeAlias = Tuple[float, float]
@@ -26,8 +19,9 @@ Point: TypeAlias = Tuple[float, float]
 
 def parse(data: Union[List, Dict, Any]) -> Union[List, SimpleNamespace, Any]:
     """
-    Recursively converts a nested structure of lists and dictionaries into
-    a structure of lists and SimpleNamespace objects. Other data types are left unchanged.
+    Recursively converts a nested structure of lists and dictionaries.
+
+    into a structure of lists and SimpleNamespace objects. Other data types are left unchanged.
 
     Parameters:
     - data (Union[List, Dict, Any]): The input data to parse. This can be a list,
@@ -61,7 +55,7 @@ def delete_txt_files() -> None:
         try:
             os.remove(file)
         except Exception as e:
-            log_error(f"Error deleting {file}: {e}")
+            logging.error(f"Error deleting {file}: {e}")
 
 
 def build_geometry(
@@ -102,9 +96,9 @@ def init_journey(
     # log_info(f"{ way_points= }")
     # log_info(f"{ exits= }")
     exit_ids = []
-    wp_ids = []
+    # wp_ids = []
     journey = jps.JourneyDescription()
-    distance = 1
+    # distance = 1
     # for way_point in way_points:
     #     # log_info(f"add way_point: {way_point}")
     #     wp_id = simulation.add_waypoint_stage((way_point[0], way_point[1]), distance)
@@ -112,7 +106,7 @@ def init_journey(
     #     journey.add(wp_id)
 
     for e in exits:
-        log_info(f"add {e}")
+        # log_info(f"add {e}")
         exit_id = simulation.add_exit_stage(e)
         exit_ids.append(exit_id)
         journey.add(exit_id)

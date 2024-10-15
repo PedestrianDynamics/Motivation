@@ -98,7 +98,7 @@ def run() -> None:
     )
     traj, walkable_area = read_sqlite_file(SELECTED_OUTPUT_FILE)
 
-    json_data = load_json_data("files/bottleneck.json")
+    json_data = load_json_data("files/inifile.json")
 
     if selected == "Heatmap":
         handle_heatmap(walkable_area)
@@ -309,29 +309,17 @@ def handle_distance_to_entrance(traj, measurement_line, motivation_file) -> None
     df_time_distance["time_seconds"] = (
         df_time_distance["time"] / 1.0  # traj.frame_rate
     )
-    # c1.info("Motivation")
-    # c2.info("Time distance")
-    # c3.info("Merged")
-    # c1.dataframe(speed)
-    # c2.dataframe(df_time_distance)
     speed = speed.merge(df_time_distance, on=[ID_COL, FRAME_COL])
-    # c3.dataframe(speed)
     first_frame_speed = speed.loc[
         speed[FRAME_COL] == speed[FRAME_COL].min(),
         ["speed", "time_seconds", "distance"],
     ]
     norm = Normalize(speed.min().speed, speed.max().speed)
-    # st.info(
-    #     f"Min: {speed.min().speed}, Max: {speed.max().speed}, first frame: {speed[FRAME_COL].min()}"
-    # )
-
     cmap = cm.jet  # type: ignore
     # ---------------
     trajectory_ids = df_time_distance["id"].unique()
     fig, ax = plt.subplots()
     for traj_id in trajectory_ids:
-        # if traj_id != 44:
-        #    continue
         traj_data = df_time_distance[df_time_distance[ID_COL] == traj_id]
         speed_id = speed[speed[ID_COL] == traj_id].speed.to_numpy()
         # Extract points and speeds for the current trajectory

@@ -436,7 +436,6 @@ class MotivationModel:
         self, motivation_i: float, agent_id: int
     ) -> Tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
-
         v_0 = self.normal_v_0 * self.motivation_strategy.get_value(agent_id=agent_id)
 
         time_gap = self.normal_time_gap
