@@ -48,7 +48,12 @@ Point: TypeAlias = Tuple[float, float]
 
 
 def write_value_to_file(file_handle: _io.TextIOWrapper, value: str) -> None:
-    """Write motivation information for ploting as heatmap."""
+    """Append a string to a file with a newline character.
+
+    Args:
+        file_handle (_io.TextIOWrapper): The file handle to write to.
+        value (str): The string to write to the file.
+    """
     file_handle.write(value + "\n")
 
 
