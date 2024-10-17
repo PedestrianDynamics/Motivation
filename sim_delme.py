@@ -194,6 +194,7 @@ def adjust_parameter_linearly(
     return min_value + (max_value - min_value) * motivation_i
 
 
+def process_agent(
     agent: jps.Agent,
     door: List[float],
     simulation: jps.Simulation,
@@ -204,8 +205,9 @@ def adjust_parameter_linearly(
     d_ped_max: float,
     default_strength: float,
     default_range: float,
+    file_handle: _io.TextIOWrapper,
     frame_to_write: int,
-) -> str:
+):
     """Process an individual agent by calculating motivation and updating model parameters."""
     position = agent.position
     distance = calculate_distance(position, door)
@@ -244,6 +246,19 @@ def adjust_parameter_linearly(
 
 
 def run_simulation_loop(
+    simulation: jps.Simulation,
+    door: List[float],
+    motivation_model: mm.MotivationModel,
+    simulation_time: float,
+    a_ped_min: float,
+    a_ped_max: float,
+    d_ped_min: float,
+    d_ped_max: float,
+    default_strength: float,
+    default_range: float,
+    every_nth_frame: int,
+    motivation_file: pathlib.Path,
+) -> None:
     """Run the simulation loop to process agents and write motivation information to a CSV file.
 
     Args:
@@ -265,9 +280,7 @@ def run_simulation_loop(
     """
     buffer = []
     frame_to_write = 0
-    while (
-        simulation.elapsed_time() < simulation_time and simulation.agent_count() > 0
-    ):
+    while simulation.elapsed_time() < simulation_time and simulation.agent_count() > 0:
         print(f"time: {simulation.elapsed_time():.2f}", end="\r")
 
         if simulation.iteration_count() % every_nth_frame == 0:
