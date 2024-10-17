@@ -237,22 +237,9 @@ def process_agent(
 
     agent.model.v0 = v_0
     agent.model.time_gap = time_gap
-    return f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {position[0]:.2f}, {position[1]:.2f}"
+    return f"{frame_to_write},{agent.id},{simulation.elapsed_time():.2f},{motivation_i:.2f},{position[0]:.2f},{position[1]:.2f}"
 
 
-def run_simulation_loop(
-    simulation: jps.Simulation,
-    door: List[float],
-    motivation_model: mm.MotivationModel,
-    simulation_time: float,
-    a_ped_min: float,
-    a_ped_max: float,
-    d_ped_min: float,
-    d_ped_max: float,
-    default_strength: float,
-    default_range: float,
-    every_nth_frame: int,
-    motivation_file: pathlib.Path,
 ) -> None:
     """Run the simulation loop to process agents and write motivation information to a CSV file.
 
@@ -274,35 +261,33 @@ def run_simulation_loop(
         None
     """
     buffer = []
-    with open(motivation_file, "w", encoding="utf-8") as file_handle:
-        frame_to_write = 0
+    frame_to_write = 0
+    while (
+        simulation.elapsed_time() < simulation_time and simulation.agent_count() > 0
+    ):
+        print(f"time: {simulation.elapsed_time():.2f}", end="\r")
 
-        while (
-            simulation.elapsed_time() < simulation_time and simulation.agent_count() > 0
-        ):
-            print(f"time: {simulation.elapsed_time():.2f}", end="\r")
+        if simulation.iteration_count() % every_nth_frame == 0:
+            for agent in simulation.agents():
+                ret = process_agent(
+                    agent,
+                    door,
+                    simulation,
+                    motivation_model,
+                    a_ped_min,
+                    a_ped_max,
+                    d_ped_min,
+                    d_ped_max,
+                    default_strength,
+                    default_range,
+                    frame_to_write,
+                )
+                buffer.append(ret)
+            frame_to_write += 1
+        simulation.iterate()
 
-            if simulation.iteration_count() % every_nth_frame == 0:
-                for agent in simulation.agents():
-                    ret = process_agent(
-                        agent,
-                        door,
-                        simulation,
-                        motivation_model,
-                        a_ped_min,
-                        a_ped_max,
-                        d_ped_min,
-                        d_ped_max,
-                        default_strength,
-                        default_range,
-                        file_handle,
-                        frame_to_write,
-                    )
-                    buffer.append(ret)
-                frame_to_write += 1
-            simulation.iterate()
-
-        with profile_function("Writing to csv file"):
+    with profile_function("Writing to csv file"):
+        with open(motivation_file, "w", encoding="utf-8") as file_handle:
             for items in buffer:
                 write_value_to_file(file_handle, items)
 
