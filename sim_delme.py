@@ -63,9 +63,26 @@ def write_value_to_file(file_handle: _io.TextIOWrapper, value: str) -> None:
 
 @contextlib.contextmanager
 def profile_function(name: str) -> Iterator[None]:
-    """Profile function. use with <with> and name it <name>."""
+    """Measure and log the execution time of a block of code.
+
+    This function is intended to be used as a context manager using the `with` statement.
+    It records the time taken for the code within the `with` block to execute and logs it
+    along with the provided `name`.
+
+    Args:
+        name (str): The name of the code block being profiled. This will be included in the log message.
+
+    Yields:
+        Iterator[None]: An iterator that allows the code within the `with` block to execute.
+
+    Example:
+        ```python
+        with profile_function("My Code Block"):
+            # Code to be profiled
+        ```
+    """
     start_time = time.perf_counter_ns()
-    yield  # <-- your code will execute here
+    yield
     total_time = time.perf_counter_ns() - start_time
     logging.info(f"{name}: {total_time / 1000000.0:.4f} ms")
 
