@@ -48,10 +48,14 @@ Point: TypeAlias = Tuple[float, float]
 
 
 def write_value_to_file(file_handle: _io.TextIOWrapper, value: str) -> None:
-    """Append a string to a file with a newline character.
+    """Append a string to a file, followed by a newline.
+
+    This function takes a file handle opened in append mode
+    and writes the given string to the file, followed by a newline.
 
     Args:
-        file_handle (_io.TextIOWrapper): The file handle to write to.
+        file_handle (_io.TextIOWrapper): The file handle to write to,
+            opened in append mode ('a').
         value (str): The string to write to the file.
     """
     file_handle.write(value + "\n")
