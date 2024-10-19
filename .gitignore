@@ -134,3 +134,4 @@ dmypy.json
 *tree*
 /files/bottleneck_0.8m.json
 /profile_stats.prof
+.aider*

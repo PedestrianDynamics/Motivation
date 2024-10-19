@@ -26,6 +26,23 @@ from .plotting import (
 from .ui import ui_measurement_parameters
 
 
+def get_first_frame_pedestrian_passes_line(filename: str, passing_line_y: float = 20.0):
+    """
+    Return the first frame when a pedestrian passes the specified horizontal line.
+    Also return the DataFrame of whole trajectories.
+    """
+    df = pd.read_csv(
+        filename, sep="\t", names=["id", "frame", "x", "y", "z", "m"], comment="#"
+    )
+    df = df.sort_values(["frame", "id"])
+    df["y_diff"] = df.groupby("id")["y"].diff()
+    crossing_frame = df[(df["y"] >= passing_line_y) & (df["y_diff"] > 0)]["frame"].min()
+    if pd.isna(crossing_frame):
+        return df, None
+    else:
+        return df, int(crossing_frame)
+
+
 def generate_heatmap(
     walkable_area: pedpy.WalkableArea,
     position_x: npt.NDArray[Any],
@@ -98,7 +115,6 @@ def run() -> None:
         "Select file", sorted(list(set(glob.glob("files/*.sqlite"))), reverse=True)
     )
     traj, walkable_area = read_sqlite_file(SELECTED_OUTPUT_FILE)
-    print("HHHHHHHH", type(traj))
     json_data = load_json_data("files/inifile.json")
 
     if selected == "Heatmap":
@@ -167,14 +183,20 @@ def handle_analysis(
             handle_voronoi(traj, walkable_area)
         elif selected == "Distance to entrance":
             original_positions_file = Path(json_data["init_trajectories_file"])
+            df, frame_after_decrease = get_first_frame_pedestrian_passes_line(
+                original_positions_file
+            )
             original_traj = pedpy.load_trajectory_from_txt(
                 trajectory_file=original_positions_file,
             )
+            frame_rate = original_traj.frame_rate
+            df_moving = df[df["frame"] >= frame_after_decrease]
+            traj_exp = pedpy.TrajectoryData(data=df_moving, frame_rate=frame_rate)
             fig = handle_distance_to_entrance(
                 traj, measurement_line, motivation_file, prefix="traj"
             )
             fig2 = handle_distance_to_entrance(
-                original_traj, measurement_line, motivation_file, prefix="orig"
+                traj_exp, measurement_line, motivation_file, prefix="orig"
             )
             c1, c2 = st.columns(2)
             c1.pyplot(fig)
@@ -299,7 +321,7 @@ def get_user_inputs(prefix=""):
     )
     if prefix != "orig":
         color_by_speed = c3.radio(
-            f"{prefix}Select parameter to color by:",
+            f"Select parameter to color by ({prefix}):",
             ("Motivation", "Speed"),
             key=f"{prefix}_color_by_speed",
         )
@@ -360,7 +382,6 @@ def process_data(traj, measurement_line, motivation_file, color_by_speed):
 
 
 # Plotting function
-@st.cache_data
 def plot_distance_to_entrance(
     df_time_distance,
     speed,

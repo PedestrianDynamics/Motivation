@@ -414,7 +414,7 @@ def main(
     motivation_file = _trajectory_path.with_name(
         _trajectory_path.stem + "_motivation.csv"
     )
-    logging.info(f"{motivation_file}")
+    logging.info(f"{motivation_file = }")
     simulation = init_simulation(_data, _time_step, _fps, _trajectory_path)
     a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
         parse_velocity_init_parameters(_data)
