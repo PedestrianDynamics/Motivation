@@ -5,7 +5,7 @@
     ],
     "version": 0.1,
     "init_trajectories_file": "../trajectories_croma/1C060_cam6_cam5_frameshift0_Combined.txt",
-    "init_positions_file": "../trajectories_croma/1C060_frame_3951.csv",
+    "init_positions_file": "../trajectories_croma/1C060_frame_5350.csv",
     "velocity_init_parameters": {
         "a_ped": 0.1,
         "d_ped": 0.4,

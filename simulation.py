@@ -10,6 +10,7 @@ import logging
 import pathlib
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
+import typer
 
 import jupedsim as jps
 from jupedsim.distributions import distribute_by_number
@@ -394,7 +395,7 @@ def read_positions_from_csv(file_path="points.csv"):
     return tuple_list
 
 
-def main(
+def init_and_run_simulation(
     _number_agents: int,
     _fps: int,
     _time_step: float,
@@ -473,7 +474,7 @@ def start_simulation(config_path, output_path):
         simulation_time = parse_simulation_time(data)
         dummy = ""
         if fps and time_step:
-            evac_time = main(
+            evac_time = init_and_run_simulation(
                 number_agents,
                 fps,
                 time_step,
@@ -499,29 +500,30 @@ def modify_and_save_config(base_config, modification_dict, new_config_path):
         json.dump(config, f, ensure_ascii=False, indent=4)
 
 
-if __name__ == "__main__":
+def main(
+    inifile: pathlib.Path = typer.Option(
+        pathlib.Path("files/inifile.json"),
+        help="Path to the initial configuration file",
+    ),
+):
+    """Implement Main function. Create variations and start simulations."""
     init_logger()
-    base_config = "files/inifile.json"
-    logging.info(f"{base_config = }")
-    # Load base configuration
-    with open(base_config, "r", encoding="utf8") as f:
+    logging.info(f"Base config = {inifile}")
+    with open(inifile, "r", encoding="utf8") as f:
         base_config = json.load(f)
 
     variations = [
         {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 1.0},
         # {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/width": 3.0, "motivation_parameters/seed": 200.0},
-        # {"motivation_parameters/width": 4.0, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/width": 5.0, "motivation_parameters/seed": 200.0},
-        # {"motivation_parameters/width": 6.0, "motivation_parameters/seed": 300.0},
-        # {"motivation_parameters/width": 7.0, "motivation_parameters/seed": 300.0},
     ]
-    file_path = "files/variations/variations.json"
 
-    # Write the list of dictionaries to a JSON file
-    with open(file_path, "w") as f:
+    output_dir = pathlib.Path("files/variations")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    variations_file = output_dir / "variations.json"
+    with open(variations_file, "w") as f:
         json.dump(variations, f, indent=4)
-    # Run simulations with variations
+
     for i, variation in enumerate(variations, start=1):
         logging.info(f"running variation {i:03d}: {variation}")
         new_config_path = f"config_variation_{i:03d}.json"
@@ -532,3 +534,7 @@ if __name__ == "__main__":
 
         evac_time = start_simulation(new_config_path, output_path)
         logging.info(f"Variation {i:03d}: {evac_time = }")
+
+
+if __name__ == "__main__":
+    typer.run(main)

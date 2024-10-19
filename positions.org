@@ -334,7 +334,7 @@ def process_file(filename: str, geometry: shapely.geometry.Polygon) -> None:
 
 ** Main function processing the files
 
-#+begin_src python -n :results  output :exports {both} :wrap results :hlines yes :python ~/.venvs/pedpy/bin/python :session imports :var figname="plot.png"
+#+begin_src python -n :results  output :exports pboth :wrap results :hlines yes :python ~/.venvs/pedpy/bin/python :session imports :var figname="plot.png"
 for filename in filenames[0:1]:
     figname = process_file(filename, geometry)
 #+end_src
