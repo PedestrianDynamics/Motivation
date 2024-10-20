@@ -10,12 +10,12 @@ import logging
 import pathlib
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias
-import typer
 
 import jupedsim as jps
+import typer
 from jupedsim.distributions import distribute_by_number
 from shapely import from_wkt
-from src.logger_config import init_logger
+
 from src import motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
@@ -33,7 +33,7 @@ from src.inifile_parser import (
     parse_velocity_init_parameters,
     parse_way_points,
 )
-
+from src.logger_config import init_logger
 from src.utilities import (
     build_geometry,
     calculate_distance,

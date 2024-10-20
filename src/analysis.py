@@ -3,19 +3,20 @@
 import glob
 import json
 from pathlib import Path
-from typing import Any
-import pandas as pd
+from typing import Any, Dict
+
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+import numpy as np
 import numpy.typing as npt
+import pandas as pd
 import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import read_sqlite_file
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from pedpy.column_identifier import FRAME_COL, ID_COL
-from typing import Dict
-import numpy as np
+
 from .inifile_parser import parse_fps
 from .plotting import (
     plot_density_time_series,

@@ -2,17 +2,17 @@
 
 import glob
 import json
-import os
-from pathlib import Path
-from typing import Any, Dict, List, Tuple, TypeAlias, Union
-from types import SimpleNamespace
 import logging
-import jupedsim as jps
+import os
+from math import sqrt
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, Dict, List, Tuple, TypeAlias, Union
 
+import jupedsim as jps
 import streamlit as st
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-from math import sqrt
 
 Point: TypeAlias = Tuple[float, float]
 

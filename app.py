@@ -7,12 +7,13 @@ Date: August 11, 2023
 
 from pathlib import Path
 
+import jupedsim as jps
+import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import read_sqlite_file
+
 from anim import animate
-import jupedsim as jps
 from src import analysis, docs
-import pedpy
 from src.logger_config import init_logger
 from src.simutilities import (
     call_simulation,
