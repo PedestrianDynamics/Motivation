@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import streamlit as st
 
-from simulation import main
+from simulation import init_and_run_simulation
 from src import motivation_model as mm
 from src.inifile_parser import (
     parse_fps,
@@ -75,7 +75,7 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
     msg.code(f"Running simulation with {number_agents}. Strategy: <{strategy}>...")
 
     with st.spinner("Simulating..."):
-        evac_time = main(
+        evac_time = init_and_run_simulation(
             number_agents, fps, time_step, simulation_time, data, Path(output_file), msg
         )
 
