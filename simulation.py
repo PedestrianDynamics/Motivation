@@ -36,7 +36,6 @@ from src.inifile_parser import (
 from src.logger_config import init_logger
 from src.utilities import (
     build_geometry,
-    calculate_centroid,
     calculate_distance,
     distribute_and_add_agents,
     init_journey,
