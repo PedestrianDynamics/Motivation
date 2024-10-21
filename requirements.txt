@@ -7,3 +7,4 @@ matplotlib
 pedpy
 numpy
 streamlit_option_menu
+typer
