@@ -23,11 +23,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mypy ruff
+          pip install -r requirements-dev.txt
           pip install -r requirements.txt
-      - name: Lint with Ruff
-        run: ruff  $(git ls-files '*.py')
-      - name: Analysing with Mypy
+      - name: Run pre-commit hooks
         run: |
-          mypy --strict $(git ls-files '*.py')
-    
+          pre-commit run --all-files
+          
