@@ -3,7 +3,7 @@
 import glob
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Optional, Tuple
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -15,6 +15,7 @@ import streamlit as st
 from jupedsim.internal.notebook_utils import read_sqlite_file
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
+from matplotlib.figure import Figure as matplotlib_fig
 from pedpy.column_identifier import FRAME_COL, ID_COL
 
 from .inifile_parser import parse_fps
@@ -27,9 +28,12 @@ from .plotting import (
 from .ui import ui_measurement_parameters
 
 
-def get_first_frame_pedestrian_passes_line(filename: str, passing_line_y: float = 20.0):
+def get_first_frame_pedestrian_passes_line(
+    filename: Path, passing_line_y: float = 20.0
+) -> Tuple[pd.DataFrame, Optional[int]]:
     """
     Return the first frame when a pedestrian passes the specified horizontal line.
+
     Also return the DataFrame of whole trajectories.
     """
     df = pd.read_csv(
@@ -83,7 +87,7 @@ def generate_heatmap(
         position_x, position_y, bins=50, weights=value
     )
     heatmap = heatmap / np.max(heatmap)
-    extent = [geo_min_x, geo_max_x, geo_min_y, geo_max_y]
+    extent = (geo_min_x, geo_max_x, geo_min_y, geo_max_y)
     plt.imshow(
         heatmap.T,
         origin="lower",
@@ -124,13 +128,13 @@ def run() -> None:
         handle_analysis(selected, SELECTED_OUTPUT_FILE, traj, walkable_area, json_data)
 
 
-def load_json_data(filepath: str) -> dict:
+def load_json_data(filepath: str) -> Any:
     """Load JSON data from a given file."""
     with open(filepath, "r", encoding="utf8") as f:
         return json.loads(f.read())
 
 
-def handle_heatmap(walkable_area) -> None:
+def handle_heatmap(walkable_area: pedpy.WalkableArea) -> None:
     """Handle heatmap selection and generation."""
     heatmap_files = glob.glob("files/*motivation.csv")
     selected_heatmap_file = st.selectbox(
@@ -155,13 +159,17 @@ def handle_heatmap(walkable_area) -> None:
 
 
 def handle_analysis(
-    selected, SELECTED_OUTPUT_FILE, traj, walkable_area, json_data
+    selected: str,
+    selected_output_file: str,
+    traj: pedpy.TrajectoryData,
+    walkable_area: pedpy.WalkableArea,
+    json_data: Any,
 ) -> None:
     """Handle the analysis based on the selected option."""
     fps = parse_fps(json_data)
 
-    if SELECTED_OUTPUT_FILE:
-        output_path = Path(SELECTED_OUTPUT_FILE)
+    if selected_output_file:
+        output_path = Path(selected_output_file)
         motivation_file = output_path.with_name(output_path.stem + "_motivation.csv")
         print(f"{motivation_file = }")
 
@@ -205,7 +213,10 @@ def handle_analysis(
 
 
 def plot_measurement_setup(
-    walkable_area, traj, measurement_line, measurement_area
+    walkable_area: pedpy.WalkableArea,
+    traj: pedpy.TrajectoryData,
+    measurement_line: pedpy.MeasurementLine,
+    measurement_area: pedpy.MeasurementArea,
 ) -> None:
     """Plot the measurement setup."""
     pedpy.plot_measurement_setup(
@@ -227,7 +238,9 @@ def plot_measurement_setup(
     st.sidebar.pyplot(fig)
 
 
-def handle_nt(traj, measurement_line) -> None:
+def handle_nt(
+    traj: pedpy.TrajectoryData, measurement_line: pedpy.MeasurementLine
+) -> None:
     """Handle NT (number of traversals) computation."""
     nt, crossing_frames = pedpy.compute_n_t(
         traj_data=traj, measurement_line=measurement_line
@@ -235,7 +248,9 @@ def handle_nt(traj, measurement_line) -> None:
     plotly_nt_series(nt)
 
 
-def handle_speed(traj, measurement_area, json_data) -> None:
+def handle_speed(
+    traj: pedpy.TrajectoryData, measurement_area: pedpy.MeasurementArea, json_data: Any
+) -> None:
     """Handle speed computation and plotting."""
     ui_measurement_parameters(json_data)
     individual_speed = pedpy.compute_individual_speed(
@@ -251,7 +266,12 @@ def handle_speed(traj, measurement_area, json_data) -> None:
     plot_speed_time_series(mean_speed)
 
 
-def handle_flow(traj, measurement_line, fps, json_data) -> None:
+def handle_flow(
+    traj: pedpy.TrajectoryData,
+    measurement_line: pedpy.MeasurementLine,
+    fps: int,
+    json_data: Any,
+) -> None:
     """Handle flow computation and plotting."""
     ui_measurement_parameters(json_data)
     nt, crossing_frames = pedpy.compute_n_t(
@@ -269,7 +289,12 @@ def handle_flow(traj, measurement_line, fps, json_data) -> None:
     plot_flow_time_series(flow_speed)
 
 
-def handle_density(traj, walkable_area, measurement_area, json_data) -> None:
+def handle_density(
+    traj: pedpy.TrajectoryData,
+    walkable_area: pedpy.WalkableArea,
+    measurement_area: pedpy.MeasurementArea,
+    json_data: Any,
+) -> None:
     """Handle density computation and plotting."""
     ui_measurement_parameters(json_data)
     individual = pedpy.compute_individual_voronoi_polygons(
@@ -282,7 +307,9 @@ def handle_density(traj, walkable_area, measurement_area, json_data) -> None:
     plot_density_time_series(density_voronoi)
 
 
-def handle_voronoi(traj, walkable_area) -> None:
+def handle_voronoi(
+    traj: pedpy.TrajectoryData, walkable_area: pedpy.WalkableArea
+) -> None:
     """Handle Voronoi polygons plotting."""
     individual = pedpy.compute_individual_voronoi_polygons(
         traj_data=traj, walkable_area=walkable_area
@@ -312,7 +339,7 @@ def handle_voronoi(traj, walkable_area) -> None:
 
 
 # UI handling
-def get_user_inputs(prefix=""):
+def get_user_inputs(prefix: str = "") -> Tuple[float, bool, float, str]:
     """Get inputs from the user for the plot configuration with unique keys."""
     c1, c2, c3 = st.columns(3)
 
@@ -339,8 +366,9 @@ def get_user_inputs(prefix=""):
     return yaxis_max, color_by_speed == "Speed", colorbar_max, unit_text
 
 
-# Logic handling
-def compute_speed_or_motivation(traj, motivation_file, color_by_speed):
+def compute_speed_or_motivation(
+    traj: pedpy.TrajectoryData, motivation_file: Path, color_by_speed: bool
+) -> pd.DataFrame:
     """Compute either speed or motivation data based on user input."""
     if color_by_speed:
         # Compute speed
@@ -359,7 +387,12 @@ def compute_speed_or_motivation(traj, motivation_file, color_by_speed):
     return speed
 
 
-def process_data(traj, measurement_line, motivation_file, color_by_speed):
+def process_data(
+    traj: pedpy.TrajectoryData,
+    measurement_line: pedpy.MeasurementLine,
+    motivation_file: Path,
+    color_by_speed: bool,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Process and merge the data required for plotting."""
     # Compute time distance line
     df_time_distance = pedpy.compute_time_distance_line(
@@ -384,18 +417,18 @@ def process_data(traj, measurement_line, motivation_file, color_by_speed):
 
 # Plotting function
 def plot_distance_to_entrance(
-    df_time_distance,
-    speed,
-    first_frame_speed,
-    color_by_speed,
-    yaxis_max,
-    colorbar_max,
-    unit_text,
-):
+    df_time_distance: pd.DataFrame,
+    speed: pd.DataFrame,
+    first_frame_speed: pd.DataFrame,
+    color_by_speed: bool,
+    yaxis_max: float,
+    colorbar_max: float,
+    unit_text: str,
+) -> matplotlib_fig:
     """Plot the distance to entrance with speed or motivation coloring."""
     norm = Normalize(speed["speed"].min(), speed["speed"].max())
-    cmap = cm.jet
-
+    # cmap = cm.jet
+    cmap = cm.get_cmap("jet")
     # Create the figure and axis
     fig, ax = plt.subplots()
 
@@ -442,7 +475,12 @@ def plot_distance_to_entrance(
 
 
 # Main handler function
-def handle_distance_to_entrance(traj, measurement_line, motivation_file, prefix=""):
+def handle_distance_to_entrance(
+    traj: pedpy.TrajectoryData,
+    measurement_line: pedpy.MeasurementLine,
+    motivation_file: Path,
+    prefix: str = "",
+) -> matplotlib_fig:
     """Handle distance to entrance plotting."""
     # Get user inputs
     yaxis_max, color_by_speed, colorbar_max, unit_text = get_user_inputs(prefix)

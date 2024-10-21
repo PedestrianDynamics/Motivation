@@ -17,7 +17,9 @@ from shapely.ops import unary_union
 Point: TypeAlias = Tuple[float, float]
 
 
-def parse(data: Union[List, Dict, Any]) -> Union[List, SimpleNamespace, Any]:
+def parse(
+    data: Union[List[Any], Dict[str, Any], Any],
+) -> Union[List[Any], SimpleNamespace, Any]:
     """
     Recursively converts a nested structure of lists and dictionaries.
 
@@ -82,10 +84,10 @@ def init_journey(
     simulation: jps.Simulation,
     way_points: List[Tuple[Point, float]],
     exits: List[List[Point]],
-) -> Tuple[int, int]:
+) -> Tuple[int, List[int]]:
     """Init goals of agents to follow.
 
-    Add waypoints and exits to journey. Then register journey in simultion
+    Add waypoints and exits to journey. Then register journey in simulation
 
     :param simulation:
     :param way_points: defined as a list of (point, distance)
@@ -95,7 +97,7 @@ def init_journey(
     # log_info("Init journey with: ")
     # log_info(f"{ way_points= }")
     # log_info(f"{ exits= }")
-    exit_ids = []
+    exit_ids: List[int] = []
     # wp_ids = []
     journey = jps.JourneyDescription()
     # distance = 1

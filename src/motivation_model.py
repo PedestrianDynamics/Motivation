@@ -15,38 +15,6 @@ from .logger_config import log_debug
 Point: TypeAlias = Tuple[float, float]
 
 
-def shifted_logistic(
-    x: float, M_max: float = 1.0, k: float = 1.0, shift: float = 0.0
-) -> np.ndarray:
-    r"""
-    Compute the shifted logistic function.
-
-    This function serves as a mean to normalize the motivation values to the range [0, 1].
-
-    The shifted logistic function is defined as:
-
-    .. math::
-        \\text{motivation} = \\frac{M_{max}}{1 + e^{-k \\cdot (x - \\text{shift})}}
-
-    Parameters:
-    ----------
-    x : float
-        Input value for which to compute the shifted logistic function.
-    M_max : float, optional
-        The maximum value of the logistic function. Default is 1.0.
-    k : float, optional
-        The steepness of the curve. Default is 1.0.
-    shift : float, optional
-        The value to shift the input by. Default is 5.0.
-
-    Returns:
-    -------
-    float
-        The computed value of the shifted logistic function for the input `x`.
-    """
-    return M_max / (1 + np.exp(-k * (x - shift)))
-
-
 class MotivationStrategy(ABC):
     """Abstract class for strategy model."""
 
@@ -260,8 +228,8 @@ class EVCStrategy(MotivationStrategy):
 
         ax0.plot(distances, E)
         ax0.grid(alpha=0.3)
-        ax0.set_ylim([-0.1, 3])
-        ax0.set_xlim([-0.1, 4])
+        ax0.set_ylim((-0.1, 3))
+        ax0.set_xlim((-0.1, 4))
         ax0.set_title(f"{self.name()} - E (width, height)")
         ax0.set_xlabel("Distance / m")
         ax0.set_ylabel("Expectancy")
@@ -272,8 +240,8 @@ class EVCStrategy(MotivationStrategy):
 
         ax1.plot(self.agent_ids, V, "o")
         ax1.grid(alpha=0.3)
-        ax1.set_ylim([-0.1, 5])
-        ax1.set_xlim([-0.1, self.max_reward + 1])
+        ax1.set_ylim((-0.1, 5))
+        ax1.set_xlim((-0.1, self.max_reward + 1))
         ax1.set_title(f"{self.name()} - V (seed = {self.seed:.0f})")
         ax1.set_xlabel("# Agents")
         ax1.set_ylabel("Value")
@@ -294,8 +262,8 @@ class EVCStrategy(MotivationStrategy):
 
         ax2.plot(Nrange, C, ".-")
         ax2.grid(alpha=0.3)
-        ax2.set_xlim([0, self.max_reward + 1])
-        ax2.set_ylim([-0.1, self.competition_max + 1])
+        ax2.set_xlim((0, self.max_reward + 1))
+        ax2.set_ylim((-0.1, self.competition_max + 1))
         ax2.set_xlabel("#agents left simulation")
         ax2.set_ylabel("Competition")
         ax2.set_xticks(
@@ -370,7 +338,7 @@ class EVCStrategy(MotivationStrategy):
 
         ax3.grid(alpha=0.3)
         # ax3.set_ylim([-0.1, 3])
-        ax3.set_xlim([-0.1, 4])
+        ax3.set_xlim((-0.1, 4))
         ax3.legend()
         if self.evc:
             title = (

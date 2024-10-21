@@ -39,7 +39,7 @@ def parse_destinations(json_data: Dict[str, Any]) -> Dict[int, List[List[Point]]
 
 def parse_velocity_init_parameters(
     json_data: Dict[str, Any],
-) -> Tuple[float, float, float, float]:
+) -> Tuple[float, float, float, float, float, float, float, float]:
     """Parse init parameters for velocity model.
 
     return a_ped, d_ped, a_wall, d_Wall
