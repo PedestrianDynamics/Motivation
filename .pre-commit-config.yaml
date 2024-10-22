@@ -5,8 +5,6 @@ repos:
     # Run the linter.
       - id: ruff
         args: ['check', '--select', 'I', '--exit-zero']
-    # Run the formatter.
-      - id: ruff-format
 
   # Mypy type checker
   - repo: local
