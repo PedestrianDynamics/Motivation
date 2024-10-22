@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 import streamlit as st
 
-from simulation import init_and_run_simulation
+from simulation import get_agent_positions, init_and_run_simulation
 from src import motivation_model as mm
 from src.inifile_parser import (
     parse_fps,
@@ -18,7 +18,6 @@ from src.inifile_parser import (
     parse_simulation_time,
     parse_time_step,
 )
-from simulation import get_agent_positions
 
 
 def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
