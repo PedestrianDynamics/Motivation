@@ -151,15 +151,14 @@ def init_simulation(
     :returns:
     """
     accessible_areas = parse_accessible_areas(_data)
+
     if from_file:
+        logging.info(f"Init geometry from WKT")
         geometry = from_wkt(
             "POLYGON ((-8.88 -7.63, 8.3 -7.63, 8.3 27.95, -8.88 27.95, -8.88 -7.63), (-3.54 -1.13, -3.57 19.57, -1.52 19.57, -1.37 19.71,  -0.87 19.71, -0.72 19.57, -0.42 19.57, -0.27 19.71, -0.27 21.09, -0.42 21.23, -0.72 21.23, -0.87 21.09, -1.37 21.09, -1.52 21.23, -1.67 21.23, -1.67 21.18, -1.545 21.18, -1.4200000000000002 21.065, -1.4200000000000002 19.735, -1.545 19.62, -3.6199999999999997 19.62, -3.59 -1.13, -3.54 -1.13), (3.57 -0.89, 3.64 19.64, 1.47 19.57, 1.32 19.71, 0.82 19.71, 0.67 19.57, 0.38 19.57, 0.23 19.71, 0.23 21.09, 0.38 21.23, 0.67 21.23, 0.82 21.09, 1.32 21.09, 1.47 21.23, 1.62 21.23, 1.62 21.18, 1.4949999999999999 21.18, 1.37 21.065, 1.37 19.735, 1.4949999999999999 19.62, 3.69 19.69, 3.6199999999999997 -0.89, 3.57 -0.89))"
         )
-        # geometry with two doors
-        # geometry = from_wkt(
-        #     "POLYGON ((-8.88 -7.63, 8.3 -7.63, 8.3 27.95, -8.88 27.95, -8.88 -7.63), (-3.54 -1.13, -3.57 19.57, -1.52 19.57, -1.37 19.71, -1.37 21.09, -1.52 21.23, -1.67 21.23, -1.67 21.18, -1.545 21.18, -1.4200000000000002 21.065, -1.4200000000000002 19.735, -1.545 19.62, -3.6199999999999997 19.62, -3.59 -1.13, -3.54 -1.13), (3.57 -0.89, 3.64 19.64, 1.47 19.57, 1.32 19.71, 1.32 21.09, 1.47 21.23, 1.62 21.23, 1.62 21.18, 1.4949999999999999 21.18, 1.37 21.065, 1.37 19.735, 1.4949999999999999 19.62, 3.69 19.69, 3.6199999999999997 -0.89, 3.57 -0.89), (0.67 19.57, 0.82 19.71, 0.82 21.09, 0.67 21.23, 0.38 21.23, 0.23 21.09, 0.23 19.71, 0.38 19.57, 0.67 19.57), (-0.42 19.57, -0.27 19.71, -0.27 21.09, -0.42 21.23, -0.72 21.23, -0.87 21.09, -0.87 19.71, -0.72 19.57, -0.42 19.57))"
-        # )
     else:
+        logging.info("Init geometry from data")
         geometry = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     simulation = jps.Simulation(
@@ -365,23 +364,6 @@ def init_positions(_data: Dict[str, Any], _number_agents: int) -> List[Point]:
         positions += pos
         if not total_agents:
             break
-    distribution_polygons = parse_distribution_polygons(_data)
-    positions = []
-    seed = int(_data["motivation_parameters"]["seed"])
-    total_agents = _number_agents
-    for s_polygon in distribution_polygons.values():
-        logging.info(f"Distribute {total_agents} agents")
-        pos = distribute_by_number(
-            polygon=s_polygon,
-            number_of_agents=total_agents,
-            distance_to_agents=0.4,
-            distance_to_polygon=0.2,
-            seed=seed,
-        )
-        total_agents -= _number_agents
-        positions += pos
-        if not total_agents:
-            break
 
     return positions
 
@@ -407,8 +389,27 @@ def read_positions_from_csv(file_path: str = "points.csv") -> List[Point]:
     return points
 
 
+def get_agent_positions(_data: Dict[str, Any]) -> Tuple[List[Point], int]:
+    """Get agent positions either from a file or generate them."""
+    if "init_positions_file" in _data:
+        positions_file = _data["init_positions_file"]
+        if pathlib.Path(positions_file).exists():
+            logging.info(f"Reading positions from file: {positions_file}")
+            positions = read_positions_from_csv(file_path=positions_file)
+            num_agents = len(positions)
+            _data["simulation_parameters"]["number_agents"] = num_agents
+            logging.info(f"Number of agents from file: {num_agents}")
+        else:
+            raise FileNotFoundError(f"Positions file {positions_file} does not exist!")
+    else:
+        num_agents = parse_number_agents(_data)
+        logging.info(f"Generating {num_agents} agent positions")
+        positions = init_positions(_data, num_agents)
+    
+    return positions, num_agents
+
+
 def init_and_run_simulation(
-    _number_agents: int,
     _fps: int,
     _time_step: float,
     _simulation_time: float,
@@ -428,17 +429,15 @@ def init_and_run_simulation(
         _trajectory_path.stem + "_motivation.csv"
     )
     logging.info(f"{motivation_file = }")
-    simulation = init_simulation(_data, _time_step, _fps, _trajectory_path)
+    simulation = init_simulation(
+        _data, _time_step, _fps, _trajectory_path, from_file=True
+    )
     a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
         parse_velocity_init_parameters(_data)
     )
     agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
-    # positions = init_positions(_data, _number_agents)
-    positions_file = _data["init_positions_file"]
-    print("parsed json file: ", _data["init_positions_file"])
-    positions = read_positions_from_csv(file_path=positions_file)
-    logging.info(f"Number of Agents {len(positions)}")
-    # positions = read_positions_from_csv(file_path="debug.csv")
+
+    positions, num_agents = get_agent_positions(_data)
     ped_ids = distribute_and_add_agents(
         simulation=simulation,
         agent_parameters_list=agent_parameters_list,
@@ -482,12 +481,10 @@ def start_simulation(config_path: str, output_path: str) -> float:
         data = json.load(f)
         fps = parse_fps(data)
         time_step = parse_time_step(data)
-        number_agents = parse_number_agents(data)
         simulation_time = parse_simulation_time(data)
         dummy = ""
         if fps and time_step:
             evac_time = init_and_run_simulation(
-                number_agents,
                 fps,
                 time_step,
                 simulation_time,
@@ -552,3 +549,4 @@ def main(
 
 if __name__ == "__main__":
     typer.run(main)
+
