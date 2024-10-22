@@ -18,6 +18,7 @@ from src.inifile_parser import (
     parse_simulation_time,
     parse_time_step,
 )
+from simulation import get_agent_positions
 
 
 def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -68,9 +69,9 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
     with open(config_file, "r", encoding="utf8") as f:
         data = json.loads(f.read())
 
+    _, number_agents = get_agent_positions(data)
     fps = parse_fps(data)
     time_step = parse_time_step(data)
-    number_agents = parse_number_agents(data)
     simulation_time = parse_simulation_time(data)
     strategy = parse_motivation_strategy(data)
 
@@ -78,7 +79,7 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
 
     with st.spinner("Simulating..."):
         evac_time = init_and_run_simulation(
-            number_agents, fps, time_step, simulation_time, data, Path(output_file), msg
+            fps, time_step, simulation_time, data, Path(output_file), msg
         )
 
     msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")

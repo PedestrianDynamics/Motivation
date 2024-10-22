@@ -405,7 +405,7 @@ def get_agent_positions(_data: Dict[str, Any]) -> Tuple[List[Point], int]:
         num_agents = parse_number_agents(_data)
         logging.info(f"Generating {num_agents} agent positions")
         positions = init_positions(_data, num_agents)
-    
+
     return positions, num_agents
 
 
@@ -549,4 +549,3 @@ def main(
 
 if __name__ == "__main__":
     typer.run(main)
-
