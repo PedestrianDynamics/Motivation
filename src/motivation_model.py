@@ -113,6 +113,12 @@ class EVCStrategy(MotivationStrategy):
         if self.seed is not None:
             random.seed(self.seed)
 
+        if self.number_high_value > self.nagents:
+            logging.warning(
+                f"Configuration error: {self.number_high_value} > {self.nagents}. Change value to match!"
+            )
+            self.number_high_value = self.nagents
+
         high_value_agents = set(random.sample(self.agent_ids, self.number_high_value))
         for n in self.agent_ids:
             if n in high_value_agents:
