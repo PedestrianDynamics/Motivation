@@ -409,6 +409,10 @@ def get_agent_positions(_data: Dict[str, Any]) -> Tuple[List[Point], int]:
     return positions, num_agents
 
 
+def print_hello(msg):
+    print(f"{msg}")
+
+
 def init_and_run_simulation(
     _fps: int,
     _time_step: float,
