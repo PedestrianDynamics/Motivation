@@ -63,7 +63,9 @@ def profile_function(name: str) -> Iterator[None]:
 
 
 def init_motivation_model(
-    _data: Dict[str, Any], ped_ids: List[int]
+    _data: Dict[str, Any],
+    ped_ids: List[int],
+    ped_positions: List[Point],
 ) -> mm.MotivationModel:
     """Init motivation model based on parsed strategy."""
     width = _data["motivation_parameters"]["width"]
@@ -72,6 +74,12 @@ def init_motivation_model(
     motivation_doors = parse_motivation_doors(_data)
     if not motivation_doors:
         logging.info("json file does not contain any motivation door.")
+
+    door_point1 = (motivation_doors[0][0][0], motivation_doors[0][0][1])
+    door_point2 = (motivation_doors[0][1][0], motivation_doors[0][1][1])
+    x_door = 0.5 * (door_point1[0] + door_point2[0])
+    y_door = 0.5 * (door_point1[1] + door_point2[1])
+    motivation_door_center: Point = (x_door, y_door)
 
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
@@ -100,6 +108,8 @@ def init_motivation_model(
             number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
             nagents=number_agents,
             agent_ids=ped_ids,
+            agent_positions=ped_positions,
+            motivation_door_center=motivation_door_center,
             competition_decay_reward=competition_decay_reward,
             competition_max=competition_max,
             percent=percent,
@@ -409,10 +419,6 @@ def get_agent_positions(_data: Dict[str, Any]) -> Tuple[List[Point], int]:
     return positions, num_agents
 
 
-def print_hello(msg):
-    print(f"{msg}")
-
-
 def init_and_run_simulation(
     _fps: int,
     _time_step: float,
@@ -448,7 +454,7 @@ def init_and_run_simulation(
         positions=positions,
         exit_positions=exit_positions,
     )
-    motivation_model = init_motivation_model(_data, ped_ids)
+    motivation_model = init_motivation_model(_data, ped_ids, positions)
     x_door = 0.5 * (motivation_model.door_point1[0] + motivation_model.door_point2[0])
     y_door = 0.5 * (motivation_model.door_point1[1] + motivation_model.door_point2[1])
     motivation_door: Point = (x_door, y_door)

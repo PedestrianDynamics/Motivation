@@ -11,6 +11,7 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from .logger_config import log_debug
+import math
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -91,7 +92,9 @@ class EVCStrategy(MotivationStrategy):
     """Motivation theory based on E.V.C (model4)."""
 
     agent_ids: List[int] = field(default_factory=list)
+    agent_positions: List[Point] = (field(default_factory=list),)
     pedestrian_value: Dict[int, float] = field(default_factory=dict)
+    motivation_door_center: Point = tuple()
     width: float = 1.0
     height: float = 1.0
     max_reward: int = 0
@@ -107,6 +110,30 @@ class EVCStrategy(MotivationStrategy):
     nagents: int = 10
     evc: bool = True
     alpha = 1.0
+    spatial_bias: float = 5.0  # To account for absolute distances
+    distance_scale: float = 2.0  # Scale factor for distance normalization
+
+    def calculate_exit_distance(self, pos: Point) -> float:
+        """Calculate distance from a position to the door center.
+
+        Returns absolute distance in spatial units."""
+        dx = pos[0] - self.motivation_door_center[0]
+        dy = pos[1] - self.motivation_door_center[1]
+        return math.sqrt(dx * dx + dy * dy)
+
+    def get_high_value_probability(self, pos: Point) -> float:
+        """Calculate probability of being high value based on position.
+        Returns higher probability for positions closer to door."""
+        distance = self.calculate_exit_distance(pos)
+        # Convert distance to probability using exponential decay
+        # Scale the distance to control the rate of probability decay
+        probability = math.exp(-self.spatial_bias * (distance / self.distance_scale))
+        return probability
+
+    @staticmethod
+    def get_derived_seed(base_seed: int, operation_id: int) -> int:
+        """Create a new seed based on the base seed and operation type."""
+        return base_seed * 1000 + operation_id
 
     def __post_init__(self) -> None:
         """Initialize array pedestrian_value with random values in min max interval."""
@@ -119,17 +146,38 @@ class EVCStrategy(MotivationStrategy):
             )
             self.number_high_value = self.nagents
 
-        high_value_agents = set(random.sample(self.agent_ids, self.number_high_value))
+        # Calculate probabilities for each agent based on position
+        agent_probabilities = [
+            (agent_id, self.get_high_value_probability(pos))
+            for agent_id, pos in zip(self.agent_ids, self.agent_positions)
+        ]
+        # Sort agents by their probability of being high value
+        sorted_agents = sorted(
+            agent_probabilities,
+            key=lambda x: x[1]
+            * (1 + random.uniform(0, 0.2)),  # Multiplicative randomness
+            reverse=True,
+        )
+
+        # Take the top number_high_value agents as high value agents
+        high_value_agents = set(
+            agent_id for agent_id, _ in sorted_agents[: self.number_high_value]
+        )
+        # high_value_agents = set(random.sample(self.agent_ids, self.number_high_value))
         for n in self.agent_ids:
             if n in high_value_agents:
                 # This agent gets a high value
                 self.pedestrian_value[n] = self.value(
-                    self.min_value_high, self.max_value_high
+                    self.min_value_high,
+                    self.max_value_high,
+                    self.get_derived_seed(self.seed, n),
                 )
             else:
                 # This agent gets a low value
                 self.pedestrian_value[n] = self.value(
-                    self.min_value_low, self.max_value_low
+                    self.min_value_low,
+                    self.max_value_low,
+                    self.get_derived_seed(self.seed, n),
                 )
 
     @staticmethod
