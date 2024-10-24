@@ -128,9 +128,11 @@ def init_motivation_model(
             number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
             nagents=number_agents,
             agent_ids=ped_ids,
+            agent_positions=ped_positions,
             competition_decay_reward=competition_decay_reward,
             competition_max=competition_max,
             percent=percent,
+            motivation_door_center=motivation_door_center,
             evc=False,
         )
     # =================
@@ -438,7 +440,7 @@ def init_and_run_simulation(
     motivation_file = _trajectory_path.with_name(
         _trajectory_path.stem + "_motivation.csv"
     )
-    logging.info(f"{motivation_file = }")
+    logging.info(f"{motivation_file.stem = }")
     simulation = init_simulation(
         _data, _time_step, _fps, _trajectory_path, from_file=True
     )

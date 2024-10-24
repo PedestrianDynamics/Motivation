@@ -99,6 +99,17 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
             width=params["width"], height=params["height"]
         )
     elif strategy in ["EVC", "EC-V"]:
+        door_point1 = (
+            params["motivation_doors"][0][0][0],
+            params["motivation_doors"][0][0][1],
+        )
+        door_point2 = (
+            params["motivation_doors"][0][1][0],
+            params["motivation_doors"][0][1][1],
+        )
+        x_door = 0.5 * (door_point1[0] + door_point2[0])
+        y_door = 0.5 * (door_point1[1] + door_point2[1])
+        motivation_door_center = (x_door, y_door)
         return mm.EVCStrategy(
             width=params["width"],
             height=params["height"],
@@ -110,6 +121,8 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
             min_value_low=params["min_value_low"],
             number_high_value=params["number_high_value"],
             agent_ids=list(range(params["number_agents"])),
+            # agent_positions=ped_positions,
+            motivation_door_center=motivation_door_center,
             competition_decay_reward=params["competition_decay_reward"],
             competition_max=params["competition_max"],
             percent=params["percent"],
