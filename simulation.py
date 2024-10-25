@@ -95,7 +95,7 @@ def init_motivation_model(
     if choose_motivation_strategy == "default":
         motivation_strategy = mm.DefaultMotivationStrategy(width=width, height=height)
     if choose_motivation_strategy == "EVC":
-        logging.info(f"init EVC with {width = }, {height = }")
+        logging.info(f"init EVC with {width = }, {height = }, {seed = }")
         motivation_strategy = mm.EVCStrategy(
             width=width,
             height=height,
@@ -229,7 +229,7 @@ def process_agent(
     }
 
     motivation_i = motivation_model.motivation_strategy.motivation(params)
-
+    agent_value = motivation_model.motivation_strategy.get_value(agent_id=agent.id)
     if motivation_i > 1:
         logging.error(f"{simulation.iteration_count()}: {agent.id}: {motivation_i = }")
 
@@ -252,7 +252,8 @@ def process_agent(
 
     agent.model.v0 = v_0
     agent.model.time_gap = time_gap
-    return f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {position[0]:.2f}, {position[1]:.2f}"
+
+    return f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {position[0]:.2f}, {position[1]:.2f}, {agent_value:.2f}"
 
 
 def run_simulation_loop(
@@ -317,7 +318,7 @@ def run_simulation_loop(
                 frame_to_write += 1
             simulation.iterate()
 
-        with profile_function("Writing to csv file"):
+        with profile_function("Writing motivation data to csv file"):
             for items in buffer:
                 write_value_to_file(file_handle, items)
 
@@ -489,6 +490,7 @@ def init_and_run_simulation(
 
 def start_simulation(config_path: str, output_path: str) -> float:
     """Call main function."""
+    logging.info(f"Start simulation with config file: {config_path}")
     with open(config_path, "r", encoding="utf8") as f:
         data = json.load(f)
         fps = parse_fps(data)
@@ -536,7 +538,7 @@ def main(
         base_config = json.load(f)
 
     variations = [
-        {"motivation_parameters/width": 1.0, "motivation_parameters/seed": 1.0},
+        {"motivation_parameters/width": 5.0, "motivation_parameters/seed": 10000.0},
         # {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
     ]
 

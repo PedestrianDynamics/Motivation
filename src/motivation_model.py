@@ -81,7 +81,7 @@ class MotivationStrategy(ABC):
     @abstractmethod
     def get_value(self, **kwargs: Any) -> float:
         """Get value of agents."""
-        pass
+        raise NotImplementedError("Subclasses should implement this!")
 
 
 @dataclass
@@ -145,7 +145,7 @@ class EVCStrategy(MotivationStrategy):
     percent: float = 1
     competition_max: float = 1
     competition_decay_reward: float = 5
-    seed: int = 0
+    seed: int = 1
     min_value_high: float = 0.5
     max_value_high: float = 1
     min_value_low: float = 0
@@ -153,10 +153,13 @@ class EVCStrategy(MotivationStrategy):
     number_high_value: int = 10
     nagents: int = 10
     evc: bool = True
-    alpha = 1.0
-    spatial_bias: float = 5.0  # To account for absolute distances
-    distance_scale: float = 2.0  # Scale factor for distance normalization
+    motivation_change = 1.0  # to strengthen the change of the state. Not yet used!
+    distance_decay: float = -width / math.log(0.01)
     seed_manager: Optional[SeedManager] = None
+    # probability should be negligible (< 0.01) at self.width meters"
+    # therefore: 0.01 = exp(-width/distance_decay)
+    # Taking ln: ln(0.01) = -width/distance_decay
+    # Therefore distance_decay = -width/ln(0.01)
 
     def calculate_exit_distance(self, pos: Point) -> float:
         """Calculate distance from a position to the door center.
@@ -175,7 +178,7 @@ class EVCStrategy(MotivationStrategy):
         distance = self.calculate_exit_distance(pos)
         # Convert distance to probability using exponential decay
         # Scale the distance to control the rate of probability decay
-        probability = math.exp(-self.spatial_bias * (distance / self.distance_scale))
+        probability = math.exp(-distance / self.distance_decay)
         return probability
 
     @staticmethod
@@ -185,6 +188,7 @@ class EVCStrategy(MotivationStrategy):
 
     def __post_init__(self) -> None:
         """Initialize array pedestrian_value with random values in min max interval."""
+        logging.info(f"EVCStrategy post_init: Seed = {self.seed}")
         if self.seed is not None and self.seed_manager is None:
             self.seed_manager = SeedManager(self.seed)
 
@@ -207,7 +211,10 @@ class EVCStrategy(MotivationStrategy):
         # Set seed for high value selection
         if self.seed_manager:
             self.seed_manager.set_seed_for_operation(SeedOperation.HIGH_VALUE_SELECTION)
-
+            s = self.seed_manager.get_operation_seed(
+                SeedOperation.HIGH_VALUE_SELECTION, 1
+            )
+            logging.info(f"Seed for high value section for id = 1: {s}")
         # Sort agents by their probability of being high value
         sorted_agents = sorted(
             agent_probabilities,
@@ -522,8 +529,10 @@ class MotivationModel:
         v_0 = self.normal_v_0 * self.motivation_strategy.get_value(agent_id=agent_id)
 
         time_gap = self.normal_time_gap
-        v_0_new = v_0 * (1 + self.motivation_strategy.alpha * motivation_i)
-        time_gap_new = time_gap / (1 + self.motivation_strategy.alpha * motivation_i)
+        v_0_new = v_0 * (1 + self.motivation_strategy.motivation_change * motivation_i)
+        time_gap_new = time_gap / (
+            1 + self.motivation_strategy.motivation_change * motivation_i
+        )
         return v_0_new, time_gap_new
 
     def plot(self) -> Tuple[Figure, Figure]:

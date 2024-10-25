@@ -381,7 +381,7 @@ def compute_speed_or_motivation(
         # Read motivation from file
         speed = pd.read_csv(
             motivation_file,
-            names=[FRAME_COL, ID_COL, "time", "speed", "x", "y"],
+            names=[FRAME_COL, ID_COL, "time", "speed", "x", "y", "value"],
             dtype={ID_COL: "int64", FRAME_COL: "int64"},
         )
     return speed
