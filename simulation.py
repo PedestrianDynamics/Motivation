@@ -539,7 +539,7 @@ def main(
 
     variations = [
         {"motivation_parameters/width": 5.0, "motivation_parameters/seed": 10000.0},
-        # {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
+        {"motivation_parameters/width": 2.0, "motivation_parameters/seed": 300.0},
     ]
 
     output_dir = pathlib.Path("files/variations")
@@ -551,8 +551,8 @@ def main(
 
     for i, variation in enumerate(variations, start=1):
         logging.info(f"running variation {i:03d}: {variation}")
-        new_config_path = f"{output_dir}/config_variation_{i:03d}.json"
-        output_path = f"files/trajectory_variation_{i:03d}.sqlite"
+        new_config_path = f"{output_dir}/{inifile.stem}_variation_{i:03d}.json"
+        output_path = f"files/{inifile.stem}_variation_{i:03d}.sqlite"
         logging.info(f"{output_path = }")
         # Modify and save the new configuration
         modify_and_save_config(base_config, variation, new_config_path)
