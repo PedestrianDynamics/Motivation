@@ -117,10 +117,14 @@ def run() -> None:
         ],
     )
     SELECTED_OUTPUT_FILE = st.selectbox(
-        "Select file", sorted(list(set(glob.glob("files/*.sqlite"))), reverse=True)
+        "Select sqlite", sorted(list(set(glob.glob("files/*.sqlite"))), reverse=True)
+    )
+
+    SELECTED_JSON_FILE = st.selectbox(
+        "Select json", sorted(list(set(glob.glob("files/*.json"))), reverse=True)
     )
     traj, walkable_area = read_sqlite_file(SELECTED_OUTPUT_FILE)
-    json_data = load_json_data("files/inifile.json")
+    json_data = load_json_data(SELECTED_JSON_FILE)
 
     if selected == "Heatmap":
         handle_heatmap(walkable_area)
