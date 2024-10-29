@@ -1,3 +1,5 @@
+"""Generate variation files necessary to start simulations."""
+
 import json
 import logging
 import pathlib
@@ -5,60 +7,65 @@ from typing import Any, Dict, List, Union
 import typer
 from datetime import datetime
 
-def get_nested_value(config: Dict, param_path: str) -> Any:
+
+def get_nested_value(config: Dict[str, Any], param_path: str) -> Any:
     """Get value from nested dictionary using dot notation."""
-    keys = param_path.split('/')
+    keys = param_path.split("/")
     current = config
     for key in keys:
         current = current[key]
     return current
 
-def set_nested_value(config: Dict, param_path: str, value: Any) -> None:
+
+def set_nested_value(config: Dict[str, Any], param_path: str, value: Any) -> None:
     """Set value in nested dictionary using dot notation."""
-    keys = param_path.split('/')
+    keys = param_path.split("/")
     current = config
     for key in keys[:-1]:
         current = current[key]
     current[keys[-1]] = value
 
+
 def create_parameter_variations(
-    base_config: Dict,
+    base_config: Dict[str, Any],
     param_path: str,
-    values: List[Union[float, int, str]],
-    description: str = ""
-) -> List[Dict]:
+    values: List[Union[float, int]],
+    description: str = "",
+) -> List[Dict[str, Any]]:
     """
     Create variations of the configuration by varying a single parameter.
-    
+
     Args:
         base_config: The base configuration dictionary
         param_path: Path to the parameter using '/' notation (e.g., 'motivation_parameters/height')
         values: List of values to try for this parameter
         description: Optional description of what these variations represent
-    
+
     Returns:
         List of variation dictionaries
     """
     original_value = get_nested_value(base_config, param_path)
     variations = []
-    
+
     for value in values:
         variation = {
             "name": f"{param_path.replace('/', '_')}_{value}",
             "description": description,
             "original_value": original_value,
-            "parameters": {
-                param_path: value
-            }
+            "parameters": {param_path: value},
         }
         variations.append(variation)
-    
+
     return variations
 
-def save_variations(variations: List[Dict], output_path: pathlib.Path) -> None:
+
+def save_variations(
+    variations: List[Dict[str, Any]], output_path: pathlib.Path
+) -> None:
     """Save variations to a JSON file with proper formatting."""
     with open(output_path, "w", encoding="utf8") as f:
         json.dump(variations, f, indent=4)
+
 
 def main(
     inifile: pathlib.Path = typer.Option(
@@ -85,22 +92,24 @@ def main(
     """Generate parameter variations for simulation runs."""
     if not param or not values:
         print("Usage example:")
-        print("  python generate_variations.py --inifile files/inifile.json \\\n"
-              "         --param motivation_parameters/height \\\n"
-              "         --values 0.5,1.0,1.5 \\\n"
-              "         --description 'Testing different heights'")
+        print(
+            "  python generate_variations.py --inifile files/inifile.json \\\n"
+            "         --param motivation_parameters/height \\\n"
+            "         --values 0.5,1.0,1.5 \\\n"
+            "         --description 'Testing different heights'"
+        )
         return
 
     # Load base configuration
     with open(inifile, "r", encoding="utf8") as f:
         base_config = json.load(f)
-    
+
     # Parse values (handle both float and int)
     try:
-        parsed_values = []
-        for v in values.split(','):
+        parsed_values: List[float | int] = []
+        for v in values.split(","):
             v = v.strip()
-            if '.' in v:
+            if "." in v:
                 parsed_values.append(float(v))
             else:
                 parsed_values.append(int(v))
@@ -110,24 +119,22 @@ def main(
 
     # Generate variations
     variations = create_parameter_variations(
-        base_config,
-        param,
-        parsed_values,
-        description
+        base_config, param, parsed_values, description
     )
-    
+
     # Determine output path
     if output is None:
-        param_name = param.replace('/', '_')
+        param_name = param.replace("/", "_")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output = pathlib.Path(f"variations_{param_name}_{timestamp}.json")
-    
+
     # Save variations
     save_variations(variations, output)
     print(f"Created {len(variations)} variations in {output}")
     print("\nVariations summary:")
     for var in variations:
         print(f"- {var['name']}: {var['parameters'][param]}")
+
 
 if __name__ == "__main__":
     typer.run(main)

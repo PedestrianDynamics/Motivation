@@ -183,7 +183,7 @@ def init_simulation(
             output_file=pathlib.Path(_trajectory_path), every_nth_frame=_fps
         ),
     )
-    logging.info("Init simulation done")
+    logging.info("Init simulation done.")
     return simulation
 
 
@@ -512,7 +512,7 @@ def start_simulation(config_path: str, output_path: str) -> float:
         return evac_time
 
 
-def load_variations(variations_path: pathlib.Path) -> List[Dict]:
+def load_variations(variations_path: pathlib.Path) -> List[Dict[str, Any]]:
     """Load parameter variations from a JSON file."""
     if not variations_path.exists():
         raise FileNotFoundError(f"Variations file not found: {variations_path}")
@@ -529,7 +529,7 @@ def load_variations(variations_path: pathlib.Path) -> List[Dict]:
 
 
 def modify_and_save_config(
-    base_config: Dict, variation: Dict[str, any], output_path: pathlib.Path
+    base_config: Dict[str, Any], variation: Dict[str, Any], output_path: pathlib.Path
 ) -> None:
     """
     Modify base configuration with variation parameters and save to new file.
@@ -573,27 +573,27 @@ def main(
     init_logger()
 
     # Load base configuration
-    logging.info(f"Loading base configuration from {inifile}")
+    logging.info(f"Loading base configuration from {inifile}.")
     try:
         with open(inifile, "r", encoding="utf8") as f:
             base_config = json.load(f)
     except FileNotFoundError:
-        logging.error(f"Base configuration file not found: {inifile}")
+        logging.error(f"Base configuration file not found: {inifile}.")
         raise typer.Exit(code=1)
 
     # Load variations
-    logging.info(f"Loading variations from {variations_file}")
+    logging.info(f"Loading variations from {variations_file}.")
     try:
         variations = load_variations(variations_file)
     except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
-        logging.error(f"Error loading variations: {e}")
-        raise typer.Exit(code=1)
+        logging.error(f"Error loading variations: {e}.")
+        raise typer.Exit(code=2)
 
     # Create output directory
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Save a copy of the variations used for this run
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_info = {
         "timestamp": timestamp,
         "base_config": str(inifile),
@@ -631,10 +631,10 @@ def main(
 
         # Run simulation
         try:
-            evac_time = start_simulation(new_config_path, output_path)
+            evac_time = start_simulation(str(new_config_path), str(output_path))
             status = "completed"
         except Exception as e:
-            logging.error(f"Error in simulation: {e}")
+            logging.error(f"Error in simulation: {e}.")
             evac_time = None
             status = "failed"
 
@@ -650,18 +650,17 @@ def main(
         }
         results.append(result)
 
-        logging.info(f"Status: {status}")
+        logging.info(f"Status: {status}.")
         if evac_time is not None:
-            logging.info(f"Evacuation time: {evac_time:.2f} [s]")
+            logging.info(f"Evacuation time: {evac_time:.2f} [s].")
 
     # Save all results
     results_file = output_dir / f"results_{timestamp}.json"
     with open(results_file, "w") as f:
         json.dump(results, f, indent=4)
 
-    logging.info(f"\nSimulation batch completed. Results saved to {results_file}")
+    logging.info(f"\nSimulation batch completed. Results saved to {results_file}.")
 
-    # Print summary
     completed = sum(1 for r in results if r["status"] == "completed")
     failed = sum(1 for r in results if r["status"] == "failed")
     logging.info("\nSummary:")
