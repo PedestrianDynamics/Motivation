@@ -117,7 +117,8 @@ def run() -> None:
         ],
     )
     SELECTED_OUTPUT_FILE = st.selectbox(
-        "Select sqlite", sorted(list(set(glob.glob("files/*.sqlite"))), reverse=True)
+        "Select sqlite",
+        sorted(list(set(glob.glob("files/variations/*.sqlite"))), reverse=True),
     )
 
     SELECTED_JSON_FILE = st.selectbox(

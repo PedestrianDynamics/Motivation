@@ -25,14 +25,18 @@ streamlit run app.py
 
 ### Run simulation in a terminal:
 
+1. Generate variations
 ```bash
-./run.sh simulation.py <input-file> <output-file.txt> <run-jpsvis>
+python generage_variations.py --inifile files/inifile.json --param motivation_parameters/width --values 1.0,2.0
 ```
 
-- `python-script.py`: Model logic.
-- `input-file.json`: inifile of the project with all necessary configs.
-- `output_file.txt`: a successful simulation creates a trajectory file.
-- `run-jpsvis (1|0)`: to visualize the trajectories with jpsvis
+2. Run simulation with variations 
+
+```bash
+python simulation.py --variations-file variations.json --inifile inifile.json
+```
+
+with the json file being produced in step 1.
 
 
 
