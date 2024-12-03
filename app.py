@@ -14,6 +14,7 @@ from jupedsim.internal.notebook_utils import read_sqlite_file
 
 from anim import animate
 from src import analysis, docs
+import glob
 from src.logger_config import init_logger
 from src.simutilities import (
     call_simulation,
@@ -29,7 +30,9 @@ if __name__ == "__main__":
         st.session_state.data = {}
 
     if "all_files" not in st.session_state:
-        st.session_state.all_files = ["files/inifile.json", "files/bottleneck.json"]
+        st.session_state.all_files = glob.glob(
+            "files/*.json"
+        )  # ["files/inifile.json", "files/bottleneck.json"]
 
     tab = init_sidebar()
 
@@ -68,7 +71,6 @@ if __name__ == "__main__":
                     x1 = 0.5 * (vertices[0][0] + vertices[1][0]) + width
                     y1 = 0.5 * (vertices[1][1] + vertices[1][1]) + width
 
-                    st.info(f"Motivation door:  {x0=}, {y0=}, {x1=}, {y1=}")
                     anm = animate(
                         data_with_speed,
                         walkable_area,
@@ -83,6 +85,8 @@ if __name__ == "__main__":
                     st.plotly_chart(anm)
 
             params = extract_motivation_parameters(data)
+
+            # get_agents_positions
             plot_motivation_model(params)
         case "Analysis":
             analysis.run()
