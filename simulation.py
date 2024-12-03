@@ -12,7 +12,7 @@ import logging
 import pathlib
 import time
 from typing import Any, Dict, Iterator, List, Tuple, TypeAlias, cast
-
+import random
 import jupedsim as jps
 import typer
 from jupedsim.distributions import distribute_by_number
@@ -74,6 +74,7 @@ def init_motivation_model(
     height = _data["motivation_parameters"]["height"]
     seed = _data["motivation_parameters"]["seed"]
     motivation_doors = parse_motivation_doors(_data)
+    logging.info("Enter init motivation model")
     if not motivation_doors:
         logging.info("json file does not contain any motivation door.")
 
@@ -92,6 +93,7 @@ def init_motivation_model(
         "competition_decay_reward"
     ]
     percent = _data["motivation_parameters"]["percent"]
+    logging.info(f"{choose_motivation_strategy = }")
     # =================
     motivation_strategy: mm.MotivationStrategy
     if choose_motivation_strategy == "default":
@@ -413,9 +415,17 @@ def get_agent_positions(_data: Dict[str, Any]) -> Tuple[List[Point], int]:
         if pathlib.Path(positions_file).exists():
             logging.info(f"Reading positions from file: {positions_file}")
             positions = read_positions_from_csv(file_path=positions_file)
-            num_agents = len(positions)
-            _data["simulation_parameters"]["number_agents"] = num_agents
-            logging.info(f"Number of agents from file: {num_agents}")
+            num_positions = len(positions)
+            num_agents_config = parse_number_agents(_data)
+            logging.info(f"Number of agents from file: {num_agents_config = }")
+            if num_agents_config < num_positions:
+                positions = random.sample(positions, num_agents_config)
+                num_agents = num_agents_config
+            if num_agents_config >= num_positions:
+                positions = positions
+                num_agents = num_positions
+
+            logging.info(f"Number of agents from file: {num_agents = }")
         else:
             raise FileNotFoundError(f"Positions file {positions_file} does not exist!")
     else:
@@ -454,7 +464,9 @@ def init_and_run_simulation(
     )
     agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
 
-    positions, num_agents = get_agent_positions(_data)
+    positions, _ = get_agent_positions(_data)
+    logging.info(f"{len(positions)} = ")
+    logging.info(positions)
     ped_ids = distribute_and_add_agents(
         simulation=simulation,
         agent_parameters_list=agent_parameters_list,

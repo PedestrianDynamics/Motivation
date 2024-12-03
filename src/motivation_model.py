@@ -189,15 +189,24 @@ class EVCStrategy(MotivationStrategy):
     def __post_init__(self) -> None:
         """Initialize array pedestrian_value with random values in min max interval."""
         logging.info(f"EVCStrategy post_init: Seed = {self.seed}")
+        if not self.agent_positions:
+            logging.critical(
+                f"Agent positions are not correctly initialised {self.agent_positions = } "
+            )
+            logging.critical(f"{self.agent_ids = } ")
+
         if self.seed is not None and self.seed_manager is None:
             self.seed_manager = SeedManager(self.seed)
 
         if self.number_high_value > self.nagents:
             logging.warning(
-                f"Configuration error: {self.number_high_value} > {self.nagents}. Change value to match!"
+                f"Configuration error: {self.number_high_value = } > {self.nagents = }. Change value to match!"
             )
             self.number_high_value = self.nagents
-
+        else:
+            logging.info(f" {self.number_high_value = }, {self.nagents = }.")
+            logging.info(f"NN {len(self.agent_ids) = }")
+            logging.info(f"{len(self.agent_positions) = }")
         # Set seed for position probability calculations
         if self.seed_manager:
             self.seed_manager.set_seed_for_operation(SeedOperation.POSITION_PROBABILITY)
@@ -207,7 +216,7 @@ class EVCStrategy(MotivationStrategy):
             (agent_id, self.get_high_value_probability(pos))
             for agent_id, pos in zip(self.agent_ids, self.agent_positions)
         ]
-
+        #        logging.info(f"{agent_probabilities = }")
         # Set seed for high value selection
         if self.seed_manager:
             self.seed_manager.set_seed_for_operation(SeedOperation.HIGH_VALUE_SELECTION)
@@ -222,11 +231,12 @@ class EVCStrategy(MotivationStrategy):
             * (1 + random.uniform(0, 0.2)),  # Multiplicative randomness
             reverse=True,
         )
-
+        #        logging.info(f"{sorted_agents = }")
         # Take the top number_high_value agents as high value agents
         high_value_agents = set(
             agent_id for agent_id, _ in sorted_agents[: self.number_high_value]
         )
+        logging.info(f"{self.number_high_value = }, {len(high_value_agents) = }")
         # high_value_agents = set(random.sample(self.agent_ids, self.number_high_value))
         for n in self.agent_ids:
             if self.seed_manager:

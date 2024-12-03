@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import streamlit as st
-
+import logging
 from simulation import get_agent_positions, init_and_run_simulation
 from src import motivation_model as mm
 from src.inifile_parser import (
@@ -45,10 +45,13 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
         "percent": params["percent"],
         # Add more parameters as needed
     }
-    extracted_params["number_agents"] = int(parse_number_agents(data))
     extracted_params["normal_v_0"] = parse_normal_v_0(data)
     extracted_params["normal_time_gap"] = parse_normal_time_gap(data)
     extracted_params["motivation_doors"] = parse_motivation_doors(data)
+    # calculate positions
+    positions, num_agents = get_agent_positions(data)
+    extracted_params["number_agents"] = num_agents
+    extracted_params["positions"] = positions
     return extracted_params
 
 
@@ -63,12 +66,10 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
     msg = st.empty()
     if Path(output_file).exists():
         Path(output_file).unlink()
-
-    # Load configuration data again in case it's been updated
-    with open(config_file, "r", encoding="utf8") as f:
-        data = json.loads(f.read())
-
-    _, number_agents = get_agent_positions(data)
+    logging.info(f"in call simulation {data['simulation_parameters']['number_agents']}")
+    logging.info(f"in call simulation {data['simulation_parameters']['number_agents']}")
+    number_agents = parse_number_agents(data)
+    logging.info(f"Call simulation {number_agents = }")
     fps = parse_fps(data)
     time_step = parse_time_step(data)
     simulation_time = parse_simulation_time(data)
@@ -121,7 +122,8 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
             min_value_low=params["min_value_low"],
             number_high_value=params["number_high_value"],
             agent_ids=list(range(params["number_agents"])),
-            # agent_positions=ped_positions,
+            nagents=params["number_agents"],
+            agent_positions=params["positions"],
             motivation_door_center=motivation_door_center,
             competition_decay_reward=params["competition_decay_reward"],
             competition_max=params["competition_max"],
@@ -156,6 +158,6 @@ def plot_motivation_model(params: Dict[str, Any]) -> None:
     if params["strategy"] != "default":
         fig1, fig2 = motivation_model.plot()
         figs.extend([fig1, fig2])
-    with st.expander("Plot model", expanded=True):
+    with st.expander("Plot model", expanded=False):
         for fig in figs:
             st.pyplot(fig)
