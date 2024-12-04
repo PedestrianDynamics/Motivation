@@ -465,8 +465,6 @@ def init_and_run_simulation(
     agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
 
     positions, _ = get_agent_positions(_data)
-    logging.info(f"{len(positions)} = ")
-    logging.info(positions)
     ped_ids = distribute_and_add_agents(
         simulation=simulation,
         agent_parameters_list=agent_parameters_list,
