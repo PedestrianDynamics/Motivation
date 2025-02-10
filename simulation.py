@@ -17,7 +17,7 @@ import jupedsim as jps
 import typer
 from jupedsim.distributions import distribute_by_number
 from shapely import from_wkt
-
+from typing import Optional
 from src import motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
@@ -234,10 +234,10 @@ def process_agent(
 
     motivation_i = motivation_model.motivation_strategy.motivation(params)
     agent_value = motivation_model.motivation_strategy.get_value(agent_id=agent.id)
-    if motivation_i > 1:
-        logging.error(
-            f"Motivation too high. Count: {simulation.iteration_count()}. Agent: {agent.id}. Motivation: {motivation_i = }"
-        )
+    # if motivation_i > 1:
+    #     logging.error(
+    #         f"Motivation too high. Count: {simulation.iteration_count()}. Agent: {agent.id}. Motivation: {motivation_i = }"
+    #     )
 
     v_0, time_gap = motivation_model.calculate_motivation_state(motivation_i, agent.id)
 
@@ -496,7 +496,9 @@ def init_and_run_simulation(
     logging.info(
         f"Simulation completed after {simulation.iteration_count()} iterations"
     )
-    logging.info(f"Simulation time: {simulation.iteration_count()*_time_step:.2f} [s]")
+    logging.info(
+        f"Simulation time: {simulation.iteration_count() * _time_step:.2f} [s]"
+    )
     # logging.info(f"Trajectory: {_trajectory_path}")
     return float(simulation.iteration_count() * _time_step)
 
@@ -565,21 +567,22 @@ def modify_and_save_config(
         json.dump(new_config, f, indent=4)
 
 
+
 def main(
     inifile: pathlib.Path = typer.Option(
         pathlib.Path("files/inifile.json"),
         help="Path to the initial configuration file",
     ),
-    variations_file: pathlib.Path = typer.Option(
-        ...,  # Make this required
-        help="Path to the variations file",
+    variations_file: Optional[pathlib.Path] = typer.Option(
+        None,
+        help="Path to the variations file (optional). If not provided, the simulation will run with the base configuration only.",
     ),
     output_dir: pathlib.Path = typer.Option(
         pathlib.Path("files/variations"),
         help="Directory for output files",
     ),
 ) -> None:
-    """Run simulations with parameter variations."""
+    """Run simulations with parameter variations or, if no variations file is provided, run a single simulation using the base configuration."""
     init_logger()
 
     # Load base configuration
@@ -591,92 +594,133 @@ def main(
         logging.error(f"Base configuration file not found: {inifile}.")
         raise typer.Exit(code=1)
 
-    # Load variations
-    logging.info(f"Loading variations from {variations_file}.")
-    try:
-        variations = load_variations(variations_file)
-    except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
-        logging.error(f"Error loading variations: {e}.")
-        raise typer.Exit(code=2)
-
-    # Create output directory
+    # Create output directory if it does not exist
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save a copy of the variations used for this run
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    run_info = {
-        "timestamp": timestamp,
-        "base_config": str(inifile),
-        "variations_file": str(variations_file),
-        "variations": variations,
-    }
 
-    run_info_file = output_dir / f"run_info_{timestamp}.json"
-    with open(run_info_file, "w") as f:
-        json.dump(run_info, f, indent=4)
-
-    # Run simulations for each variation
-    results = []
-    total_variations = len(variations)
-
-    for i, variation in enumerate(variations, start=1):
-        var_name = variation.get("name", f"variation_{i:03d}")
-        var_desc = variation.get("description", "")
-
-        logging.info(f"\nRunning variation {i}/{total_variations}: {var_name}")
-        if var_desc:
-            logging.info(f"Description: {var_desc}")
-
-        # Log parameter changes
-        for param, value in variation["parameters"].items():
-            original = variation.get("original_value", "unknown")
-            logging.info(f"  >>  {param}: {original} -> {value}")
-
-        # Create variation-specific filenames
-        new_config_path = output_dir / f"{inifile.stem}_{var_name}.json"
-        output_path = output_dir / f"{inifile.stem}_{var_name}.sqlite"
-
-        # Modify and save the new configuration
-        modify_and_save_config(base_config, variation["parameters"], new_config_path)
-
-        # Run simulation
+    if variations_file:
+        # Load variations from the provided file
+        logging.info(f"Loading variations from {variations_file}.")
         try:
-            evac_time = start_simulation(str(new_config_path), str(output_path))
+            variations = load_variations(variations_file)
+        except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
+            logging.error(f"Error loading variations: {e}.")
+            raise typer.Exit(code=2)
+
+        # Save a copy of the variations used for this run
+        run_info = {
+            "timestamp": timestamp,
+            "base_config": str(inifile),
+            "variations_file": str(variations_file),
+            "variations": variations,
+        }
+        run_info_file = output_dir / f"run_info_{timestamp}.json"
+        with open(run_info_file, "w") as f:
+            json.dump(run_info, f, indent=4)
+
+        # Run simulations for each variation
+        results = []
+        total_variations = len(variations)
+
+        for i, variation in enumerate(variations, start=1):
+            var_name = variation.get("name", f"variation_{i:03d}")
+            var_desc = variation.get("description", "")
+
+            logging.info(f"\nRunning variation {i}/{total_variations}: {var_name}")
+            if var_desc:
+                logging.info(f"Description: {var_desc}")
+
+            # Log parameter changes
+            for param, value in variation["parameters"].items():
+                original = variation.get("original_value", "unknown")
+                logging.info(f"  >>  {param}: {original} -> {value}")
+
+            # Create variation-specific filenames
+            new_config_path = output_dir / f"{inifile.stem}_{var_name}.json"
+            output_path = output_dir / f"{inifile.stem}_{var_name}.sqlite"
+
+            # Modify and save the new configuration for this variation
+            modify_and_save_config(
+                base_config, variation["parameters"], new_config_path
+            )
+
+            # Run simulation for this variation
+            try:
+                evac_time = start_simulation(str(new_config_path), str(output_path))
+                status = "completed"
+            except Exception as e:
+                logging.error(f"Error in simulation: {e}.")
+                evac_time = None
+                status = "failed"
+
+            # Store the result
+            result = {
+                "variation_name": var_name,
+                "description": var_desc,
+                "parameters": variation["parameters"],
+                "evac_time": evac_time,
+                "status": status,
+                "config_file": str(new_config_path),
+                "output_file": str(output_path),
+            }
+            results.append(result)
+
+            logging.info(f"Status: {status}.")
+            if evac_time is not None:
+                logging.info(f"Evacuation time: {evac_time:.2f} [s].")
+
+        # Save all simulation results
+        results_file = output_dir / f"results_{timestamp}.json"
+        with open(results_file, "w") as f:
+            json.dump(results, f, indent=4)
+
+        logging.info(f"\nSimulation batch completed. Results saved to {results_file}.")
+
+        completed = sum(1 for r in results if r["status"] == "completed")
+        failed = sum(1 for r in results if r["status"] == "failed")
+        logging.info("\nSummary:")
+        logging.info(f"Total variations: {total_variations}")
+        logging.info(f"Completed: {completed}")
+        logging.info(f"Failed: {failed}")
+
+    else:
+        # No variations file provided; run simulation with the base configuration only.
+        logging.info(
+            "No variations file provided. Running simulation with base configuration."
+        )
+
+        # Optionally, you can save a copy of the base configuration in the output directory.
+        config_file = output_dir / f"{inifile.stem}_base_{timestamp}.json"
+        with open(config_file, "w") as f:
+            json.dump(base_config, f, indent=4)
+
+        output_path = output_dir / f"{inifile.stem}_base_{timestamp}.sqlite"
+
+        try:
+            evac_time = start_simulation(str(config_file), str(output_path))
             status = "completed"
         except Exception as e:
             logging.error(f"Error in simulation: {e}.")
             evac_time = None
             status = "failed"
 
-        # Store results
-        result = {
-            "variation_name": var_name,
-            "description": var_desc,
-            "parameters": variation["parameters"],
-            "evac_time": evac_time,
-            "status": status,
-            "config_file": str(new_config_path),
+        # Save run info for the base configuration simulation
+        run_info = {
+            "timestamp": timestamp,
+            "base_config": str(inifile),
+            "config_file": str(config_file),
             "output_file": str(output_path),
+            "status": status,
+            "evac_time": evac_time,
         }
-        results.append(result)
+        run_info_file = output_dir / f"run_info_{timestamp}.json"
+        with open(run_info_file, "w") as f:
+            json.dump(run_info, f, indent=4)
 
         logging.info(f"Status: {status}.")
         if evac_time is not None:
             logging.info(f"Evacuation time: {evac_time:.2f} [s].")
-
-    # Save all results
-    results_file = output_dir / f"results_{timestamp}.json"
-    with open(results_file, "w") as f:
-        json.dump(results, f, indent=4)
-
-    logging.info(f"\nSimulation batch completed. Results saved to {results_file}.")
-
-    completed = sum(1 for r in results if r["status"] == "completed")
-    failed = sum(1 for r in results if r["status"] == "failed")
-    logging.info("\nSummary:")
-    logging.info(f"Total variations: {total_variations}")
-    logging.info(f"Completed: {completed}")
-    logging.info(f"Failed: {failed}")
+        logging.info(f"\nSimulation completed. Run info saved to {run_info_file}.")
 
 
 if __name__ == "__main__":

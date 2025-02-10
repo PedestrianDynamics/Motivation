@@ -237,7 +237,6 @@ class EVCStrategy(MotivationStrategy):
             agent_id for agent_id, _ in sorted_agents[: self.number_high_value]
         )
         logging.info(f"{self.number_high_value = }, {len(high_value_agents) = }")
-        # high_value_agents = set(random.sample(self.agent_ids, self.number_high_value))
         for n in self.agent_ids:
             if self.seed_manager:
                 self.seed_manager.set_seed_for_operation(
@@ -272,7 +271,7 @@ class EVCStrategy(MotivationStrategy):
         expr = 1 / ((_distance / _width) ** 2 - 1)
         if np.isinf(expr):
             return 0.0
-
+        # TODO: For now I assume that the height is 1.
         return float(np.exp(expr) * np.e * _height)
 
     @staticmethod
@@ -328,7 +327,7 @@ class EVCStrategy(MotivationStrategy):
             params["seed"] = None
 
         value = self.pedestrian_value[agent_id] if self.evc else 1.0
-        V_unit = value / self.max_value_high
+        V_unit = value  # / self.max_value_high
         C_unit = EVCStrategy.competition(
             N=got_reward,
             c0=self.competition_max,
@@ -403,14 +402,14 @@ class EVCStrategy(MotivationStrategy):
             labels=[
                 "0",
                 f"N0={self.competition_decay_reward}",
-                f"Nmax={ self.max_reward * self.percent:.0f}",
+                f"Nmax={self.max_reward * self.percent:.0f}",
             ],
         )
         ax2.set_yticks(
             [0, self.competition_max], labels=["0", f"Max={self.competition_max:.0f}"]
         )
         ax2.set_title(
-            f"{self.name()} - C ({self.percent*100:.0f}% of max reward {self.max_reward:.0f})"
+            f"{self.name()} - C ({self.percent * 100:.0f}% of max reward {self.max_reward:.0f})"
         )
         # M
         max_value_id = max(
@@ -536,13 +535,13 @@ class MotivationModel:
         self, motivation_i: float, agent_id: int
     ) -> Tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
-        v_0 = self.normal_v_0 * self.motivation_strategy.get_value(agent_id=agent_id)
+        v_0_new = self.normal_v_0 * self.motivation_strategy.get_value(
+            agent_id=agent_id
+        )
 
         time_gap = self.normal_time_gap
-        v_0_new = v_0 * (1 + self.motivation_strategy.motivation_change * motivation_i)
-        time_gap_new = time_gap / (
-            1 + self.motivation_strategy.motivation_change * motivation_i
-        )
+        # v_0_new = v_0 * (1 + self.motivation_strategy.motivation_change * motivation_i)
+        time_gap_new = time_gap / (1 + motivation_i)
         return v_0_new, time_gap_new
 
     def plot(self) -> Tuple[Figure, Figure]:
