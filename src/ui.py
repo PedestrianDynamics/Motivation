@@ -269,7 +269,7 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
             key="value_low",
             options=np.arange(
                 0.1,  # float(data["motivation_parameters"]["min_value_low"]),
-                1.0,  # float(data["motivation_parameters"]["max_value_low"]),
+                1.1,  # float(data["motivation_parameters"]["max_value_low"]),
                 0.1,
             ),
             value=[

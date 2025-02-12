@@ -17,6 +17,9 @@ from enum import Enum, auto
 
 Point: TypeAlias = Tuple[float, float]
 
+def clamp(value: float, min_val: float, max_val: float) -> float:
+    """Clamp 'value' to be within [min_val, max_val]."""
+    return max(min_val, min(value, max_val))
 
 class SeedOperation(Enum):
     """Enumeration of different seeding operations for tracking purposes."""
@@ -153,6 +156,8 @@ class EVCStrategy(MotivationStrategy):
     number_high_value: int = 10
     nagents: int = 10
     evc: bool = True
+    normal_v_0: float = 1.2
+    normal_time_gap: float = 1.0
     motivation_change = 1.0  # to strengthen the change of the state. Not yet used!
     distance_decay: float = -width / math.log(0.01)
     seed_manager: Optional[SeedManager] = None
@@ -266,13 +271,13 @@ class EVCStrategy(MotivationStrategy):
     def expectancy(_distance: float, _width: float, _height: float) -> float:
         """Calculate Expectancy depending on the distance to the entrance."""
         if _distance >= _width:
-            return 0.0
+            return 1.0
 
         expr = 1 / ((_distance / _width) ** 2 - 1)
         if np.isinf(expr):
-            return 0.0
-        # TODO: For now I assume that the height is 1.
-        return float(np.exp(expr) * np.e * _height)
+            return 1.0
+        
+        return float(1+np.exp(expr) * np.e * _height)
 
     @staticmethod
     def competition(N: int, c0: float, N0: float, percent: float, Nmax: float) -> float:
@@ -291,13 +296,13 @@ class EVCStrategy(MotivationStrategy):
         - float: The function value corresponding to input value in N.
         """
         max_reward = percent * Nmax
-        slope = c0 / (max_reward - N0)
+        slope = (c0-1) / (max_reward - N0)
         if N <= N0:
             return c0
         elif N < max_reward:
-            return c0 - slope * (N - N0)
+            return  c0 - slope * (N - N0)
         else:
-            return 0
+            return 1
 
     def get_value(self, **kwargs: Any) -> float:
         """Random value in interval."""
@@ -342,7 +347,10 @@ class EVCStrategy(MotivationStrategy):
         )
 
         M = V_unit * E_unit * C_unit
-        return M
+
+        max_human_v0 = 3.6
+        max_M = max_human_v0/self.normal_v_0
+        return clamp(M, 0.01, max_M)
 
     def plot(self) -> List[Figure]:
         """Plot functions for inspection."""
@@ -359,7 +367,7 @@ class EVCStrategy(MotivationStrategy):
 
         ax0.plot(distances, E)
         ax0.grid(alpha=0.3)
-        ax0.set_ylim((-0.1, 3))
+        ax0.set_ylim((-0.1, 5))
         ax0.set_xlim((-0.1, 4))
         ax0.set_title(f"{self.name()} - E (width, height)")
         ax0.set_xlabel("Distance / m")
@@ -406,7 +414,7 @@ class EVCStrategy(MotivationStrategy):
             ],
         )
         ax2.set_yticks(
-            [0, self.competition_max], labels=["0", f"Max={self.competition_max:.0f}"]
+            [0, self.competition_max], labels=["0", f"Max={self.competition_max:.1f}"]
         )
         ax2.set_title(
             f"{self.name()} - C ({self.percent * 100:.0f}% of max reward {self.max_reward:.0f})"
