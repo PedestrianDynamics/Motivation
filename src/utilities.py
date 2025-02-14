@@ -13,6 +13,7 @@ import jupedsim as jps
 import streamlit as st
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
+import logging
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -98,14 +99,13 @@ def init_journey(
     # log_info(f"{ way_points= }")
     # log_info(f"{ exits= }")
     exit_ids: List[int] = []
-    # wp_ids = []
+    wp_ids = []
     journey = jps.JourneyDescription()
-    # distance = 1
-    # for way_point in way_points:
-    #     # log_info(f"add way_point: {way_point}")
-    #     wp_id = simulation.add_waypoint_stage((way_point[0], way_point[1]), distance)
-    #     wp_ids.append(wp_id)
-    #     journey.add(wp_id)
+    for way_point, distance in way_points:
+        logging.info(f"add way_point: {way_point}, distance: {distance}")
+        wp_id = simulation.add_waypoint_stage((way_point[0], way_point[1]), distance)
+        wp_ids.append(wp_id)
+        journey.add(wp_id)
 
     for e in exits:
         # log_info(f"add {e}")
@@ -123,7 +123,7 @@ def init_journey(
     #     )
 
     journey_id = int(simulation.add_journey(journey))
-    return journey_id, exit_ids
+    return journey_id, exit_ids, wp_ids
 
 
 def calculate_distance(p1: Point, p2: Point) -> float:
