@@ -80,7 +80,7 @@ def generate_heatmap(
             y_interior,
             color="white",
             linestyle="-",
-            label=f"Interior {i+1}",
+            label=f"Interior {i + 1}",
         )
 
     heatmap, xedges, yedges = np.histogram2d(
@@ -350,7 +350,7 @@ def get_user_inputs(prefix: str = "") -> Tuple[float, bool, float, str]:
 
     # Add unique keys using the prefix argument
     yaxis_max = c1.number_input(
-        f"{prefix}Max y-Axis: ", value=200, step=5, key=f"{prefix}_yaxis_max"
+        f"{prefix} Max y-Axis: ", value=200, step=5, key=f"{prefix}_yaxis_max"
     )
     if prefix != "orig":
         color_by_speed = c3.radio(
