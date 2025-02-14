@@ -161,6 +161,7 @@ class EVCStrategy(MotivationStrategy):
     motivation_change = 1.0  # to strengthen the change of the state. Not yet used!
     distance_decay: float = -width / math.log(0.01)
     seed_manager: Optional[SeedManager] = None
+    value_probability: bool = True
     # probability should be negligible (< 0.01) at self.width meters"
     # therefore: 0.01 = exp(-width/distance_decay)
     # Taking ln: ln(0.01) = -width/distance_decay
@@ -183,7 +184,11 @@ class EVCStrategy(MotivationStrategy):
         distance = self.calculate_exit_distance(pos)
         # Convert distance to probability using exponential decay
         # Scale the distance to control the rate of probability decay
-        probability = math.exp(-distance / self.distance_decay)
+
+        if self.value_probability:
+            probability = math.exp(-distance / self.distance_decay)
+        else:
+            probability = 1.0
         return probability
 
     @staticmethod
@@ -543,13 +548,9 @@ class MotivationModel:
         self, motivation_i: float, agent_id: int
     ) -> Tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
-        v_0_new = self.normal_v_0 * self.motivation_strategy.get_value(
-            agent_id=agent_id
-        )
-
-        time_gap = self.normal_time_gap
-        # v_0_new = v_0 * (1 + self.motivation_strategy.motivation_change * motivation_i)
-        time_gap_new = time_gap / (1 + motivation_i)
+        
+        v_0_new = self.normal_v_0 * motivation_i
+        time_gap_new = self.normal_time_gap / motivation_i
         return v_0_new, time_gap_new
 
     def plot(self) -> Tuple[Figure, Figure]:
