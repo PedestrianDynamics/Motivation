@@ -19,7 +19,7 @@ import random
 import jupedsim as jps
 import typer
 from jupedsim.distributions import distribute_by_number
-from shapely import from_wkt
+from shapely import from_wkt, Polygon
 from typing import Optional
 from xml.etree.ElementTree import Element, ElementTree, SubElement
 from jupedsim.internal.notebook_utils import read_sqlite_file
@@ -262,7 +262,9 @@ def init_motivation_model(
             competition_max=competition_max,
             percent=percent,
             evc=True,
-            value_probability=_data["motivation_parameters"]["value_probability"],
+            value_probability=_data["motivation_parameters"][
+                "value_probability_sorting"
+            ],
         )
     if choose_motivation_strategy == "EC-V":
         motivation_strategy = mm.EVCStrategy(
@@ -315,31 +317,87 @@ def init_simulation(
 
     if from_file:
         logging.info(f"Init geometry from WKT")
-        geometry_open = from_wkt(
-            "POLYGON ((-8.88 -11, 8.3 -11, 8.3 27.95, -8.88 27.95, -8.88 -11), (-3.54 -11, -3.57 19.57, -1.52 19.57, -1.37 19.71,  -0.87 19.71, -0.72 19.57, -0.42 19.57,  -0.42 21.23, -0.72 21.23, -0.87 21.09, -1.37 21.09, -1.52 21.23, -1.67 21.23, -1.67 21.18, -1.545 21.18, -1.4200000000000002 21.065, -1.4200000000000002 19.735, -1.545 19.62, -3.6199999999999997 19.62, -3.59 -11, -3.54 -11), (3.57 -11, 3.64 19.64, 1.47 19.57, 1.32 19.71, 0.82 19.71, 0.67 19.57, 0.38 19.57,  0.38 21.23, 0.67 21.23, 0.82 21.09, 1.32 21.09, 1.47 21.23, 1.62 21.23, 1.62 21.18, 1.4949999999999999 21.18, 1.37 21.065, 1.37 19.735, 1.4949999999999999 19.62, 3.69 19.69, 3.6199999999999997 -11, 3.57 -11))"
-        )
 
-        geometry_close = from_wkt(
-            "POLYGON ((-8.88 -11, 8.3 -11, 8.3 27.95, -8.88 27.95, -8.88 -11), "
-            "(-3.54 -11, -3.57 19.57, -1.52 19.57, -1.37 19.71, -0.87 19.71, -0.72 19.57, -0.42 19.57, "
-            "-0.42 21.23, -0.72 21.23, -0.87 21.09, -1.37 21.09, -1.52 21.23, -1.67 21.23, -1.67 21.18, "
-            "-1.545 21.18, -1.4200000000000002 21.065, -1.4200000000000002 19.735, -1.545 19.62, "
-            "-3.6199999999999997 19.62, -3.59 -11, -3.54 -11), "
-            "(3.57 -11, 3.64 19.64, 1.47 19.57, 1.32 19.71, 0.82 19.71, 0.67 19.57, 0.38 19.57, "
-            "0.38 21.23, 0.67 21.23, 0.82 21.09, 1.32 21.09, 1.47 21.23, 1.62 21.23, 1.62 21.18, "
-            "1.4949999999999999 21.18, 1.37 21.065, 1.37 19.735, 1.4949999999999999 19.62, 3.69 19.69, "
-            "3.6199999999999997 -11, 3.57 -11), "
-            "(-0.4 19.57, 0.37 19.57, 0.37 19.3, -0.4 19.3, -0.4 19.57))"
-        )
+        # Original exterior ring
+        exterior = [
+            (-8.88, -11.1),
+            (8.3, -11.1),
+            (8.3, 27.95),
+            (-8.88, 27.95),
+            (-8.88, -11.1),
+        ]
 
+        # Interior rings (excluding the door)
+        interior_rings = [
+            # Left cutout
+            [
+                (-7, -11),
+                (-3.57, -3),
+                (-3.57, 19.57),
+                (-1.52, 19.57),
+                (-1.37, 19.71),
+                (-0.87, 19.71),
+                (-0.72, 19.57),
+                (-0.42, 19.57),
+                (-0.42, 21.23),
+                (-0.72, 21.23),
+                (-0.87, 21.09),
+                (-1.37, 21.09),
+                (-1.52, 21.23),
+                (-1.67, 21.23),
+                (-1.67, 21.18),
+                (-1.545, 21.18),
+                (-1.42, 21.065),
+                (-1.42, 19.735),
+                (-1.545, 19.62),
+                (-3.62, 19.62),
+                (-3.59, -3),
+                (-7, -11),
+            ],
+            # Right cutout
+            [
+                (7, -11),
+                (3.57, -3),
+                (3.64, 19.64),
+                (1.47, 19.57),
+                (1.32, 19.71),
+                (0.82, 19.71),
+                (0.67, 19.57),
+                (0.38, 19.57),
+                (0.38, 21.23),
+                (0.67, 21.23),
+                (0.82, 21.09),
+                (1.32, 21.09),
+                (1.47, 21.23),
+                (1.62, 21.23),
+                (1.62, 21.18),
+                (1.495, 21.18),
+                (1.37, 21.065),
+                (1.37, 19.735),
+                (1.495, 19.62),
+                (3.69, 19.69),
+                (3.62, -3),
+                (7, -11),
+            ],
+            # Bottom strip
+            [(-6.8, -10.8), (6.8, -10.8), (6.8, -10.6), (-6.8, -10.6), (-6.8, -10.8)],
+        ]
+
+        # Door coordinates
+        door = [(-0.4, 19.57), (0.37, 19.57), (0.37, 19.3), (-0.4, 19.3), (-0.4, 19.57)]
+        # Create closed geometry (with door)
+        geometry_closed = Polygon(exterior, interior_rings + [door])
+
+        # Create open geometry (without door)
+        geometry_open = Polygon(exterior, interior_rings)
     else:
         logging.info("Init geometry from data")
         geometry_open = build_geometry(accessible_areas)
-        geometry_close = build_geometry(accessible_areas)
+        geometry_closed = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     simulation = jps.Simulation(
         model=jps.CollisionFreeSpeedModelV2(),
-        geometry=geometry_close,
+        geometry=geometry_closed,
         dt=_time_step,
         trajectory_writer=jps.SqliteTrajectoryWriter(
             output_file=pathlib.Path(_trajectory_path), every_nth_frame=_fps
@@ -356,6 +414,7 @@ def adjust_radius_with_distance(
     max_value: float = 0.5,
     y_min: float = -1,  # Start reducing radius from this y position
     y_max: float = 19,  # Exit position where radius should be min_value
+    min_motivation: float = 1,
 ) -> float:
     """
     Adjust the radius based on agent's motivation level and distance to exit.
@@ -368,6 +427,7 @@ def adjust_radius_with_distance(
     :param y_max: Position where radius is minimal.
     :return: Adjusted radius.
     """
+    max_motivation = 3.6 / 1.2
     # Ensure position_y is within the defined range
     position_y = max(min(position_y, y_max), y_min)
 
@@ -375,8 +435,19 @@ def adjust_radius_with_distance(
     distance_factor = (y_max - position_y) / (y_max - y_min)
 
     # Compute motivation-dependent base radius (inverse relationship)
-    motivation_radius = max_value - (max_value - min_value) * 0.5 * (motivation_i - 1)
-
+    motivation_radius = max_value - (max_value - min_value) * (
+        motivation_i - min_motivation
+    ) / (max_motivation - min_motivation)
+    # print("-----------------------")
+    # print(f"{y_min = }, {y_max = }")
+    # print(f"{min_value = }, {max_value = }")
+    # print(
+    #     f"{position_y = }, {motivation_i = }, {min_motivation = }, {motivation_radius = } "
+    # )
+    # print(
+    #     f"{min_value = }, {motivation_radius = }, {distance_factor = }, --> {min_value + (motivation_radius - min_value) * distance_factor}"
+    # )
+    # input()
     # Scale radius based on distance factor
     return min_value + (motivation_radius - min_value) * distance_factor
 
@@ -386,6 +457,7 @@ def adjust_parameter_linearly(
     min_value: float = 0.01,
     default_value: float = 0.5,
     max_value: float = 1.0,
+    min_motivation: float = 1,
 ) -> float:
     """
     Adjust the a parameter based on agent's motivation level (1 <= motivation_i <= 3).
@@ -397,7 +469,7 @@ def adjust_parameter_linearly(
     :return: Adjusted range_neighbor_repulsion value.
     """
     # Linear interpolation between min_value and max_value based on motivation_i
-    return min_value + (max_value - min_value) * 0.5 * (motivation_i - 1)
+    return min_value + (max_value - min_value) * 0.5 * (motivation_i - min_motivation)
 
 
 def process_agent(
@@ -413,6 +485,7 @@ def process_agent(
     default_range: float,
     file_handle: _io.TextIOWrapper,
     frame_to_write: int,
+    _data: Dict[str, Any],
 ) -> str:
     """Process an individual agent by calculating motivation and updating model parameters."""
     position = agent.position
@@ -432,13 +505,14 @@ def process_agent(
     #     )
 
     v_0, time_gap = motivation_model.calculate_motivation_state(motivation_i, agent.id)
-
+    min_motivtion = _data["motivation_parameters"]["min_value_low"]
     # Adjust agent parameters based on motivation
     agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
         motivation_i=motivation_i,
         min_value=a_ped_min,
         default_value=default_strength,
         max_value=a_ped_max,
+        min_motivation=min_motivtion,
     )
 
     agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
@@ -446,20 +520,32 @@ def process_agent(
         min_value=d_ped_min,
         default_value=default_range,
         max_value=d_ped_max,
+        min_motivation=min_motivtion,
     )
     # Usage in the agent model
-    # exit_position_y = 18
-    # if position[1] < exit_position_y:  # Adjust radius based on distance to exit
-    #     agent.model.radius = adjust_radius_with_distance(
-    #         position_y=position[1],
-    #         motivation_i=motivation_i,
-    #         min_value=0.1,  # Smallest radius near the exit
-    #         max_value=0.5,  # Largest radius when far away
-    #         y_min=5,  # Start decreasing radius here
-    #         y_max=exit_position_y,  # Minimum radius at exit
-    #     )
-    # else:
-    agent.model.radius = 0.1  # Fixed radius at the exit
+    do_adjust_radius = False
+    if "do_adjust_radius" in _data["motivation_parameters"]:
+        do_adjust_radius = _data["motivation_parameters"]["do_adjust_radius"]
+
+    if do_adjust_radius:  # Adjust radius based on distance to exit
+        min_value_y = _data["motivation_parameters"]["adjust_radius_y_min"]
+        max_value_y = _data["motivation_parameters"]["adjust_radius_y_max"]
+        min_value_radius = _data["motivation_parameters"]["min_radius"]
+        max_value_radius = _data["motivation_parameters"]["max_radius"]
+        min_motivation = _data["motivation_parameters"]["min_value_low"]
+        agent.model.radius = adjust_radius_with_distance(
+            position_y=position[1],
+            motivation_i=motivation_i,
+            min_value=min_value_radius,  # Smallest radius near the exit
+            max_value=max_value_radius,  # Largest radius when far away
+            y_min=min_value_y,  # Start decreasing radius here
+            y_max=max_value_y,  # Minimum radius at exit
+            min_motivation=min_motivation,
+        )
+    else:
+        agent.model.radius = _data["velocity_init_parameters"][
+            "radius"
+        ]  # Fixed radius at the exit
 
     agent.model.v0 = v_0
     agent.model.time_gap = time_gap
@@ -484,6 +570,7 @@ def run_simulation_loop(
     default_range: float,
     every_nth_frame: int,
     motivation_file: pathlib.Path,
+    data: Dict[str, Any],
 ) -> None:
     """Run the simulation loop to process agents and write motivation information to a CSV file.
 
@@ -533,6 +620,7 @@ def run_simulation_loop(
                         default_range,
                         file_handle,
                         frame_to_write,
+                        data,
                     )
                     buffer.append(ret)
                 frame_to_write += 1
@@ -561,15 +649,15 @@ def create_agent_parameters(
         parse_velocity_init_parameters(_data)
     )
 
-    #     if True or not wp_ids:
-    #     stage_id = exit_id
-    # else:
-    #     stage_id = wp_ids[0]
+    if not wp_ids:
+        stage_id = exit_id
+    else:
+        stage_id = wp_ids[0]
 
     for exit_id in exit_ids:
         agent_parameters = jps.CollisionFreeSpeedModelV2AgentParameters(
             journey_id=journey_id,
-            stage_id=exit_id,
+            stage_id=stage_id,
             radius=radius,
             v0=normal_v_0,
             time_gap=normal_time_gap,
@@ -712,6 +800,7 @@ def init_and_run_simulation(
         default_range=d_ped,
         every_nth_frame=_data["simulation_parameters"]["fps"],
         motivation_file=motivation_file,
+        data=_data,
     )
     end_time = time.time()
     logging.info(f"Run time: {end_time - start_time:.2f} seconds")

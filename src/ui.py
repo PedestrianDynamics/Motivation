@@ -237,7 +237,7 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
             value=data["simulation_parameters"]["simulation_time"],
             step=20,
             min_value=50,
-            max_value=300,
+            max_value=500,
         )
 
 
@@ -249,7 +249,7 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
             "**Value high**",
             key="value_high",
             options=np.arange(
-                1.0,
+                0.7,
                 2.6,
                 0.1,
             ),

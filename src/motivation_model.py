@@ -214,9 +214,9 @@ class EVCStrategy(MotivationStrategy):
             )
             self.number_high_value = self.nagents
         else:
-            logging.info(f" {self.number_high_value = }, {self.nagents = }.")
-            logging.info(f"NN {len(self.agent_ids) = }")
-            logging.info(f"{len(self.agent_positions) = }")
+            #logging.info(f" {self.number_high_value = }, {self.nagents = }.")
+            logging.info(f"Number of agents {len(self.agent_ids) = }")
+            logging.info(f"Number of positions {len(self.agent_positions) = }")
         # Set seed for position probability calculations
         if self.seed_manager:
             self.seed_manager.set_seed_for_operation(SeedOperation.POSITION_PROBABILITY)
@@ -246,7 +246,7 @@ class EVCStrategy(MotivationStrategy):
         high_value_agents = set(
             agent_id for agent_id, _ in sorted_agents[: self.number_high_value]
         )
-        logging.info(f"{self.number_high_value = }, {len(high_value_agents) = }")
+        logging.info(f"Number of high value agents: {self.number_high_value}")
         for n in self.agent_ids:
             if self.seed_manager:
                 self.seed_manager.set_seed_for_operation(
