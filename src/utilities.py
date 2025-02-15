@@ -8,7 +8,7 @@ from math import sqrt
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple, TypeAlias, Union
-
+import random
 import jupedsim as jps
 import streamlit as st
 from shapely import GeometryCollection, Polygon
@@ -113,14 +113,13 @@ def init_journey(
         exit_ids.append(exit_id)
         journey.add(exit_id)
 
-    # chosen_id = random.choice(exit_ids)
-    # logging.info(f"{chosen_id}, {exit_ids}")
-    # stage_id = chosen_id
-    # # todo these wp id are not needed and not properly initialized
-    # for wp_id in wp_ids:
-    #     journey.set_transition_for_stage(
-    #         wp_id, jps.Transition.create_fixed_transition(stage_id)
-    #     )
+    chosen_id = random.choice(exit_ids)
+    logging.info(f"{chosen_id}, {exit_ids}")
+    stage_id = chosen_id
+    for wp_id in wp_ids:
+        journey.set_transition_for_stage(
+            wp_id, jps.Transition.create_fixed_transition(stage_id)
+        )
 
     journey_id = int(simulation.add_journey(journey))
     return journey_id, exit_ids, wp_ids
