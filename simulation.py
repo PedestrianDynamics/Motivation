@@ -335,8 +335,8 @@ def init_simulation(
                 (-3.57, -3),
                 (-3.57, 19.57),
                 (-1.52, 19.57),
-                (-1.37, 19.71),
-                (-0.87, 19.71),
+                (-1.37, 19.57),
+                (-0.87, 19.57),
                 (-0.72, 19.57),
                 (-0.42, 19.57),
                 (-0.42, 21.23),
@@ -360,8 +360,8 @@ def init_simulation(
                 (3.57, -3),
                 (3.64, 19.64),
                 (1.47, 19.57),
-                (1.32, 19.71),
-                (0.82, 19.71),
+                (1.32, 19.57),
+                (0.82, 19.57),
                 (0.67, 19.57),
                 (0.38, 19.57),
                 (0.38, 21.23),
@@ -385,8 +385,10 @@ def init_simulation(
 
         # Door coordinates
         door = [(-0.4, 19.57), (0.37, 19.57), (0.37, 19.3), (-0.4, 19.3), (-0.4, 19.57)]
+        door2 = [(-0.4, 19.7), (0.37, 19.7), (0.37, 19.5), (-0.4, 19.5), (-0.4, 19.7)]
+
         # Create closed geometry (with door)
-        geometry_closed = Polygon(exterior, interior_rings + [door])
+        geometry_closed = Polygon(exterior, interior_rings + [door, door2])
 
         # Create open geometry (without door)
         geometry_open = Polygon(exterior, interior_rings)
@@ -448,6 +450,7 @@ def adjust_radius_with_distance(
     #     f"{min_value = }, {motivation_radius = }, {distance_factor = }, --> {min_value + (motivation_radius - min_value) * distance_factor}"
     # )
     # input()
+
     # Scale radius based on distance factor
     return min_value + (motivation_radius - min_value) * distance_factor
 
