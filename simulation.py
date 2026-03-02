@@ -47,6 +47,8 @@ from src.utilities import (
     calculate_distance,
     distribute_and_add_agents,
     init_journey,
+    calculate_crossing_density,
+    plot_crossing_order_vs_area,
 )
 
 # import cProfile
@@ -140,18 +142,20 @@ def compute_speed(traj, df, fps):
 
 def export_trajectory_to_txt(
     trajectory_data,
+    motivation_model: mm.MotivationModel,
     output_file="output.txt",
     geometry_file="geometry.xml",
     df=10,
     v0=1.2,
     radius=0.18,
+    by_speed=True,
 ):
     """
     Exports trajectory data from a SQLite file to a formatted .txt file, including speed and color.
     """
     df_data = trajectory_data.data
     fps = trajectory_data.frame_rate
-    print(f"{fps = }")
+    print(f"export_trajectory_to_txt {fps = }")
     # Extract trajectories for speed calculations
     # trajectories = df_data.groupby("id").apply(
     #     lambda group: group.sort_values(by="frame")[["x", "y"]].values
@@ -159,24 +163,34 @@ def export_trajectory_to_txt(
 
     speeds = []
     frame_indices = []
-
+    values = []
     for traj_id, group in df_data.groupby("id"):
         # Sort by frame within each trajectory
         group = group.sort_values(by="frame")
         traj = group[["x", "y"]].values
+        agent_value = motivation_model.motivation_strategy.get_value(agent_id=traj_id)
 
         # Calculate speed for this trajectory
         speed = compute_speed(traj, df, fps)
+        # if agent_value > 1.0:#green
+        values.extend([-1] * len(speed))
+        # else:#blue
+        #    values.extend([10]*len(speed))
 
         # Store speed and corresponding frame indices
         speeds.extend(speed)
         frame_indices.extend(group.index)
 
-    speed_series = pd.Series(speeds, index=frame_indices)
-    df_data.loc[frame_indices, "speed"] = speed_series
     df_data["angle"] = np.degrees(np.arctan2(df_data["oy"], df_data["ox"]))
     # Calculate color based on speed
-    df_data["color"] = (df_data["speed"] / v0 * 255).clip(0, 255).astype(int)
+    if by_speed:
+        speed_series = pd.Series(speeds, index=frame_indices)
+        df_data.loc[frame_indices, "speed"] = speed_series
+        df_data["color"] = (df_data["speed"] / v0 * 255).clip(0, 255).astype(int)
+    else:
+        value_series = pd.Series(values, index=frame_indices)
+        df_data.loc[frame_indices, "value"] = value_series
+        df_data["color"] = df_data["value"]
 
     # Write the formatted data to the output file
     with open(output_file, "w") as f:
@@ -320,19 +334,22 @@ def init_simulation(
 
         # Original exterior ring
         exterior = [
-            (-8.88, -11.1),
-            (8.3, -11.1),
+            (-8.88, -20.1),
+            (8.3, -20.1),
             (8.3, 27.95),
             (-8.88, 27.95),
-            (-8.88, -11.1),
+            (-8.88, -20.1),
         ]
 
         # Interior rings (excluding the door)
         interior_rings = [
             # Left cutout
             [
-                (-7, -11),
+                (-10, -20),
                 (-3.57, -3),
+                (-2, -3),
+                (-2, -2.8),
+                (-3.57, -2.8),
                 (-3.57, 19.57),
                 (-1.52, 19.57),
                 (-1.37, 19.57),
@@ -352,12 +369,15 @@ def init_simulation(
                 (-1.545, 19.62),
                 (-3.62, 19.62),
                 (-3.59, -3),
-                (-7, -11),
+                (-10, -20),
             ],
             # Right cutout
             [
-                (7, -11),
+                (10, -20),
                 (3.57, -3),
+                (2, -3),
+                (2, -2.8),
+                (3.57, -2.8),
                 (3.64, 19.64),
                 (1.47, 19.57),
                 (1.32, 19.57),
@@ -377,18 +397,25 @@ def init_simulation(
                 (1.495, 19.62),
                 (3.69, 19.69),
                 (3.62, -3),
-                (7, -11),
+                (10, -20),
             ],
             # Bottom strip
-            [(-6.8, -10.8), (6.8, -10.8), (6.8, -10.6), (-6.8, -10.6), (-6.8, -10.8)],
+            # [(3.55, -3), (2, -3), (2, -3.2), (3.55, -3.2),(3.55, -3)],
+            # [(-3.55, -3), (-2, -3), (-2, -3.2), (-3.55, -3.2),(-3.55, -3)]
         ]
 
         # Door coordinates
-        door = [(-0.4, 19.57), (0.37, 19.57), (0.37, 19.3), (-0.4, 19.3), (-0.4, 19.57)]
-        door2 = [(-0.4, 19.7), (0.37, 19.7), (0.37, 19.5), (-0.4, 19.5), (-0.4, 19.7)]
+        door = [(-0.41, 20), (0.37, 20), (0.37, 21), (-0.41, 21), (-0.41, 20)]
+        door2 = [
+            (-0.41, 19.9),
+            (0.37, 19.9),
+            (0.37, 19.8),
+            (-0.41, 19.8),
+            (-0.41, 19.9),
+        ]
 
         # Create closed geometry (with door)
-        geometry_closed = Polygon(exterior, interior_rings + [door, door2])
+        geometry_closed = Polygon(exterior, interior_rings + [door])
 
         # Create open geometry (without door)
         geometry_open = Polygon(exterior, interior_rings)
@@ -475,6 +502,31 @@ def adjust_parameter_linearly(
     return min_value + (max_value - min_value) * 0.5 * (motivation_i - min_motivation)
 
 
+def adjust_buffer_size_linearly(
+    value_i: float,
+    min_size: float = 0.1,
+    max_size: float = 1.5,
+    min_motivation: float = 0.5,
+    max_motivation: float = 3.0,
+) -> float:
+    """
+    Adjust the buffer size based on agent's motivation level (1 <= motivation_i <= 3).
+
+    :param motivation_i: The agent's motivation level.
+    :param min_size: The minimum buffer size at highest motivation.
+    :param max_size: The maximum buffer size at lowest motivation.
+    :param min_motivation: Motivation level corresponding to max_size.
+    :param max_motivation: Motivation level corresponding to min_size.
+    :return: Adjusted buffer size.
+    """
+    # Clamp motivation_i between min and max motivation
+    value_i = max(min_motivation, min(value_i, max_motivation))
+
+    # Inverse linear interpolation
+    t = (value_i - min_motivation) / (max_motivation - min_motivation)
+    return max_size - (max_size - min_size) * t
+
+
 def process_agent(
     agent: jps.Agent,
     door: Point,
@@ -510,6 +562,7 @@ def process_agent(
     v_0, time_gap = motivation_model.calculate_motivation_state(motivation_i, agent.id)
     min_motivtion = _data["motivation_parameters"]["min_value_low"]
     # Adjust agent parameters based on motivation
+    # if agent_value > 0.5:
     agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
         motivation_i=motivation_i,
         min_value=a_ped_min,
@@ -517,7 +570,6 @@ def process_agent(
         max_value=a_ped_max,
         min_motivation=min_motivtion,
     )
-
     agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
         motivation_i=motivation_i,
         min_value=d_ped_min,
@@ -525,6 +577,37 @@ def process_agent(
         max_value=d_ped_max,
         min_motivation=min_motivtion,
     )
+    # if simulation.elapsed_time() > 25:
+    #     agent.model.strength_neighbor_repulsion = 0.6
+    #     agent.model.range_neighbor_repulsion = 0.2
+    # if simulation.elapsed_time() > 30:
+    #     agent.model.strength_neighbor_repulsion = 0.6
+    #     agent.model.range_neighbor_repulsion = 0.22
+    # if simulation.elapsed_time() > 35:
+    #     agent.model.strength_neighbor_repulsion = 0.6
+    #     agent.model.range_neighbor_repulsion = 0.24
+    # if simulation.elapsed_time() > 40:
+    #     agent.model.strength_neighbor_repulsion = 0.6
+    #     agent.model.range_neighbor_repulsion = 0.28
+    # if simulation.elapsed_time() > 45:
+    #     agent.model.strength_neighbor_repulsion = 0.6
+    #     agent.model.range_neighbor_repulsion = 0.39
+
+    # else:
+    #    agent.model.strength_neighbor_repulsion = 0.6
+    #    agent.model.range_neighbor_repulsion = 0.1
+
+    do_adjust_buffer = True
+    if "do_adjust_buffer" in _data["motivation_parameters"]:
+        do_adjust_buffer = _data["motivation_parameters"]["do_adjust_buffer"]
+
+    if do_adjust_buffer:
+        agent.model.agent_buffer = adjust_buffer_size_linearly(motivation_i)
+        if False and agent.position[1] > 15:
+            print(
+                f"{agent.id}: ({agent.position[0]}, {agent.position[1]}), {motivation_i = :.2f}, {agent.model.agent_buffer =}"
+            )
+
     # Usage in the agent model
     do_adjust_radius = False
     if "do_adjust_radius" in _data["motivation_parameters"]:
@@ -550,10 +633,12 @@ def process_agent(
             "radius"
         ]  # Fixed radius at the exit
 
+        # 0,3
+        # 1,6
     agent.model.v0 = v_0
     agent.model.time_gap = time_gap
     # print(
-    #     f"{agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {agent.model.radius:.2f}"
+    #     f"{agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {agent.model.v0 =}, {agent.model.time_gap = }"
     # )
     return f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {position[0]:.2f}, {position[1]:.2f}, {agent_value:.2f}"
 
@@ -639,6 +724,7 @@ def create_agent_parameters(
 ) -> Tuple[List[jps.CollisionFreeSpeedModelV2AgentParameters], List[List[Point]]]:
     """Create the model parameters."""
     way_points = parse_way_points(_data)
+    way_points = []
     destinations_dict = parse_destinations(_data)
     destinations: List[List[Point]] = cast(
         List[List[Point]], list(destinations_dict.values())
@@ -647,13 +733,14 @@ def create_agent_parameters(
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
     radius = parse_radius(_data)
+    agent_buffer = _data["motivation_parameters"]["agent_buffer"]
     agent_parameters_list = []
     a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
         parse_velocity_init_parameters(_data)
     )
 
     if not wp_ids:
-        stage_id = exit_id
+        stage_id = exit_ids[0]
     else:
         stage_id = wp_ids[0]
 
@@ -668,6 +755,7 @@ def create_agent_parameters(
             range_neighbor_repulsion=d_ped,
             strength_geometry_repulsion=a_wall,
             range_geometry_repulsion=d_wall,
+            agent_buffer=agent_buffer,
         )
         agent_parameters_list.append(agent_parameters)
 
@@ -814,7 +902,7 @@ def init_and_run_simulation(
         f"Simulation time: {simulation.iteration_count() * _time_step:.2f} [s]"
     )
     # logging.info(f"Trajectory: {_trajectory_path}")
-    return float(simulation.iteration_count() * _time_step)
+    return float(simulation.iteration_count() * _time_step), motivation_model
 
 
 def start_simulation(config_path: str, output_path: str) -> float:
@@ -834,7 +922,7 @@ def start_simulation(config_path: str, output_path: str) -> float:
         logging.info(f"Open door time: {open_door_time} s")
         dummy = ""
         if fps and time_step:
-            evac_time = init_and_run_simulation(
+            evac_time, motivation_model = init_and_run_simulation(
                 fps,
                 time_step,
                 simulation_time,
@@ -843,7 +931,7 @@ def start_simulation(config_path: str, output_path: str) -> float:
                 pathlib.Path(output_path),
                 dummy,
             )
-        return evac_time
+        return evac_time, motivation_model
 
 
 def load_variations(variations_path: pathlib.Path) -> List[Dict[str, Any]]:
@@ -1018,7 +1106,9 @@ def main(
         output_path = output_dir / f"{inifile.stem}_base_{timestamp}.sqlite"
 
         try:
-            evac_time = start_simulation(str(config_file), str(output_path))
+            evac_time, motivation_model = start_simulation(
+                str(config_file), str(output_path)
+            )
             status = "completed"
         except Exception as e:
             logging.error(f"Error in simulation: {e}.")
@@ -1041,7 +1131,10 @@ def main(
         logging.info(f"Status: {status}.")
         if evac_time is not None:
             logging.info(f"Evacuation time: {evac_time:.2f} [s].")
-        logging.info(f"\nSimulation completed. Run info saved to {run_info_file}.")
+        logging.info(
+            f"\nSimulation completed. Run info saved to {run_info_file}.\n Timestamp:"
+        )
+        print(timestamp)
 
         if status == "completed":
             logging.info("JPSVIS")
@@ -1051,17 +1144,36 @@ def main(
             v0_mean = 1.2
             export_trajectory_to_txt(
                 trajectory_data,
+                motivation_model,
                 output_file=output_file,
                 geometry_file="geometry.xml",
                 df=10,
                 v0=v0_mean,
+                by_speed=False,
             )
 
             # polygon_to_xml(walkable_area=walkable_area, output_file=geometry_file)
             print(">>> ", output_file)
-            # print(">>> ", geometry_file)
+            print(">>> ", geometry_file)
             command = ["/Applications/jpsvis.app/Contents/MacOS/jpsvis", output_file]
             result = subprocess.run(command, capture_output=True, text=True)
+
+            (
+                df_merged_simulation,
+                density_over_time_simulation,
+                crossing_info_simulation,
+                individual_simulation,
+                title_simulation,
+            ) = calculate_crossing_density(
+                output_path, walkable_area, file_type="simulation", title="Simulation"
+            )
+
+            plot_crossing_order_vs_area(
+                df_merged_simulation, output_path.stem, title=None, color="blue"
+            )
+
+        else:
+            logging.warning(f"Status: {status}")
 
 
 if __name__ == "__main__":

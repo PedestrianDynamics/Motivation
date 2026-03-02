@@ -17,9 +17,11 @@ from enum import Enum, auto
 
 Point: TypeAlias = Tuple[float, float]
 
+
 def clamp(value: float, min_val: float, max_val: float) -> float:
     """Clamp 'value' to be within [min_val, max_val]."""
     return max(min_val, min(value, max_val))
+
 
 class SeedOperation(Enum):
     """Enumeration of different seeding operations for tracking purposes."""
@@ -214,7 +216,7 @@ class EVCStrategy(MotivationStrategy):
             )
             self.number_high_value = self.nagents
         else:
-            #logging.info(f" {self.number_high_value = }, {self.nagents = }.")
+            # logging.info(f" {self.number_high_value = }, {self.nagents = }.")
             logging.info(f"Number of agents {len(self.agent_ids) = }")
             logging.info(f"Number of positions {len(self.agent_positions) = }")
         # Set seed for position probability calculations
@@ -281,8 +283,8 @@ class EVCStrategy(MotivationStrategy):
         expr = 1 / ((_distance / _width) ** 2 - 1)
         if np.isinf(expr):
             return 1.0
-        
-        return float(1+np.exp(expr) * np.e * _height)
+
+        return float(1 + np.exp(expr) * np.e * _height)
 
     @staticmethod
     def competition(N: int, c0: float, N0: float, percent: float, Nmax: float) -> float:
@@ -301,11 +303,11 @@ class EVCStrategy(MotivationStrategy):
         - float: The function value corresponding to input value in N.
         """
         max_reward = percent * Nmax
-        slope = (c0-1) / (max_reward - N0)
+        slope = (c0 - 1) / (max_reward - N0)
         if N <= N0:
             return c0
         elif N < max_reward:
-            return  c0 - slope * (N - N0)
+            return c0 - slope * (N - N0)
         else:
             return 1
 
@@ -354,7 +356,7 @@ class EVCStrategy(MotivationStrategy):
         M = V_unit * E_unit * C_unit
 
         max_human_v0 = 3.6
-        max_M = max_human_v0/self.normal_v_0
+        max_M = max_human_v0 / self.normal_v_0
         return clamp(M, 0.01, max_M)
 
     def plot(self) -> List[Figure]:
@@ -372,11 +374,12 @@ class EVCStrategy(MotivationStrategy):
 
         ax0.plot(distances, E)
         ax0.grid(alpha=0.3)
-        ax0.set_ylim((-0.1, 5))
+        ax0.set_ylim((-0.1, 2))
         ax0.set_xlim((-0.1, 4))
-        ax0.set_title(f"{self.name()} - E (width, height)")
-        ax0.set_xlabel("Distance / m")
-        ax0.set_ylabel("Expectancy")
+        # ax0.set_title(f"{self.name()} - E (width, height)")
+        ax0.set_xlabel("$d$ / m", size=14)
+        ax0.set_ylabel(r"$E(d)$", size=14)
+        fig0.savefig("expectancy.pdf")
         # V
         V = []
         for s in self.agent_ids:
@@ -384,11 +387,12 @@ class EVCStrategy(MotivationStrategy):
 
         ax1.plot(self.agent_ids, V, "o")
         ax1.grid(alpha=0.3)
-        ax1.set_ylim((-0.1, 5))
+        ax1.set_ylim((-0.1, 2))
         ax1.set_xlim((-0.1, self.max_reward + 1))
-        ax1.set_title(f"{self.name()} - V (seed = {self.seed:.0f})")
-        ax1.set_xlabel("# Agents")
-        ax1.set_ylabel("Value")
+        # ax1.set_title(f"{self.name()} - V (seed = {self.seed:.0f})")
+        ax1.set_xlabel("# Agents", size=14)
+        ax1.set_ylabel("Value", size=14)
+        fig1.savefig("value.pdf")
         # C
         C = []
         Nrange = np.arange(0, self.max_reward + 1)
@@ -408,8 +412,8 @@ class EVCStrategy(MotivationStrategy):
         ax2.grid(alpha=0.3)
         ax2.set_xlim((0, self.max_reward + 1))
         ax2.set_ylim((-0.1, self.competition_max + 1))
-        ax2.set_xlabel("#agents left simulation")
-        ax2.set_ylabel("Competition")
+        ax2.set_xlabel("#agents left simulation", size=14)
+        ax2.set_ylabel(r"$C(N)$", size=14)
         ax2.set_xticks(
             [0, self.competition_decay_reward, self.max_reward * self.percent],
             labels=[
@@ -421,9 +425,10 @@ class EVCStrategy(MotivationStrategy):
         ax2.set_yticks(
             [0, self.competition_max], labels=["0", f"Max={self.competition_max:.1f}"]
         )
-        ax2.set_title(
-            f"{self.name()} - C ({self.percent * 100:.0f}% of max reward {self.max_reward:.0f})"
-        )
+        # ax2.set_title(
+        #    f"{self.name()} - C ({self.percent * 100:.0f}% of max reward {self.max_reward:.0f})"
+        # )
+        fig2.savefig("competition.pdf")
         # M
         max_value_id = max(
             self.pedestrian_value, key=lambda k: self.pedestrian_value[k]
@@ -438,8 +443,9 @@ class EVCStrategy(MotivationStrategy):
         #     f"id min value {min_value_id}: {self.pedestrian_value[min_value_id]}"
         # )
         N_three = np.linspace(10, self.max_reward * self.percent, 3)
-        symbols = ["--", "-", "-."]
-        for i, n in enumerate(N_three):
+        symbols = ["-", "--", "-."]
+
+        for i, n in enumerate(N_three[1:2]):
             n = int(n)
             for id_ in self.agent_ids:
                 m_max = []
@@ -457,11 +463,12 @@ class EVCStrategy(MotivationStrategy):
                         m_max,
                         linestyle=symbols[i % len(symbols)],
                         color="blue",
+                        lw=2,
                         label=f"max value, Nmax={n}",
                     )
                 else:
                     ax3.plot(distances, m_max, linestyle="-", color="gray", lw=0.08)
-        for i, n in enumerate(N_three):
+        for i, n in enumerate(N_three[1:2]):
             n = int(n)
             m_min = []
             for dist in distances:
@@ -477,6 +484,7 @@ class EVCStrategy(MotivationStrategy):
                 m_min,
                 linestyle=symbols[i % len(symbols)],
                 color="red",
+                lw=2,
                 label=f"min value, Nmax={n}",
             )
 
@@ -490,9 +498,10 @@ class EVCStrategy(MotivationStrategy):
             )
         else:
             title = f"EC-V -  E.C-V (N={self.max_reward:.0f}, seed={self.seed:.0f})"
-        ax3.set_title(title)
-        ax3.set_xlabel("Distance / m")
-        ax3.set_ylabel("Motivation")
+        # ax3.set_title(title)
+        ax3.set_xlabel(r"$d$ / m", size=14)
+        ax3.set_ylabel("$M$", size=14)
+        fig3.savefig("motivation.pdf")
         #
         M = []
         distance = self.width / 2
@@ -548,7 +557,7 @@ class MotivationModel:
         self, motivation_i: float, agent_id: int
     ) -> Tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
-        
+
         v_0_new = self.normal_v_0 * motivation_i
         time_gap_new = self.normal_time_gap / motivation_i
         return v_0_new, time_gap_new

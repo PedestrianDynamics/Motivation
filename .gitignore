@@ -135,3 +135,4 @@ dmypy.json
 /files/bottleneck_0.8m.json
 /profile_stats.prof
 .aider*
+.qodo

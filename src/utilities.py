@@ -13,7 +13,12 @@ import jupedsim as jps
 import streamlit as st
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
-import logging
+import matplotlib.pyplot as plt
+
+import pedpy
+from pedpy import compute_individual_voronoi_polygons, Cutoff
+import pandas as pd
+
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -187,3 +192,128 @@ def save_json(output: Path, data: Dict[str, Any]) -> None:
     """Save data in json file."""
     with open(output, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
+
+
+def calculate_crossing_density(
+    filename,
+    walkable_area,
+    fps=50,
+    polygon_cutoff_radius=1,
+    polygon_quad_segments=3,
+    title=None,
+    file_type="experiment",
+):
+    if file_type == "experiment":
+        if not title:
+            title = filename.split("_")[1].capitalize()
+        df = pd.read_csv(
+            filename, sep="\t", names=["id", "frame", "x", "y", "z", "m"], comment="#"
+        )
+        traj = pedpy.TrajectoryData(df, frame_rate=fps)
+        print(filename, traj.frame_rate)
+    elif file_type == "simulation":
+        traj = pedpy.load_trajectory_from_jupedsim_sqlite(filename)
+        walkable_area = pedpy.load_walkable_area_from_jupedsim_sqlite(filename)
+        df = traj.data
+        print(
+            f"Calculate crossing density for simulation file: {filename = }, {traj.frame_rate = }"
+        )
+
+    print(f"Processing file: {title}")
+
+    # --- Crossing Information Calculation ---
+    # Filter rows where pedestrians have crossed (e.g., y >= 20)
+    df_crossed = df[df["y"] >= 20].copy()
+
+    # For each pedestrian (id), get the first frame where they cross.
+    crossing_frames = df_crossed.groupby("id")["frame"].min().rename("crossing_frame")
+
+    # Sort crossing frames to determine the order.
+    crossing_frames_sorted = crossing_frames.sort_values()
+
+    # Create a series that indicates crossing order (1 for first, 2 for second, etc.)
+    crossing_order = pd.Series(
+        range(1, len(crossing_frames_sorted) + 1),
+        index=crossing_frames_sorted.index,
+        name="crossing_order",
+    )
+
+    crossing_info = pd.concat([crossing_frames, crossing_order], axis=1)
+
+    # --- Voronoi Polygon and Density Computation ---
+    # Compute individual Voronoi polygons; ensure 'walkable_area' is defined properly.
+    individual = compute_individual_voronoi_polygons(
+        traj_data=traj,
+        walkable_area=walkable_area,
+        cut_off=Cutoff(
+            radius=polygon_cutoff_radius, quad_segments=polygon_quad_segments
+        ),
+    )
+
+    # Compute mean density over time (group by frame)
+    density_over_time = (
+        individual.groupby("frame")[
+            "density"
+        ].mean()  # .rename("mean_individual_density")
+    )
+
+    # Compute mean density per agent (group by id)
+    density_per_agent = individual.groupby("id")["density"].mean()
+
+    # Compute polygon area for each individual.
+    individual["area"] = individual["polygon"].apply(lambda poly: poly.area)
+
+    # Compute mean polygon area per agent.
+    area_per_agent = individual.groupby("id")["area"].mean()
+
+    # --- Merging the Data ---
+    # Create DataFrames from Series
+    df_order = crossing_order.to_frame(name="order")
+    df_density = density_per_agent.to_frame(name="density")
+    df_area = area_per_agent.to_frame()
+
+    # Merge on the 'id' index (make sure all series are indexed by id)
+    df_merged = df_order.join(df_density, how="inner").join(df_area, how="inner")
+
+    return df_merged, density_over_time, crossing_info, individual, title
+
+
+def plot_crossing_order_vs_area(
+    df_merged,
+    filename_stem,
+    title=None,
+    color="blue",
+    output_dir="index_area_figs",
+    figsize=(6, 4),
+    marker="o",
+):
+    """
+    Plot mean Voronoi polygon area per agent vs crossing order.
+
+    Parameters:
+    - df_merged: DataFrame with 'order' and 'area' columns (from process_trajectory_file)
+    - filename_stem: str or Path.stem for output image filename
+    - title: optional title for the plot
+    - color: color of scatter points
+    - output_dir: directory where the plot will be saved
+    - figsize: figure size
+    - marker: marker style for scatter plot
+    """
+    plt.figure(figsize=figsize)
+    plt.scatter(df_merged["order"], df_merged["area"], color=color, marker=marker)
+
+    plt.xlabel("Crossing Order (1 = first to cross)", size=14)
+    plt.ylabel(r"Mean Area per Agent / $m^2$", size=14)
+    if title:
+        plt.title(title)
+
+    max_order = df_merged["order"].max()
+    print(f"Max crossing order: {max_order}")
+    plt.xticks(range(1, max_order + 1, 20))
+    plt.ylim([0, 3])
+    plt.grid(True, alpha=0.3)
+
+    output_path = f"{output_dir}/{filename_stem}.pdf"
+    plt.savefig(output_path, bbox_inches="tight")
+    print(output_path)
+    plt.show()

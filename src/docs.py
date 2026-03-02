@@ -69,6 +69,7 @@ def main() -> None:
         
         $$
         \textbf{competition} = 
+
         \begin{cases} 
         c_0 & \text{if } N \leq N_0 \\
         c_0 - \left(\frac{c_0}{\text{percent} \cdot N_{\text{max}} - N_0}\right) \cdot (N - N_0) & \text{if } N_0 < N < \text{percent} \cdot N_{\text{max}} \\

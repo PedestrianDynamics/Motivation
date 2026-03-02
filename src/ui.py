@@ -237,7 +237,7 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
             value=data["simulation_parameters"]["simulation_time"],
             step=20,
             min_value=50,
-            max_value=500,
+            max_value=3000,
         )
 
 
