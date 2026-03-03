@@ -1139,7 +1139,7 @@ def main(
         if status == "completed":
             logging.info("JPSVIS")
             trajectory_data, walkable_area = read_sqlite_file(output_path)
-            output_file = pathlib.Path(output_path).stem + ".txt"
+            output_file = "jpsvis_files" + pathlib.Path(output_path).stem + ".txt"
             geometry_file = pathlib.Path(output_path).stem + "_geometry.xml"
             v0_mean = 1.2
             export_trajectory_to_txt(
@@ -1149,7 +1149,7 @@ def main(
                 geometry_file="geometry.xml",
                 df=10,
                 v0=v0_mean,
-                by_speed=False,
+                by_speed=True,
             )
 
             # polygon_to_xml(walkable_area=walkable_area, output_file=geometry_file)

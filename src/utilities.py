@@ -315,5 +315,6 @@ def plot_crossing_order_vs_area(
 
     output_path = f"{output_dir}/{filename_stem}.pdf"
     plt.savefig(output_path, bbox_inches="tight")
-    print(output_path)
+
+    print(f"Plot: {output_path}")
     plt.show()
