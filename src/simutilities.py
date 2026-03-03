@@ -8,6 +8,7 @@ import streamlit as st
 import logging
 from simulation import get_agent_positions, init_and_run_simulation
 from src import motivation_model as mm
+from src import motivation_mapping as mmap
 from src.inifile_parser import (
     parse_fps,
     parse_motivation_doors,
@@ -17,6 +18,7 @@ from src.inifile_parser import (
     parse_number_agents,
     parse_simulation_time,
     parse_time_step,
+    parse_velocity_init_parameters,
 )
 
 
@@ -43,11 +45,26 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
         "competition_max": params["competition_max"],
         "competition_decay_reward": params["competition_decay_reward"],
         "percent": params["percent"],
-        # Add more parameters as needed
     }
+    mapping_block = mmap.ensure_mapping_block(params)
+    extracted_params["mapping_block"] = mapping_block
     extracted_params["normal_v_0"] = parse_normal_v_0(data)
     extracted_params["normal_time_gap"] = parse_normal_time_gap(data)
     extracted_params["motivation_doors"] = parse_motivation_doors(data)
+    (
+        a_ped,
+        d_ped,
+        _a_wall,
+        _d_wall,
+        a_ped_min,
+        a_ped_max,
+        _d_ped_min,
+        _d_ped_max,
+    ) = parse_velocity_init_parameters(data)
+    extracted_params["a_ped"] = a_ped
+    extracted_params["d_ped"] = d_ped
+    extracted_params["a_ped_min"] = a_ped_min
+    extracted_params["a_ped_max"] = a_ped_max
     # calculate positions
     positions, num_agents = get_agent_positions(data)
     extracted_params["number_agents"] = num_agents
@@ -73,13 +90,20 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
     fps = parse_fps(data)
     time_step = parse_time_step(data)
     simulation_time = parse_simulation_time(data)
+    open_door_time = float(data["simulation_parameters"].get("open_door_time", 0.0))
     strategy = parse_motivation_strategy(data)
 
     msg.code(f"Running simulation with {number_agents}. Strategy: <{strategy}>...")
 
     with st.spinner("Simulating..."):
-        evac_time = init_and_run_simulation(
-            fps, time_step, simulation_time, data, Path(output_file), msg
+        evac_time, _ = init_and_run_simulation(
+            fps,
+            time_step,
+            simulation_time,
+            open_door_time,
+            data,
+            Path(output_file),
+            msg,
         )
 
     msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
@@ -129,6 +153,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
             competition_max=params["competition_max"],
             percent=params["percent"],
             evc=strategy == "EVC",
+            motivation_min=float(params["mapping_block"]["motivation_min"]),
         )
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
@@ -153,11 +178,26 @@ def plot_motivation_model(params: Dict[str, Any]) -> None:
         normal_v_0=params["normal_v_0"],
         normal_time_gap=params["normal_time_gap"],
         motivation_strategy=strategy,
+        parameter_mapper=mmap.MotivationParameterMapper(
+            mapping_block=params["mapping_block"],
+            normal_v_0=params["normal_v_0"],
+            strength_default=params["a_ped"],
+            strength_min=params["a_ped_min"],
+            strength_max=params["a_ped_max"],
+            range_default=params["d_ped"],
+        ),
     )
     figs = motivation_model.motivation_strategy.plot()
     if params["strategy"] != "default":
         fig1, fig2 = motivation_model.plot()
         figs.extend([fig1, fig2])
+    if motivation_model.parameter_mapper is not None:
+        figs.append(
+            mmap.plot_parameter_mappings(
+                mapper=motivation_model.parameter_mapper,
+                normal_time_gap=params["normal_time_gap"],
+            )
+        )
     with st.expander("Plot model", expanded=False):
         for fig in figs:
             st.pyplot(fig)

@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 from streamlit_option_menu import option_menu
 
+from . import motivation_mapping as mmap
 from .utilities import delete_txt_files, load_json, save_json
 
 TAB_INFO = [
@@ -330,6 +331,115 @@ def ui_competition_parameters(data: Dict[str, Any]) -> None:
         )
 
 
+def ui_mapping_parameters(data: Dict[str, Any]) -> None:
+    """Set motivation-to-parameter mapping options."""
+    params = data["motivation_parameters"]
+    mapping = mmap.ensure_mapping_block(params)
+
+    with st.sidebar.expander("Motivation Mapping", expanded=True):
+        mapping["mapping_function"] = st.selectbox(
+            "Mapping function",
+            ["gompertz"],
+            index=0,
+            help="Function used to map motivation to model parameters.",
+        )
+        mapping["motivation_min"] = st.number_input(
+            "Motivation min",
+            min_value=0.01,
+            max_value=1.0,
+            value=float(mapping["motivation_min"]),
+            step=0.01,
+            help="Lower clamp for motivation.",
+        )
+
+        st.markdown("**Desired speed anchors**")
+        c1, c2, c3 = st.columns(3)
+        mapping["desired_speed_anchors"]["low"] = c1.number_input(
+            "v0 low",
+            min_value=0.0,
+            max_value=5.0,
+            value=float(mapping["desired_speed_anchors"]["low"]),
+            step=0.05,
+        )
+        mapping["desired_speed_anchors"]["normal"] = c2.number_input(
+            "v0 normal",
+            min_value=0.0,
+            max_value=5.0,
+            value=float(mapping["desired_speed_anchors"]["normal"]),
+            step=0.05,
+        )
+        mapping["desired_speed_anchors"]["high"] = c3.number_input(
+            "v0 high",
+            min_value=0.0,
+            max_value=6.0,
+            value=float(mapping["desired_speed_anchors"]["high"]),
+            step=0.05,
+        )
+
+        st.markdown("**Time gap anchors**")
+        c1, c2, c3 = st.columns(3)
+        mapping["time_gap_anchors"]["low"] = c1.number_input(
+            "T low",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(mapping["time_gap_anchors"]["low"]),
+            step=0.01,
+        )
+        mapping["time_gap_anchors"]["normal"] = c2.number_input(
+            "T normal",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(mapping["time_gap_anchors"]["normal"]),
+            step=0.01,
+        )
+        mapping["time_gap_anchors"]["high"] = c3.number_input(
+            "T high",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(mapping["time_gap_anchors"]["high"]),
+            step=0.01,
+        )
+
+        st.markdown("**Buffer anchors**")
+        c1, c2, c3 = st.columns(3)
+        mapping["buffer_anchors"]["low"] = c1.number_input(
+            "b low",
+            min_value=0.0,
+            max_value=3.0,
+            value=float(mapping["buffer_anchors"]["low"]),
+            step=0.01,
+        )
+        mapping["buffer_anchors"]["normal"] = c2.number_input(
+            "b normal",
+            min_value=0.0,
+            max_value=3.0,
+            value=float(mapping["buffer_anchors"]["normal"]),
+            step=0.01,
+        )
+        mapping["buffer_anchors"]["high"] = c3.number_input(
+            "b high",
+            min_value=0.0,
+            max_value=3.0,
+            value=float(mapping["buffer_anchors"]["high"]),
+            step=0.01,
+        )
+
+        mapping["repulsion_strength_mode"] = st.selectbox(
+            "Strength mapping",
+            ["config_bounds"],
+            index=0,
+            help="Use a_ped_min/a_ped/a_ped_max as low/normal/high anchors.",
+        )
+        mapping["range_neighbor_repulsion_mode"] = st.selectbox(
+            "Range mapping",
+            ["constant_d_ped"],
+            index=0,
+            help="Keep range_neighbor_repulsion fixed at d_ped.",
+        )
+
+    params.update(mapping)
+
+
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section."""
     c1, c2 = st.sidebar.columns(2)
@@ -383,6 +493,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     if motivation_strategy != "default":
         ui_value_parameters(data)
         ui_competition_parameters(data)
+    ui_mapping_parameters(data)
 
     st.sidebar.write("**At this line the motivation is maximal**")
     with st.sidebar.expander(label="Motivation line"):

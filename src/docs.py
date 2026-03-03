@@ -188,3 +188,30 @@ def main() -> None:
         """,
         unsafe_allow_html=True,
     )
+
+    st.markdown(
+        r"""
+        ## Runtime Mapping (Gompertz)
+
+        During simulation, the operational model parameters are mapped from motivation
+        with Gompertz curves and clamped motivation:
+
+        $$
+        m_i^{\mathrm{used}} = \mathrm{clip}\left(m_i,\; m_{\min},\; \frac{3.6}{v_0^{\mathrm{normal}}}\right)
+        $$
+
+        Each mapped parameter uses low/normal/high anchors at
+        $m \in \{0.1,\;1,\;3\}$:
+
+        - desired speed $\tilde v_0(m)$
+        - time gap $\tilde T(m)$
+        - buffer $\tilde b(m)$
+        - strength neighbor repulsion $\tilde A(m)$
+
+        The interaction range is fixed:
+
+        $$
+        \tilde D(m)=d_{\text{ped}} \quad \text{(constant)}
+        $$
+        """
+    )

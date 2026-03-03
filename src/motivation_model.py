@@ -11,6 +11,7 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from .logger_config import log_debug
+from .motivation_mapping import MotivationParameterMapper
 import math
 import hashlib
 from enum import Enum, auto
@@ -164,6 +165,7 @@ class EVCStrategy(MotivationStrategy):
     distance_decay: float = -width / math.log(0.01)
     seed_manager: Optional[SeedManager] = None
     value_probability: bool = True
+    motivation_min: float = 0.1
     # probability should be negligible (< 0.01) at self.width meters"
     # therefore: 0.01 = exp(-width/distance_decay)
     # Taking ln: ln(0.01) = -width/distance_decay
@@ -357,7 +359,7 @@ class EVCStrategy(MotivationStrategy):
 
         max_human_v0 = 3.6
         max_M = max_human_v0 / self.normal_v_0
-        return clamp(M, 0.01, max_M)
+        return clamp(M, self.motivation_min, max_M)
 
     def plot(self) -> List[Figure]:
         """Plot functions for inspection."""
@@ -536,6 +538,7 @@ class MotivationModel:
     normal_v_0: float = 1.2
     normal_time_gap: float = 1.0
     motivation_strategy: Any = None
+    parameter_mapper: Optional[MotivationParameterMapper] = None
 
     def print_details(self) -> None:
         """Print member variables for debugging."""
@@ -557,6 +560,14 @@ class MotivationModel:
         self, motivation_i: float, agent_id: int
     ) -> Tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
+
+        if self.parameter_mapper is not None:
+            motivation_i = self.parameter_mapper.clamp_motivation(motivation_i)
+            v_0_new = self.parameter_mapper.desired_speed(motivation_i)
+            time_gap_new = self.parameter_mapper.time_gap(
+                motivation_i, self.normal_time_gap
+            )
+            return v_0_new, time_gap_new
 
         v_0_new = self.normal_v_0 * motivation_i
         time_gap_new = self.normal_time_gap / motivation_i

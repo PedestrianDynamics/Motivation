@@ -85,6 +85,15 @@ if __name__ == "__main__":
                     st.plotly_chart(anm)
 
             params = extract_motivation_parameters(data)
+            mapping = params.get("mapping_block", {})
+            if mapping:
+                m_min = float(mapping.get("motivation_min", 0.1))
+                m_max = 3.6 / float(params["normal_v_0"])
+                st.caption(
+                    "Motivation mapping: "
+                    f"{mapping.get('mapping_function', 'gompertz')} "
+                    f"(clamp [{m_min:.2f}, {m_max:.2f}])"
+                )
 
             # get_agents_positions
             plot_motivation_model(params)

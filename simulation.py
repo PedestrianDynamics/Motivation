@@ -25,6 +25,7 @@ from xml.etree.ElementTree import Element, ElementTree, SubElement
 from jupedsim.internal.notebook_utils import read_sqlite_file
 
 from src import motivation_model as mm
+from src import motivation_mapping as mmap
 from src.inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
@@ -244,6 +245,7 @@ def init_motivation_model(
 
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
+    mapping_block = mmap.ensure_mapping_block(_data["motivation_parameters"])
     choose_motivation_strategy = parse_motivation_strategy(_data)
     number_agents = parse_number_agents(_data)
     competition_max = _data["motivation_parameters"]["competition_max"]
@@ -279,6 +281,7 @@ def init_motivation_model(
             value_probability=_data["motivation_parameters"][
                 "value_probability_sorting"
             ],
+            motivation_min=float(mapping_block["motivation_min"]),
         )
     if choose_motivation_strategy == "EC-V":
         motivation_strategy = mm.EVCStrategy(
@@ -299,7 +302,20 @@ def init_motivation_model(
             percent=percent,
             motivation_door_center=motivation_door_center,
             evc=False,
+            motivation_min=float(mapping_block["motivation_min"]),
         )
+
+    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
+        parse_velocity_init_parameters(_data)
+    )
+    parameter_mapper = mmap.MotivationParameterMapper(
+        mapping_block=mapping_block,
+        normal_v_0=normal_v_0,
+        strength_default=a_ped,
+        strength_min=a_ped_min,
+        strength_max=a_ped_max,
+        range_default=d_ped,
+    )
     # =================
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
@@ -307,6 +323,7 @@ def init_motivation_model(
         normal_v_0=normal_v_0,
         normal_time_gap=normal_time_gap,
         motivation_strategy=motivation_strategy,
+        parameter_mapper=parameter_mapper,
     )
     motivation_model.print_details()
     return motivation_model
@@ -553,6 +570,8 @@ def process_agent(
     }
 
     motivation_i = motivation_model.motivation_strategy.motivation(params)
+    if motivation_model.parameter_mapper is not None:
+        motivation_i = motivation_model.parameter_mapper.clamp_motivation(motivation_i)
     agent_value = motivation_model.motivation_strategy.get_value(agent_id=agent.id)
     # if motivation_i > 1:
     #     logging.error(
@@ -560,23 +579,30 @@ def process_agent(
     #     )
 
     v_0, time_gap = motivation_model.calculate_motivation_state(motivation_i, agent.id)
-    min_motivtion = _data["motivation_parameters"]["min_value_low"]
-    # Adjust agent parameters based on motivation
-    # if agent_value > 0.5:
-    agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
-        motivation_i=motivation_i,
-        min_value=a_ped_min,
-        default_value=default_strength,
-        max_value=a_ped_max,
-        min_motivation=min_motivtion,
-    )
-    agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
-        motivation_i=motivation_i,
-        min_value=d_ped_min,
-        default_value=default_range,
-        max_value=d_ped_max,
-        min_motivation=min_motivtion,
-    )
+    if motivation_model.parameter_mapper is not None:
+        agent.model.strength_neighbor_repulsion = (
+            motivation_model.parameter_mapper.strength_neighbor_repulsion(motivation_i)
+        )
+        agent.model.range_neighbor_repulsion = (
+            motivation_model.parameter_mapper.range_neighbor_repulsion(motivation_i)
+        )
+    else:
+        min_motivtion = _data["motivation_parameters"]["min_value_low"]
+        # Adjust agent parameters based on motivation
+        agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
+            motivation_i=motivation_i,
+            min_value=a_ped_min,
+            default_value=default_strength,
+            max_value=a_ped_max,
+            min_motivation=min_motivtion,
+        )
+        agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
+            motivation_i=motivation_i,
+            min_value=d_ped_min,
+            default_value=default_range,
+            max_value=d_ped_max,
+            min_motivation=min_motivtion,
+        )
     # if simulation.elapsed_time() > 25:
     #     agent.model.strength_neighbor_repulsion = 0.6
     #     agent.model.range_neighbor_repulsion = 0.2
@@ -602,7 +628,12 @@ def process_agent(
         do_adjust_buffer = _data["motivation_parameters"]["do_adjust_buffer"]
 
     if do_adjust_buffer:
-        agent.model.agent_buffer = adjust_buffer_size_linearly(motivation_i)
+        if motivation_model.parameter_mapper is not None:
+            agent.model.agent_buffer = motivation_model.parameter_mapper.buffer(
+                motivation_i
+            )
+        else:
+            agent.model.agent_buffer = adjust_buffer_size_linearly(motivation_i)
         if False and agent.position[1] > 15:
             print(
                 f"{agent.id}: ({agent.position[0]}, {agent.position[1]}), {motivation_i = :.2f}, {agent.model.agent_buffer =}"
