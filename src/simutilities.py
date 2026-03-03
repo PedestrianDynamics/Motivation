@@ -96,15 +96,19 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
     msg.code(f"Running simulation with {number_agents}. Strategy: <{strategy}>...")
 
     with st.spinner("Simulating..."):
-        evac_time, _ = init_and_run_simulation(
-            fps,
-            time_step,
-            simulation_time,
-            open_door_time,
-            data,
-            Path(output_file),
-            msg,
-        )
+        try:
+            evac_time, _ = init_and_run_simulation(
+                fps,
+                time_step,
+                simulation_time,
+                open_door_time,
+                data,
+                Path(output_file),
+                msg,
+            )
+        except ValueError as exc:
+            st.error(f"Gompertz configuration error: {exc}")
+            return
 
     msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
 
@@ -166,6 +170,19 @@ def plot_motivation_model(params: Dict[str, Any]) -> None:
         params: A dictionary of parameters required for creating and plotting the motivation model.
     """
     strategy = create_motivation_strategy(params)
+    try:
+        mapper = mmap.MotivationParameterMapper(
+            mapping_block=params["mapping_block"],
+            normal_v_0=params["normal_v_0"],
+            strength_default=params["a_ped"],
+            strength_min=params["a_ped_min"],
+            strength_max=params["a_ped_max"],
+            range_default=params["d_ped"],
+        )
+    except ValueError as exc:
+        st.error(f"Gompertz configuration error: {exc}")
+        return
+
     motivation_model = mm.MotivationModel(
         door_point1=(
             params["motivation_doors"][0][0][0],
@@ -178,14 +195,7 @@ def plot_motivation_model(params: Dict[str, Any]) -> None:
         normal_v_0=params["normal_v_0"],
         normal_time_gap=params["normal_time_gap"],
         motivation_strategy=strategy,
-        parameter_mapper=mmap.MotivationParameterMapper(
-            mapping_block=params["mapping_block"],
-            normal_v_0=params["normal_v_0"],
-            strength_default=params["a_ped"],
-            strength_min=params["a_ped_min"],
-            strength_max=params["a_ped_max"],
-            range_default=params["d_ped"],
-        ),
+        parameter_mapper=mapper,
     )
     figs = motivation_model.motivation_strategy.plot()
     if params["strategy"] != "default":

@@ -15,11 +15,15 @@ FIT_EPSILON = 1e-6
 DEFAULT_MAPPING_BLOCK: Dict[str, Any] = {
     "mapping_function": "gompertz",
     "motivation_min": MOTIVATION_LOW,
+    "fit_mode": "exact_anchors",
+    "inflection_target": 1.5,
     "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
     "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
     "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
     "repulsion_strength_mode": "config_bounds",
     "range_neighbor_repulsion_mode": "constant_d_ped",
+    "use_manual_gompertz_parameters": False,
+    "gompertz_parameters": {},
 }
 
 
@@ -70,6 +74,12 @@ class AnchorValues:
     def as_dict(self) -> Dict[str, float]:
         """Serialize to plain dictionary."""
         return {"low": self.low, "normal": self.normal, "high": self.high}
+
+    def is_monotonic(self) -> bool:
+        """Check if low->normal->high is monotonic."""
+        return (self.low <= self.normal <= self.high) or (
+            self.low >= self.normal >= self.high
+        )
 
 
 def _gompertz_difference(
@@ -172,15 +182,15 @@ class GompertzCurve:
     x_low: float = MOTIVATION_LOW
     x_normal: float = MOTIVATION_NORMAL
     x_high: float = MOTIVATION_HIGH
+    params: GompertzParams | None = None
     _params: GompertzParams = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        fit_points = [
-            (self.x_low, max(self.anchors.low, FIT_EPSILON)),
-            (self.x_normal, max(self.anchors.normal, FIT_EPSILON)),
-            (self.x_high, max(self.anchors.high, FIT_EPSILON)),
-        ]
-        self._params = fit_gompertz_exact(fit_points)
+        if self.params is not None:
+            self._params = self.params
+            return
+
+        self._params = estimate_gompertz_from_anchors(self.anchors)
 
     def evaluate(self, x: float) -> float:
         """Evaluate with hard endpoint clamping."""
@@ -195,27 +205,61 @@ class GompertzCurve:
         return clamp(y, y_min, y_max)
 
 
-@dataclass
-class PiecewiseCurve:
-    """Fallback curve that interpolates exactly through the anchor points."""
+def estimate_gompertz_from_anchors(anchors: AnchorValues) -> GompertzParams:
+    """Estimate Gompertz params from low/normal/high anchors."""
+    if not anchors.is_monotonic():
+        raise ValueError(
+            "Anchor values must be monotonic for Gompertz mapping. "
+            f"Got low={anchors.low}, normal={anchors.normal}, high={anchors.high}."
+        )
 
-    anchors: AnchorValues
-    x_low: float = MOTIVATION_LOW
-    x_normal: float = MOTIVATION_NORMAL
-    x_high: float = MOTIVATION_HIGH
+    fit_points = [
+        (MOTIVATION_LOW, max(anchors.low, FIT_EPSILON)),
+        (MOTIVATION_NORMAL, max(anchors.normal, FIT_EPSILON)),
+        (MOTIVATION_HIGH, max(anchors.high, FIT_EPSILON)),
+    ]
+    return fit_gompertz_exact(fit_points)
 
-    def evaluate(self, x: float) -> float:
-        """Evaluate piecewise linearly through anchor points."""
-        if x <= self.x_low:
-            return self.anchors.low
-        if x >= self.x_high:
-            return self.anchors.high
-        if x <= self.x_normal:
-            t = (x - self.x_low) / (self.x_normal - self.x_low)
-            return self.anchors.low + t * (self.anchors.normal - self.anchors.low)
 
-        t = (x - self.x_normal) / (self.x_high - self.x_normal)
-        return self.anchors.normal + t * (self.anchors.high - self.anchors.normal)
+def estimate_gompertz_sigmoid_preferred(
+    anchors: AnchorValues, inflection_target: float
+) -> GompertzParams:
+    """Approximate Gompertz fit with an inflection target in the plotted range."""
+    if not anchors.is_monotonic():
+        raise ValueError(
+            "Anchor values must be monotonic for Gompertz mapping. "
+            f"Got low={anchors.low}, normal={anchors.normal}, high={anchors.high}."
+        )
+
+    x_vals = [MOTIVATION_LOW, MOTIVATION_NORMAL, MOTIVATION_HIGH]
+    y_vals = [anchors.low, anchors.normal, anchors.high]
+
+    increasing = anchors.high >= anchors.low
+    c_sign = 1.0 if increasing else -1.0
+    best: GompertzParams | None = None
+    best_err = float("inf")
+    max_y = max(y_vals)
+
+    for c_mag in [0.05 + i * 0.01 for i in range(1, 501)]:
+        c = c_sign * c_mag
+        # x_inflection = ln(B) / C => choose B from target inflection.
+        b = math.exp(c * inflection_target)
+        k_vals = [math.exp(-b * math.exp(-c * x)) for x in x_vals]
+        denom = sum(k * k for k in k_vals)
+        if denom <= 0:
+            continue
+        a = sum(k * y for k, y in zip(k_vals, y_vals)) / denom
+        a = max(a, max_y * (1 + 1e-9))
+
+        preds = [a * k for k in k_vals]
+        err = sum((p - y) ** 2 for p, y in zip(preds, y_vals))
+        if err < best_err:
+            best_err = err
+            best = GompertzParams(a=a, b=b, c=c)
+
+    if best is None:
+        raise ValueError("Could not estimate sigmoid-preferred Gompertz parameters.")
+    return best
 
 
 def merge_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -224,8 +268,11 @@ def merge_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]
     for key in (
         "mapping_function",
         "motivation_min",
+        "fit_mode",
+        "inflection_target",
         "repulsion_strength_mode",
         "range_neighbor_repulsion_mode",
+        "use_manual_gompertz_parameters",
     ):
         if key in motivation_parameters:
             merged[key] = motivation_parameters[key]
@@ -233,6 +280,11 @@ def merge_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]
     for key in ("desired_speed_anchors", "time_gap_anchors", "buffer_anchors"):
         if isinstance(motivation_parameters.get(key), dict):
             merged[key].update(motivation_parameters[key])
+
+    if isinstance(motivation_parameters.get("gompertz_parameters"), dict):
+        merged["gompertz_parameters"] = copy.deepcopy(
+            motivation_parameters["gompertz_parameters"]
+        )
 
     return merged
 
@@ -259,9 +311,14 @@ class MotivationParameterMapper:
         block = merge_mapping_block(self.mapping_block)
         self.mapping_function = str(block["mapping_function"])
         self.motivation_min = float(block["motivation_min"])
+        self.fit_mode = str(block["fit_mode"])
+        self.inflection_target = float(block["inflection_target"])
         self.repulsion_strength_mode = str(block["repulsion_strength_mode"])
         self.range_neighbor_repulsion_mode = str(
             block["range_neighbor_repulsion_mode"]
+        )
+        self.use_manual_gompertz_parameters = bool(
+            block["use_manual_gompertz_parameters"]
         )
 
         self.desired_speed_anchors = AnchorValues.from_dict(
@@ -279,18 +336,96 @@ class MotivationParameterMapper:
             high=float(self.strength_max),
         )
 
-        self.speed_curve = self._curve_from_anchors(self.desired_speed_anchors)
-        self.time_gap_curve = self._curve_from_anchors(self.time_gap_anchors)
-        self.buffer_curve = self._curve_from_anchors(self.buffer_anchors)
-        self.strength_curve = self._curve_from_anchors(self.strength_anchors)
+        self.estimated_gompertz_parameters = {
+            "desired_speed": self._estimate_curve_params(self.desired_speed_anchors),
+            "time_gap": self._estimate_curve_params(self.time_gap_anchors),
+            "buffer": self._estimate_curve_params(self.buffer_anchors),
+            "strength_neighbor_repulsion": self._estimate_curve_params(
+                self.strength_anchors
+            ),
+        }
 
-    @staticmethod
-    def _curve_from_anchors(anchors: AnchorValues) -> Any:
-        """Build a Gompertz curve and fallback when anchors are not fit-compatible."""
-        try:
-            return GompertzCurve(anchors)
-        except ValueError:
-            return PiecewiseCurve(anchors)
+        manual_parameters = block.get("gompertz_parameters", {})
+        self.gompertz_parameters = self._resolve_active_parameters(manual_parameters)
+        self.mapping_block["gompertz_parameters"] = self.gompertz_parameters_as_dict()
+        self.mapping_block["use_manual_gompertz_parameters"] = (
+            self.use_manual_gompertz_parameters
+        )
+        self.mapping_block["fit_mode"] = self.fit_mode
+        self.mapping_block["inflection_target"] = self.inflection_target
+
+        self.speed_curve = GompertzCurve(
+            self.desired_speed_anchors, params=self.gompertz_parameters["desired_speed"]
+        )
+        self.time_gap_curve = GompertzCurve(
+            self.time_gap_anchors, params=self.gompertz_parameters["time_gap"]
+        )
+        self.buffer_curve = GompertzCurve(
+            self.buffer_anchors, params=self.gompertz_parameters["buffer"]
+        )
+        self.strength_curve = GompertzCurve(
+            self.strength_anchors,
+            params=self.gompertz_parameters["strength_neighbor_repulsion"],
+        )
+
+    def _resolve_active_parameters(
+        self, manual_parameters: Dict[str, Any]
+    ) -> Dict[str, GompertzParams]:
+        """Use manual parameters when enabled, otherwise use estimated values."""
+        if not self.use_manual_gompertz_parameters:
+            return copy.deepcopy(self.estimated_gompertz_parameters)
+
+        expected = (
+            "desired_speed",
+            "time_gap",
+            "buffer",
+            "strength_neighbor_repulsion",
+        )
+        active: Dict[str, GompertzParams] = {}
+        for name in expected:
+            params = manual_parameters.get(name)
+            if not isinstance(params, dict):
+                raise ValueError(
+                    f"Missing manual Gompertz parameters for '{name}'. "
+                    "Disable manual mode or provide a,b,c."
+                )
+            try:
+                active[name] = GompertzParams(
+                    a=float(params["a"]),
+                    b=float(params["b"]),
+                    c=float(params["c"]),
+                )
+            except Exception as exc:
+                raise ValueError(
+                    f"Invalid manual Gompertz parameters for '{name}'. Expected numeric a,b,c."
+                ) from exc
+        return active
+
+    def _estimate_curve_params(self, anchors: AnchorValues) -> GompertzParams:
+        """Estimate Gompertz params according to fit mode."""
+        if self.fit_mode == "exact_anchors":
+            return estimate_gompertz_from_anchors(anchors)
+        if self.fit_mode == "sigmoid_preferred":
+            return estimate_gompertz_sigmoid_preferred(
+                anchors, inflection_target=self.inflection_target
+            )
+        raise ValueError(
+            f"Unknown fit_mode '{self.fit_mode}'. Use 'exact_anchors' or 'sigmoid_preferred'."
+        )
+
+    def gompertz_parameters_as_dict(self) -> Dict[str, Dict[str, float]]:
+        """Serialize active Gompertz parameters."""
+        return {
+            name: {"a": p.a, "b": p.b, "c": p.c}
+            for name, p in self.gompertz_parameters.items()
+        }
+
+    def estimated_gompertz_parameters_as_dict(self) -> Dict[str, Dict[str, float]]:
+        """Serialize estimated Gompertz parameters."""
+        return {
+            name: {"a": p.a, "b": p.b, "c": p.c}
+            for name, p in self.estimated_gompertz_parameters.items()
+        }
 
     def clamp_motivation(self, motivation: float) -> float:
         """Clamp motivation according to configured lower bound and physical upper bound."""
@@ -375,8 +510,7 @@ def plot_parameter_mappings(
     import matplotlib.pyplot as plt
 
     data = mapper.sample_curve_data(normal_time_gap=normal_time_gap, num_points=300)
-    fig, axes = plt.subplots(3, 2, figsize=(10, 10))
-    fig.tight_layout(pad=2.0)
+    fig, axes = plt.subplots(3, 2, figsize=(10, 10), constrained_layout=True)
 
     plots = [
         ("desired_speed", "Desired speed", "m/s"),
@@ -399,5 +533,5 @@ def plot_parameter_mappings(
         ax.axvline(MOTIVATION_HIGH, color="gray", ls="--", lw=0.8)
 
     axes_flat[-1].axis("off")
-    fig.suptitle("Active Motivation Parameter Mapping", y=1.02)
+    fig.suptitle("Active Motivation Parameter Mapping")
     return fig

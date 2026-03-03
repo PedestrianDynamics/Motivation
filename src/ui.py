@@ -351,6 +351,24 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
             step=0.01,
             help="Lower clamp for motivation.",
         )
+        fit_mode_options = ["exact_anchors", "sigmoid_preferred"]
+        fit_mode = str(mapping.get("fit_mode", "exact_anchors"))
+        if fit_mode not in fit_mode_options:
+            fit_mode = "exact_anchors"
+        mapping["fit_mode"] = st.selectbox(
+            "Gompertz fit mode",
+            fit_mode_options,
+            index=fit_mode_options.index(fit_mode),
+            help="exact_anchors: exact through low/normal/high. sigmoid_preferred: approximate anchors and keeps inflection in range.",
+        )
+        mapping["inflection_target"] = st.number_input(
+            "Inflection target (m)",
+            min_value=0.1,
+            max_value=3.0,
+            value=float(mapping.get("inflection_target", 1.5)),
+            step=0.1,
+            help="Used only in sigmoid_preferred mode.",
+        )
 
         st.markdown("**Desired speed anchors**")
         c1, c2, c3 = st.columns(3)
@@ -437,6 +455,77 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
             help="Keep range_neighbor_repulsion fixed at d_ped.",
         )
 
+        vparams = data["velocity_init_parameters"]
+        estimated_params: Dict[str, Dict[str, float]] = {}
+        try:
+            mapper = mmap.MotivationParameterMapper(
+                mapping_block=mapping,
+                normal_v_0=float(params["normal_v_0"]),
+                strength_default=float(vparams["a_ped"]),
+                strength_min=float(vparams["a_ped_min"]),
+                strength_max=float(vparams["a_ped_max"]),
+                range_default=float(vparams["d_ped"]),
+            )
+            estimated_params = mapper.estimated_gompertz_parameters_as_dict()
+            mapping["gompertz_parameters"] = mapper.gompertz_parameters_as_dict()
+        except ValueError as exc:
+            st.error(f"Gompertz config error: {exc}")
+
+        mapping["use_manual_gompertz_parameters"] = st.checkbox(
+            "Use manual Gompertz parameters (a,b,c)",
+            value=bool(mapping.get("use_manual_gompertz_parameters", False)),
+            help="When enabled, the mapper uses the values below instead of fitted estimates.",
+        )
+
+        curve_labels = [
+            ("desired_speed", "Desired speed"),
+            ("time_gap", "Time gap"),
+            ("buffer", "Buffer"),
+            ("strength_neighbor_repulsion", "Strength"),
+        ]
+        mapping.setdefault("gompertz_parameters", {})
+        for curve_key, curve_title in curve_labels:
+            defaults = estimated_params.get(curve_key, {"a": 1.0, "b": 1.0, "c": 1.0})
+            current = mapping["gompertz_parameters"].get(curve_key, defaults)
+            if not isinstance(current, dict):
+                current = defaults
+
+            st.markdown(f"**{curve_title} Gompertz (a, b, c)**")
+            c1, c2, c3 = st.columns(3)
+            if mapping["use_manual_gompertz_parameters"]:
+                a_val = c1.number_input(
+                    f"{curve_key} a",
+                    value=float(current.get("a", defaults["a"])),
+                    key=f"{curve_key}_a",
+                    format="%.6f",
+                )
+                b_val = c2.number_input(
+                    f"{curve_key} b",
+                    value=float(current.get("b", defaults["b"])),
+                    key=f"{curve_key}_b",
+                    format="%.6f",
+                )
+                c_val = c3.number_input(
+                    f"{curve_key} c",
+                    value=float(current.get("c", defaults["c"])),
+                    key=f"{curve_key}_c",
+                    format="%.6f",
+                )
+                mapping["gompertz_parameters"][curve_key] = {
+                    "a": float(a_val),
+                    "b": float(b_val),
+                    "c": float(c_val),
+                }
+            else:
+                c1.caption(f"a = {defaults['a']:.6f}")
+                c2.caption(f"b = {defaults['b']:.6f}")
+                c3.caption(f"c = {defaults['c']:.6f}")
+                mapping["gompertz_parameters"][curve_key] = {
+                    "a": float(defaults["a"]),
+                    "b": float(defaults["b"]),
+                    "c": float(defaults["c"]),
+                }
+
     params.update(mapping)
 
 
@@ -445,8 +534,8 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     c1, c2 = st.sidebar.columns(2)
     motivation_strategy = st.sidebar.selectbox(
         "Select model",
-        ["EVC", "default", "EC-V"],
-        help="Default: M = M(dist). EVC: M = EVC, EC-V: M=(E.C).V",
+        ["EVC", "EC-V"],
+        help="EVC: M = EVC, EC-V: M=(E.C).V",
     )
     data["motivation_parameters"]["normal_v_0"] = c1.number_input(
         "Normal V0:",
@@ -470,10 +559,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     )
 
     data["motivation_parameters"]["motivation_strategy"] = motivation_strategy
-    if motivation_strategy == "default":
-        title = "Motivation Parameters"
-    else:
-        title = "Expectancy Parameters"
+    title = "Expectancy Parameters"
     with st.sidebar.expander(title, expanded=True):
         c1, c2 = st.columns(2)
         data["motivation_parameters"]["width"] = c1.number_input(

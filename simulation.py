@@ -603,25 +603,6 @@ def process_agent(
             max_value=d_ped_max,
             min_motivation=min_motivtion,
         )
-    # if simulation.elapsed_time() > 25:
-    #     agent.model.strength_neighbor_repulsion = 0.6
-    #     agent.model.range_neighbor_repulsion = 0.2
-    # if simulation.elapsed_time() > 30:
-    #     agent.model.strength_neighbor_repulsion = 0.6
-    #     agent.model.range_neighbor_repulsion = 0.22
-    # if simulation.elapsed_time() > 35:
-    #     agent.model.strength_neighbor_repulsion = 0.6
-    #     agent.model.range_neighbor_repulsion = 0.24
-    # if simulation.elapsed_time() > 40:
-    #     agent.model.strength_neighbor_repulsion = 0.6
-    #     agent.model.range_neighbor_repulsion = 0.28
-    # if simulation.elapsed_time() > 45:
-    #     agent.model.strength_neighbor_repulsion = 0.6
-    #     agent.model.range_neighbor_repulsion = 0.39
-
-    # else:
-    #    agent.model.strength_neighbor_repulsion = 0.6
-    #    agent.model.range_neighbor_repulsion = 0.1
 
     do_adjust_buffer = True
     if "do_adjust_buffer" in _data["motivation_parameters"]:
@@ -633,11 +614,7 @@ def process_agent(
                 motivation_i
             )
         else:
-            agent.model.agent_buffer = adjust_buffer_size_linearly(motivation_i)
-        if False and agent.position[1] > 15:
-            print(
-                f"{agent.id}: ({agent.position[0]}, {agent.position[1]}), {motivation_i = :.2f}, {agent.model.agent_buffer =}"
-            )
+            agent.model.agent_buffer = 0
 
     # Usage in the agent model
     do_adjust_radius = False

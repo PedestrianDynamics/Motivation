@@ -1,217 +1,140 @@
+import matplotlib.pyplot as plt
 import streamlit as st
+
+from .motivation_mapping import (
+    AnchorValues,
+    evaluate_gompertz,
+    estimate_gompertz_from_anchors,
+)
+
+
+def _gompertz_example_plot() -> None:
+    """Render a Gompertz example with anchor points."""
+    anchors = AnchorValues(low=0.5, normal=1.2, high=3.6)
+    params = estimate_gompertz_from_anchors(anchors)
+    m_values = [0.1 + i * (3.0 - 0.1) / 200 for i in range(201)]
+    y_values = [evaluate_gompertz(m, params) for m in m_values]
+
+    fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
+    ax.plot(m_values, y_values, lw=2, label="Gompertz fit")
+    ax.scatter([0.1, 1.0, 3.0], [0.5, 1.2, 3.6], c="red", zorder=3, label="anchors")
+    ax.set_xlabel("Motivation m")
+    ax.set_ylabel("Desired speed (m/s)")
+    ax.set_title("Gompertz Example: desired speed mapping")
+    ax.grid(alpha=0.3)
+    ax.legend()
+    st.pyplot(fig)
+
+
+def _gompertz_fit_mode_comparison_plot() -> None:
+    """Render a side-by-side comparison of fit modes."""
+    anchors = AnchorValues(low=0.5, normal=1.2, high=3.6)
+    params_exact = estimate_gompertz_from_anchors(anchors)
+    params_sig = estimate_gompertz_from_anchors(anchors)
+
+    # Import here to avoid circular app dependencies and keep docs self-contained.
+    from .motivation_mapping import estimate_gompertz_sigmoid_preferred
+
+    params_sig = estimate_gompertz_sigmoid_preferred(anchors, inflection_target=1.5)
+
+    m_values = [0.1 + i * (3.0 - 0.1) / 300 for i in range(301)]
+    y_exact = [evaluate_gompertz(m, params_exact) for m in m_values]
+    y_sig = [evaluate_gompertz(m, params_sig) for m in m_values]
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4), constrained_layout=True)
+
+    axes[0].plot(m_values, y_exact, lw=2, color="#1f77b4", label="exact_anchors")
+    axes[0].scatter([0.1, 1.0, 3.0], [0.5, 1.2, 3.6], c="red", zorder=3)
+    axes[0].set_title("exact_anchors")
+    axes[0].set_xlabel("Motivation m")
+    axes[0].set_ylabel("Desired speed (m/s)")
+    axes[0].grid(alpha=0.3)
+    axes[0].legend()
+
+    axes[1].plot(
+        m_values, y_sig, lw=2, color="#ff7f0e", label="sigmoid_preferred"
+    )
+    axes[1].scatter([0.1, 1.0, 3.0], [0.5, 1.2, 3.6], c="red", zorder=3)
+    axes[1].set_title("sigmoid_preferred")
+    axes[1].set_xlabel("Motivation m")
+    axes[1].set_ylabel("Desired speed (m/s)")
+    axes[1].grid(alpha=0.3)
+    axes[1].legend()
+
+    st.pyplot(fig)
+
+
+def _logistic_example_plot() -> None:
+    """Render an illustrative logistic-family example (docs only)."""
+    lower = 0.5
+    upper = 3.6
+    x0 = 1.5
+    k = 2.4
+
+    m_values = [0.1 + i * (3.0 - 0.1) / 300 for i in range(301)]
+    y_values = [lower + (upper - lower) / (1.0 + pow(2.718281828, -k * (m - x0))) for m in m_values]
+
+    fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
+    ax.plot(m_values, y_values, lw=2, color="#2ca02c", label="logistic example")
+    ax.scatter([0.1, 1.0, 3.0], [0.5, 1.2, 3.6], c="red", zorder=3, label="reference anchors")
+    ax.set_xlabel("Motivation m")
+    ax.set_ylabel("Desired speed (m/s)")
+    ax.set_title("Logistic family example (illustrative only)")
+    ax.grid(alpha=0.3)
+    ax.legend()
+    st.pyplot(fig)
 
 
 def main() -> None:
-    """Print some documentation."""
-    st.markdown("""## Default Strategy""")
-    st.markdown(r"""
-        $
-        \textbf{motivation}(distance) =
-        \begin{cases}
-        0 & \text{if\;} distance  \geq \text{width}, \\
-        e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
-        \end{cases}
-        $
-        
-        ---
-        ---
-        """)
-    st.markdown(r"""
-        ## EVC
-        $\textbf{motivation} = E\cdot V\cdot C,$ where
-        - $E$: expectancy
-        - $V$: value
-        - $C$: competition
-        
-        ---
-        """)
-
+    """Documentation tab for current EVC + Gompertz model."""
+    st.markdown("## Motivation Model (EVC + Gompertz)")
     st.markdown(
-        r"""
-        ### 1 Expectancy
-        A bell-like function with maximum height at distance=0, and it goes to 0 beyond width.        
-
-        - **Local Maximum:**
-         Near the door ($distance \le width$), $E$ is relatively larger.
-        - **Decay to Zero:**
-         Once beyond a certain "influence zone" ($distance > width$), the expectancy drops to 0.
-        
-        --- 
-        
-        $
-        \textbf{expectancy}(distance) = 
-        \begin{cases}
-        0 & \text{if\;} distance  \geq \text{width}, \\
-        e \cdot \text{height}\cdot\exp\left(\frac{1}{\left(\frac{distance}{\text{width}}\right)^2 - 1}\right) & \text{otherwise}.
-        \end{cases}\\
-        $
-        
-        **Note:** this is the same function like default strategy
-        
-        ---
-        ### 2. Competition
-
-        1. Early Competition:
-        At the start (up to $N_0$​ departures), everyone competes for a reward or advantage. This phase can mimic a scenario where there is some strong external incentive for the first few people to escape.
-
-        2. Gradual Decline:
-        Between $N_0$​ and $\% N_{max⁡}$​, the reward or the "reason to compete" diminishes as more agents leave.
-
-        3. No Competition:
-        Once a critical number (or fraction) of people have left, $C$ goes to 0. This suggests that no meaningful benefit remains for being among the next ones out.
-
-        Current implementation:
-        - $N$ is the number of agents who have already left the room.
-        - $C$ starts at $c_0$​ and remains constant as long as $N<N_0​$.
-        - After $N_0$​ agents have left, the competition begins to drop linearly until eventually it hits 0 at $N=\% N_{max}⁡$​.
-
-        ---
-        
-        $$
-        \textbf{competition} = 
-
-        \begin{cases} 
-        c_0 & \text{if } N \leq N_0 \\
-        c_0 - \left(\frac{c_0}{\text{percent} \cdot N_{\text{max}} - N_0}\right) \cdot (N - N_0) & \text{if } N_0 < N < \text{percent} \cdot N_{\text{max}} \\
-        0 & \text{if } N \geq \text{percent} \cdot N_{\text{max}},
-        \end{cases}
-        $$
-       
-        ---
-        ##### 3 Value function
-
-        - Agents have a parameter $V_i$ that represents their intrinsic "care level" (low or high).
-        - Assign low or high values based on distance to exit, or with some probability distribution.
-        
-        $\textbf{value} = random\_number \in [v_{\min}, v_{\max}].$
-        
-        We propose a method for assigning values to agents based on their spatial proximity to a designated exit.
-        In this approach, the likelihood that an agent receives a high value decays exponentially with distance from the exit.
-
-        ###### Distance Decay Parameter
-
-        A key parameter in this model is the **distance decay**, which regulates the rate at which the probability of being high value decreases with distance. The parameter is defined as:
-
-        $$
-        \text{distance\_decay} = -\frac{\text{width}}{\ln(0.01)}
-        $$
-        This formulation guarantees that the probability of an agent being assigned a high value is approximately 0.01 when the agent is at a distance equal to the defined `width` from the exit.
-
-        ###### Probability Calculation
-        ###### Distance Measurement
-        For an agent at position \(\mathbf{p} = (x, y)\) and an exit at \(\mathbf{p}_{\text{exit}} = (x_{\text{exit}}, y_{\text{exit}})\), the Euclidean distance is computed as:
-
-        $$
-        d(\mathbf{p}, \mathbf{p}_{\text{exit}}) = \sqrt{(x - x_{\text{exit}})^2 + (y - y_{\text{exit}})^2}
-        $$
-        ###### Exponential Decay Function
-       
-        The probability \(P(\mathbf{p})\) that an agent at \(\mathbf{p}\) is assigned a high value is given by:
-
-        $$
-        P(\mathbf{p}) = \exp\left(-\frac{d(\mathbf{p}, \mathbf{p}_{\text{exit}})}{\text{distance\_decay}}\right)
-        $$
-
-        This exponential decay ensures that agents closer to the exit have a higher probability of being designated as high value.
-
-        ###### Seed Management for Reproducibility
-
-        To maintain reproducibility in the randomness inherent in the assignment process, a **SeedManager** is used. Each random operation employs a derived seed, calculated as:
-
-        $$
-        \text{derived\_seed} = \text{base\_seed} \times 1000 + \text{operation\_id}
-        $$
-
-        This ensures that every operation, including the generation of random values for agents, is deterministic when the same base seed is used.
-
-        ##### Value Assignment Process
-
-        The final assignment of values to agents proceeds through the following steps:
-
-        1. **Probability Computation:**  
-        For each agent, the high value probability is calculated using the agent's distance from the exit.
-
-        2. **Random Perturbation:**  
-        To prevent strictly deterministic outcomes (especially when agents have similar distances), a small random factor is introduced:
-   
-        $$
-        P' = P(\mathbf{p}) \times \left(1 + U[0, 0.2]\right)
-        $$
-   
-        where \(U[0, 0.2]\) represents a uniformly distributed random variable between 0 and 0.2.
-
-        3. **Sorting and Selection:**  
-        Agents are sorted in descending order based on the perturbed probability \(P'\). The top \(N\) agents—where \(N\) is the predefined number of high value agents—are selected.
-
-        4. **Final Value Generation:**  
-        - **High Value Agents:**  
-        Each agent in the selected set receives a value in the range
-        $$ [v_{\min}^{\text{high}}, v_{\max}^{\text{high}}]$$.
-        - **Low Value Agents:**  
-        All remaining agents are assigned a value in the range $$[v_{\min}^{\text{low}}, v_{\max}^{\text{low}}]$$.
-     
-        Each value is generated using a random number generator seeded with the agent's derived seed.        
-        
-        ---
-        ## Parameters
-
-        | Parameter    | Meaning| Function|
-        |--------------|:-----:|:-----:|
-        |$N_0$ | Number of agents at which the decay of the function starts.| Competition|
-        |$N_{\max}$ | Initial number of agents in the simulation|Competition|
-        |$c_0$ | Maximal competition|Competition|
-        |$p$ | Percentage number $\in [0, 1]$.|Competition|
-        |
-        |$v_{\min}$| Mimimum value | Value|
-        |$v_{\max}$| Maximum value | Value|    
-        |    
-        |width| Range of influence | Expectancy|
-        |height| Amplitude of influence | Expectancy|
-            
-            
-        ## Update agents
-        For an agent $i$ we calculate $m_i$ by one of the methods above and update its parameters as follows:
-        $$
-        m_i = V_i \cdot E_i \cdot C_i \in [0, 1]
-        $$
-        
-        Then
-        $$
-        \tilde v_i^0 =  v_i^0\cdot V_i
-        $$
-        This one-time scaling ensures that agents who "care more" start with a higher desired speed.
-        
-        and
-        $$
-        \tilde T_i = \frac{T_i}{\Big(1+m_i\Big)},
-        $$
-        """,
-        unsafe_allow_html=True,
+        "This app uses **EVC motivation** and **Gompertz-based parameter mapping** only. "
+        "The old **Default Strategy** is intentionally removed from this documentation."
+    )
+    st.markdown("### Core equations")
+    st.latex(r"M_i = E_i \cdot V_i \cdot C_i")
+    st.latex(
+        r"m_i^{\mathrm{used}} = \mathrm{clip}\left(m_i,\; m_{\min},\; \frac{3.6}{v_0^{\mathrm{normal}}}\right)"
+    )
+    st.latex(r"y(m) = a \cdot \exp\left(-b \cdot \exp(-c \cdot m)\right)")
+    st.markdown(
+        "Where `y(m)` is one mapped operational parameter and `(a,b,c)` can be "
+        "fitted from anchors or entered manually in the app."
+    )
+    st.markdown(
+        "- `fit_mode = exact_anchors`: exact match at low/normal/high.\n"
+        "- `fit_mode = sigmoid_preferred`: approximate anchors, prefers an in-range inflection."
     )
 
+    st.markdown("### Requirements (Current)")
     st.markdown(
-        r"""
-        ## Runtime Mapping (Gompertz)
-
-        During simulation, the operational model parameters are mapped from motivation
-        with Gompertz curves and clamped motivation:
-
-        $$
-        m_i^{\mathrm{used}} = \mathrm{clip}\left(m_i,\; m_{\min},\; \frac{3.6}{v_0^{\mathrm{normal}}}\right)
-        $$
-
-        Each mapped parameter uses low/normal/high anchors at
-        $m \in \{0.1,\;1,\;3\}$:
-
-        - desired speed $\tilde v_0(m)$
-        - time gap $\tilde T(m)$
-        - buffer $\tilde b(m)$
-        - strength neighbor repulsion $\tilde A(m)$
-
-        The interaction range is fixed:
-
-        $$
-        \tilde D(m)=d_{\text{ped}} \quad \text{(constant)}
-        $$
         """
+| Parameter | Low motivation | Normal motivation | High motivation | Rule |
+|---|---:|---:|---:|---|
+| Motivation (m) | 0.1 | 1.0 | 3.0 | Clamped by m in [m_min, 3.6 / v0_normal] |
+| Desired speed (v0_tilde) [m/s] | 0.5 | 1.2 | 3.6 | Gompertz |
+| Time gap (T_tilde) [s] | 2.0 | 1.0 | 0.01 | Gompertz |
+| Buffer (b_tilde) [m] | 1.0 | 0.1 | 0.0 | Gompertz |
+| Strength neighbor repulsion (A_tilde) | a_ped_min | a_ped | a_ped_max | Gompertz; anchors from config |
+| Range neighbor repulsion (D_tilde) | d_ped | d_ped | d_ped | Constant |
+"""
     )
+
+    st.markdown("### Gompertz plot")
+    _gompertz_example_plot()
+    st.markdown("### Fit mode comparison")
+    st.markdown(
+        "- `exact_anchors`: passes exactly through low/normal/high anchors.\n"
+        "- `sigmoid_preferred`: allows small anchor mismatch to keep a stronger S-shape in-range."
+    )
+    _gompertz_fit_mode_comparison_plot()
+    st.markdown("### Logistic-family example (docs only)")
+    st.markdown("This is an alternative functional family (not active in runtime code):")
+    st.latex(
+        r"y(m) = y_{\min} + \frac{y_{\max} - y_{\min}}{1 + \exp\left(-k\,(m - m_0)\right)}"
+    )
+    st.markdown("- `y_min, y_max`: lower and upper asymptotes")
+    st.markdown("- `k`: steepness")
+    st.markdown("- `m0`: inflection point")
+    _logistic_example_plot()
