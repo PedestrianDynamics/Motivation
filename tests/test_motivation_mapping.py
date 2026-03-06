@@ -19,7 +19,7 @@ from src.motivation_mapping import (
 
 def test_fit_logistic_tracks_anchor_points() -> None:
     anchors = AnchorValues(low=0.5, normal=1.2, high=3.6)
-    params = fit_logistic_from_anchors(anchors, inflection_target=1.5)
+    params = fit_logistic_from_anchors(anchors, inflection_target=MOTIVATION_NORMAL)
     assert math.isclose(evaluate_logistic(MOTIVATION_LOW, params), 0.5, abs_tol=1e-6)
     assert math.isclose(
         evaluate_logistic(MOTIVATION_NORMAL, params), 1.2, abs_tol=0.15
@@ -27,19 +27,17 @@ def test_fit_logistic_tracks_anchor_points() -> None:
     assert math.isclose(evaluate_logistic(MOTIVATION_HIGH, params), 3.6, abs_tol=1e-6)
 
 
-def test_clamp_motivation_dynamic_upper_bound() -> None:
-    assert math.isclose(clamp_motivation(10.0, normal_v_0=1.2, motivation_min=0.1), 3.0)
-    assert math.isclose(clamp_motivation(10.0, normal_v_0=0.9, motivation_min=0.1), 4.0)
-    assert math.isclose(
-        clamp_motivation(0.01, normal_v_0=1.2, motivation_min=0.1), 0.1
-    )
+def test_clamp_motivation_normalized_bounds() -> None:
+    assert math.isclose(clamp_motivation(10.0, normal_v_0=1.2, motivation_min=0.0), 1.0)
+    assert math.isclose(clamp_motivation(-1.0, normal_v_0=0.9, motivation_min=0.0), 0.0)
+    assert math.isclose(clamp_motivation(0.2, normal_v_0=1.2, motivation_min=0.0), 0.2)
 
 
 def test_mapper_anchor_hits_and_constant_range() -> None:
     mapper = MotivationParameterMapper(
         mapping_block={
             "mapping_function": "logistic",
-            "motivation_min": 0.1,
+            "motivation_min": 0.0,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -53,7 +51,7 @@ def test_mapper_anchor_hits_and_constant_range() -> None:
         range_default=0.4,
     )
 
-    assert math.isclose(mapper.max_motivation(), 3.0, rel_tol=0.0, abs_tol=1e-12)
+    assert math.isclose(mapper.max_motivation(), 1.0, rel_tol=0.0, abs_tol=1e-12)
 
     assert math.isclose(mapper.desired_speed(MOTIVATION_LOW), 0.5, abs_tol=1e-6)
     assert math.isclose(mapper.desired_speed(MOTIVATION_NORMAL), 1.2, abs_tol=1e-6)
@@ -77,7 +75,7 @@ def test_mapper_anchor_hits_and_constant_range() -> None:
         mapper.strength_neighbor_repulsion(MOTIVATION_HIGH), 0.9, abs_tol=1e-6
     )
 
-    for motivation in [0.1, 0.5, 1.0, 2.5, 3.0]:
+    for motivation in [0.0, 0.25, 0.5, 0.75, 1.0]:
         assert math.isclose(
             mapper.range_neighbor_repulsion(motivation), 0.4, abs_tol=1e-12
         )
@@ -87,7 +85,7 @@ def test_mapper_monotonicity_for_default_anchors() -> None:
     mapper = MotivationParameterMapper(
         mapping_block={
             "mapping_function": "logistic",
-            "motivation_min": 0.1,
+            "motivation_min": 0.0,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -101,7 +99,7 @@ def test_mapper_monotonicity_for_default_anchors() -> None:
         range_default=0.4,
     )
 
-    motivations = [0.1, 0.5, 1.0, 2.0, 3.0]
+    motivations = [0.0, 0.25, 0.5, 0.75, 1.0]
     speeds = [mapper.desired_speed(m) for m in motivations]
     time_gaps = [mapper.time_gap(m, 1.0) for m in motivations]
     buffers = [mapper.buffer(m) for m in motivations]
@@ -118,7 +116,7 @@ def test_non_monotonic_strength_anchors_raise_explicit_error() -> None:
         MotivationParameterMapper(
             mapping_block={
                 "mapping_function": "logistic",
-                "motivation_min": 0.1,
+                "motivation_min": 0.0,
                 "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
                 "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
                 "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -137,8 +135,8 @@ def test_logistic_mapping_keeps_monotonicity() -> None:
     mapper = MotivationParameterMapper(
         mapping_block={
             "mapping_function": "logistic",
-            "inflection_target": 1.5,
-            "motivation_min": 0.1,
+            "inflection_target": 0.5,
+            "motivation_min": 0.0,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -151,7 +149,7 @@ def test_logistic_mapping_keeps_monotonicity() -> None:
         normal_v_0=1.2,
         range_default=0.4,
     )
-    values = [mapper.desired_speed(m) for m in [0.1, 1.0, 2.0, 3.0]]
+    values = [mapper.desired_speed(m) for m in [0.0, 0.5, 0.75, 1.0]]
     assert values == sorted(values)
 
 
@@ -159,8 +157,8 @@ def test_manual_logistic_k_is_applied_per_parameter() -> None:
     mapper = MotivationParameterMapper(
         mapping_block={
             "mapping_function": "logistic",
-            "inflection_target": 1.0,
-            "motivation_min": 0.1,
+            "inflection_target": 0.5,
+            "motivation_min": 0.0,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},

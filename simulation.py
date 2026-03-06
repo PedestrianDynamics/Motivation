@@ -892,7 +892,7 @@ def modify_and_save_config(
 
 def main(
     inifile: pathlib.Path = typer.Option(
-        pathlib.Path("files/inifile.json"),
+        pathlib.Path("files/base.json"),
         help="Path to the initial configuration file",
     ),
     variations_file: Optional[pathlib.Path] = typer.Option(

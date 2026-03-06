@@ -60,10 +60,14 @@ def ui_simulation_controls(data: Dict[str, Any]) -> Tuple[str, str, int]:
     """
     # Setup UI elements for simulation control
     c1, c2, c3 = st.columns(3)
+    config_files = sorted(list(set(st.session_state.all_files)), reverse=True)
+    default_config = "files/base.json"
+    default_index = config_files.index(default_config) if default_config in config_files else 0
     CONFIG_FILE = str(
         c2.selectbox(
             "Select config file",
-            sorted(list(set(st.session_state.all_files)), reverse=True),
+            config_files,
+            index=default_index,
         )
     )
 
@@ -346,7 +350,7 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
         )
         mapping["motivation_min"] = st.number_input(
             "Motivation min",
-            min_value=0.01,
+            min_value=0.0,
             max_value=1.0,
             value=float(mapping["motivation_min"]),
             step=0.01,
@@ -354,9 +358,9 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
         )
         mapping["inflection_target"] = st.number_input(
             "Inflection target (m)",
-            min_value=0.1,
-            max_value=3.0,
-            value=float(mapping.get("inflection_target", 1.5)),
+            min_value=0.0,
+            max_value=1.0,
+            value=float(mapping.get("inflection_target", 0.5)),
             step=0.1,
             help="Logistic midpoint parameter m0.",
         )
@@ -467,27 +471,27 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
             c1, c2 = st.columns(2)
             mapping["logistic_k"]["desired_speed"] = c1.number_input(
                 "k(v0)",
-                value=float(mapping["logistic_k"].get("desired_speed", 1.0)),
+                value=float(mapping["logistic_k"].get("desired_speed", 10.0)),
                 step=0.1,
                 format="%.3f",
             )
             mapping["logistic_k"]["time_gap"] = c2.number_input(
                 "k(T)",
-                value=float(mapping["logistic_k"].get("time_gap", -1.0)),
+                value=float(mapping["logistic_k"].get("time_gap", 10.0)),
                 step=0.1,
                 format="%.3f",
             )
             c1, c2 = st.columns(2)
             mapping["logistic_k"]["buffer"] = c1.number_input(
                 "k(buffer)",
-                value=float(mapping["logistic_k"].get("buffer", -1.0)),
+                value=float(mapping["logistic_k"].get("buffer", 10.0)),
                 step=0.1,
                 format="%.3f",
             )
             mapping["logistic_k"]["strength_neighbor_repulsion"] = c2.number_input(
                 "k(A)",
                 value=float(
-                    mapping["logistic_k"].get("strength_neighbor_repulsion", 1.0)
+                    mapping["logistic_k"].get("strength_neighbor_repulsion", 10.0)
                 ),
                 step=0.1,
                 format="%.3f",

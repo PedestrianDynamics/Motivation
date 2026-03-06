@@ -165,7 +165,7 @@ class EVCStrategy(MotivationStrategy):
     distance_decay: float = -width / math.log(0.01)
     seed_manager: Optional[SeedManager] = None
     value_probability: bool = True
-    motivation_min: float = 0.1
+    motivation_min: float = 0.0
     motivation_mode: str = "PVE"
     payoff_k: float = 8.0
     payoff_q0: float = 0.5
@@ -292,6 +292,8 @@ class EVCStrategy(MotivationStrategy):
                 f"Unknown motivation_mode '{self.motivation_mode}'. "
                 "Use one of: E, V, P, PVE, NO_MOTIVATION."
             )
+        self.value_min = min(self.min_value_low, self.min_value_high)
+        self.value_max = max(self.max_value_low, self.max_value_high)
 
     def configure_payoff_update_interval(self, time_step: float) -> None:
         """Configure payoff rank update cadence from seconds to simulation steps."""
@@ -385,15 +387,20 @@ class EVCStrategy(MotivationStrategy):
 
     @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
-        """Calculate Expectancy depending on the distance to the entrance."""
-        if _distance >= _width:
+        """Calculate normalized expectancy in [0, 1]."""
+        if _height <= 0:
             return 1.0
+        if _distance >= _width:
+            return 0.0
 
         expr = 1 / ((_distance / _width) ** 2 - 1)
         if np.isinf(expr):
             return 1.0
 
-        return float(1 + np.exp(expr) * np.e * _height)
+        raw = float(1 + np.exp(expr) * np.e * _height)
+        # At d=0: expr=-1 => raw_max = 1 + height.
+        max_raw = float(1 + _height)
+        return float(clamp((raw - 1.0) / (max_raw - 1.0), 0.0, 1.0))
 
     @staticmethod
     def competition(N: int, c0: float, N0: float, percent: float, Nmax: float) -> float:
@@ -446,7 +453,16 @@ class EVCStrategy(MotivationStrategy):
             params["seed"] = None
 
         value = self.pedestrian_value[agent_id]
-        V_unit = value
+        if self.value_max > self.value_min:
+            V_unit = float(
+                clamp(
+                    (value - self.value_min) / (self.value_max - self.value_min),
+                    0.0,
+                    1.0,
+                )
+            )
+        else:
+            V_unit = 1.0
         E_unit = EVCStrategy.expectancy(
             distance,
             self.width,
@@ -465,9 +481,7 @@ class EVCStrategy(MotivationStrategy):
         else:
             M = V_unit * E_unit * P_unit
 
-        max_human_v0 = 3.6
-        max_M = max_human_v0 / self.normal_v_0
-        return clamp(M, self.motivation_min, max_M)
+        return clamp(M, self.motivation_min, 1.0)
 
     def plot(self) -> List[Figure]:
         """Plot functions for inspection."""
@@ -491,17 +505,65 @@ class EVCStrategy(MotivationStrategy):
         ax0.set_ylabel(r"$E(d)$", size=14)
         fig0.savefig("expectancy.pdf")
         # V
-        V = []
-        for s in self.agent_ids:
-            V.append(self.get_value(agent_id=s))
+        V_abs = [self.get_value(agent_id=s) for s in self.agent_ids]
+        v_min = min(V_abs) if V_abs else 0.0
+        v_max = max(V_abs) if V_abs else 1.0
+        if v_max > v_min:
+            V_norm = [(v - v_min) / (v_max - v_min) for v in V_abs]
+        else:
+            V_norm = [1.0 for _ in V_abs]
 
-        ax1.plot(self.agent_ids, V, "o")
+        # Color by value group: highest N values are shown as "high-value people".
+        sorted_ids = sorted(
+            self.agent_ids,
+            key=lambda aid: self.get_value(agent_id=aid),
+            reverse=True,
+        )
+        high_ids = set(sorted_ids[: self.number_high_value])
+        low_ids = [aid for aid in self.agent_ids if aid not in high_ids]
+        high_idxs = [i for i, aid in enumerate(self.agent_ids) if aid in high_ids]
+        low_idxs = [i for i, aid in enumerate(self.agent_ids) if aid not in high_ids]
+
+        x_vals = np.array(self.agent_ids, dtype=float)
+        dx = 0.08
+        ax1.scatter(
+            x_vals[low_idxs] - dx,
+            np.array(V_abs)[low_idxs],
+            facecolors="tab:blue",
+            edgecolors="tab:blue",
+            s=45,
+            label="low group (abs)",
+        )
+        ax1.scatter(
+            x_vals[high_idxs] - dx,
+            np.array(V_abs)[high_idxs],
+            facecolors="tab:red",
+            edgecolors="tab:red",
+            s=45,
+            label="high group (abs)",
+        )
+        ax1.scatter(
+            x_vals[low_idxs] + dx,
+            np.array(V_norm)[low_idxs],
+            facecolors="none",
+            edgecolors="tab:blue",
+            s=35,
+            label="low group (norm)",
+        )
+        ax1.scatter(
+            x_vals[high_idxs] + dx,
+            np.array(V_norm)[high_idxs],
+            facecolors="none",
+            edgecolors="tab:red",
+            s=35,
+            label="high group (norm)",
+        )
         ax1.grid(alpha=0.3)
-        ax1.set_ylim((-0.1, 2))
+        ax1.set_ylim((-0.1, max(max(V_abs, default=1.0), 1.1) + 0.1))
         ax1.set_xlim((-0.1, self.max_reward + 1))
-        # ax1.set_title(f"{self.name()} - V (seed = {self.seed:.0f})")
         ax1.set_xlabel("# Agents", size=14)
-        ax1.set_ylabel("Value", size=14)
+        ax1.set_ylabel("Value (abs + normalized)", size=14)
+        ax1.legend(loc="best", fontsize=8)
         fig1.savefig("value.pdf")
         # P
         q_vals = np.linspace(0.0, 1.0, 200)

@@ -7,21 +7,26 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
-MOTIVATION_LOW = 0.1
-MOTIVATION_NORMAL = 1.0
-MOTIVATION_HIGH = 3.0
+MOTIVATION_LOW = 0.0
+MOTIVATION_NORMAL = 0.5
+MOTIVATION_HIGH = 1.0
 FIT_EPSILON = 1e-6
 
 DEFAULT_MAPPING_BLOCK: Dict[str, Any] = {
     "mapping_function": "logistic",
     "motivation_min": MOTIVATION_LOW,
-    "inflection_target": 1.5,
+    "inflection_target": MOTIVATION_NORMAL,
     "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
     "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
     "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
     "strength_neighbor_repulsion_anchors": {"low": 0.0, "normal": 0.1, "high": 0.9},
     "use_manual_logistic_k": False,
-    "logistic_k": {},
+    "logistic_k": {
+        "desired_speed": 10.0,
+        "time_gap": 10.0,
+        "buffer": 10.0,
+        "strength_neighbor_repulsion": 10.0,
+    },
 }
 
 
@@ -33,12 +38,9 @@ def clamp(value: float, min_value: float, max_value: float) -> float:
 def clamp_motivation(
     motivation: float, normal_v_0: float, motivation_min: float = MOTIVATION_LOW
 ) -> float:
-    """Clamp motivation with dynamic physical upper limit."""
-    if normal_v_0 <= 0:
-        raise ValueError(f"normal_v_0 must be positive. Got {normal_v_0}")
-
-    max_motivation = 3.6 / normal_v_0
-    return clamp(motivation, motivation_min, max_motivation)
+    """Clamp normalized motivation to [motivation_min, 1]."""
+    _ = normal_v_0
+    return clamp(motivation, motivation_min, MOTIVATION_HIGH)
 
 
 @dataclass(frozen=True)
@@ -342,8 +344,8 @@ class MotivationParameterMapper:
         )
 
     def max_motivation(self) -> float:
-        """Return dynamic maximum motivation."""
-        return 3.6 / self.normal_v_0
+        """Return normalized maximum motivation."""
+        return MOTIVATION_HIGH
 
     def desired_speed(self, motivation: float) -> float:
         """Desired speed mapping."""
@@ -454,6 +456,16 @@ def plot_parameter_mappings(
                 fontsize=8,
                 va="bottom",
                 color="tab:red",
+            )
+            y_norm = anchors.normal
+            ax.scatter([MOTIVATION_NORMAL], [y_norm], color="tab:green", s=28, zorder=5)
+            ax.text(
+                MOTIVATION_NORMAL,
+                y_norm,
+                "  normal anchor",
+                fontsize=8,
+                va="bottom",
+                color="tab:green",
             )
 
     axes_flat[-1].axis("off")
