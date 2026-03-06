@@ -11,13 +11,13 @@ from .motivation_mapping import (
 def _logistic_runtime_plot() -> None:
     """Render active logistic mapping with anchor points."""
     anchors = AnchorValues(low=0.5, normal=1.2, high=3.6)
-    params = fit_logistic_from_anchors(anchors, inflection_target=1.5)
-    m_values = [0.1 + i * (3.0 - 0.1) / 200 for i in range(201)]
+    params = fit_logistic_from_anchors(anchors, inflection_target=0.5)
+    m_values = [0.0 + i * (1.0 - 0.0) / 200 for i in range(201)]
     y_values = [evaluate_logistic(m, params) for m in m_values]
 
     fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
     ax.plot(m_values, y_values, lw=2, label="Logistic fit")
-    ax.scatter([0.1, 1.0, 3.0], [0.5, 1.2, 3.6], c="red", zorder=3, label="anchors")
+    ax.scatter([0.0, 0.5, 1.0], [0.5, 1.2, 3.6], c="red", zorder=3, label="anchors")
     ax.set_xlabel("Motivation m")
     ax.set_ylabel("Desired speed (m/s)")
     # ax.set_title("Logistic runtime mapping: desired speed")
@@ -30,10 +30,10 @@ def _logistic_example_plot() -> None:
     """Render illustrative logistic-family example."""
     lower = 0.5
     upper = 3.6
-    x0 = 1.5
+    x0 = 0.5
     k = 2.4
 
-    m_values = [0.1 + i * (3.0 - 0.1) / 300 for i in range(301)]
+    m_values = [0.0 + i * (1.0 - 0.0) / 300 for i in range(301)]
     y_values = [
         lower + (upper - lower) / (1.0 + pow(2.718281828, -k * (m - x0)))
         for m in m_values
@@ -42,7 +42,7 @@ def _logistic_example_plot() -> None:
     fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
     ax.plot(m_values, y_values, lw=2, color="#2ca02c", label="logistic example")
     ax.scatter(
-        [0.1, 1.0, 3.0], [0.5, 1.2, 3.6], c="red", zorder=3, label="reference anchors"
+        [0.0, 0.5, 1.0], [0.5, 1.2, 3.6], c="red", zorder=3, label="reference anchors"
     )
     ax.set_xlabel("Motivation m")
     ax.set_ylabel("Desired speed (m/s)")
@@ -61,9 +61,7 @@ def main() -> None:
     st.markdown("### Core equations")
     st.latex(r"M_i \in \{E_i,\;V_i,\;P_i,\;P_iV_iE_i\}")
     st.latex(r"P_i(q_i) = \frac{1}{1 + \exp\left(k_p\,(q_i-q_0)\right)}")
-    st.latex(
-        r"m_i^{\mathrm{used}} = \mathrm{clip}\left(m_i,\; m_{\min},\; \frac{3.6}{v_0^{\mathrm{normal}}}\right)"
-    )
+    st.latex(r"m_i^{\mathrm{used}} = \mathrm{clip}\left(m_i,\; m_{\min},\; 1\right)")
     st.latex(
         r"y(m) = y_{\min} + \frac{y_{\max} - y_{\min}}{1 + \exp\left(-k\,(m - m_0)\right)}"
     )
@@ -76,7 +74,7 @@ def main() -> None:
         """
 | Parameter | Low motivation | Normal motivation | High motivation | Rule |
 |---|---:|---:|---:|---|
-| Motivation (m) | 0.1 | 1.0 | 3.0 | Clamped by m in [m_min, 3.6 / v0_normal] |
+| Motivation (m) | 0.0 | 0.5 | 1.0 | Clamped by m in [m_min, 1] |
 | Desired speed (v0_tilde) [m/s] | 0.5 | 1.2 | 3.6 | Logistic |
 | Time gap (T_tilde) [s] | 2.0 | 1.0 | 0.01 | Logistic |
 | Buffer (b_tilde) [m] | 1.0 | 0.1 | 0.0 | Logistic |
