@@ -69,7 +69,7 @@ def ui_simulation_controls(data: Dict[str, Any]) -> Tuple[str, str, int]:
 
     # Extract strategy from the loaded data for naming the output file
     strategy = data.get("motivation_parameters", {}).get(
-        "motivation_strategy", "default"
+        "motivation_mode", "PVE"
     )
     name, extension = CONFIG_FILE.rsplit(".", 1)
     sqlite_filename = f"{name}_{strategy}.{extension.replace('json', 'sqlite')}"
@@ -169,29 +169,17 @@ def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
         #     max_value=1.0,
         #     value=data["velocity_init_parameters"]["d_ped"],
         # )
-        data["velocity_init_parameters"]["a_ped_min"] = c1.number_input(
-            "a_ped_min:",
+        data["velocity_init_parameters"]["a_ped"] = c1.number_input(
+            "a_ped (normal):",
             min_value=0.0,
             max_value=10.0,
-            value=data["velocity_init_parameters"]["a_ped_min"],
+            value=data["velocity_init_parameters"]["a_ped"],
         )
-        data["velocity_init_parameters"]["a_ped_max"] = c2.number_input(
-            "a_ped_max:",
-            min_value=0.0,
-            max_value=10.0,
-            value=data["velocity_init_parameters"]["a_ped_max"],
-        )
-        data["velocity_init_parameters"]["d_ped_min"] = c1.number_input(
-            "d_ped_min:",
-            min_value=0.0,
-            max_value=10.0,
-            value=data["velocity_init_parameters"]["d_ped_min"],
-        )
-        data["velocity_init_parameters"]["d_ped_max"] = c2.number_input(
-            "d_ped_max:",
-            min_value=0.0,
-            max_value=10.0,
-            value=data["velocity_init_parameters"]["d_ped_max"],
+        data["velocity_init_parameters"]["d_ped"] = c2.number_input(
+            "d_ped (constant range):",
+            min_value=0.01,
+            max_value=1.0,
+            value=data["velocity_init_parameters"]["d_ped"],
         )
 
         data["velocity_init_parameters"]["a_wall"] = c1.number_input(
@@ -206,6 +194,15 @@ def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
             min_value=0.01,
             max_value=1.0,
             value=data["velocity_init_parameters"]["d_wall"],
+        )
+        data["velocity_init_parameters"]["theta_max_upper_bound"] = c1.number_input(
+            "theta_max_upper_bound [rad]:",
+            min_value=0.0,
+            max_value=3.141592653589793,
+            value=float(
+                data["velocity_init_parameters"].get("theta_max_upper_bound", 1.0)
+            ),
+            step=0.01,
         )
 
 
@@ -295,39 +292,43 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         )
 
 
-def ui_competition_parameters(data: Dict[str, Any]) -> None:
-    """Set competition function."""
-    with st.sidebar.expander("Competition Parameters", expanded=True):
+def ui_payoff_parameters(data: Dict[str, Any]) -> None:
+    """Set payoff function parameters."""
+    with st.sidebar.expander("Payoff Parameters", expanded=True):
+        payoff = data["motivation_parameters"].setdefault("payoff", {})
         c1, c2 = st.columns(2)
-        data["motivation_parameters"]["competition_max"] = c1.number_input(
-            "Competition max",
-            key="comp_max",
-            step=1.0,
-            min_value=0.5,
-            max_value=5.0,
-            value=float(data["motivation_parameters"]["competition_max"]),
-            help="Maximum of competition",
-        )
-        decay = int(data["motivation_parameters"]["competition_decay_reward"])
-        if decay >= data["simulation_parameters"]["number_agents"]:
-            decay = data["simulation_parameters"]["number_agents"] - 1
-        data["motivation_parameters"]["competition_decay_reward"] = c2.number_input(
-            "Competition decay",
-            key="comp_dec",
-            step=10,
-            min_value=1,
-            max_value=data["simulation_parameters"]["number_agents"],
-            value=decay,
-            help="Start of decay of competition",
-        )
-        data["motivation_parameters"]["percent"] = c1.number_input(
-            "Competition percent",
-            key="comp_perc",
-            step=0.1,
+        payoff["k"] = c1.number_input(
+            "Payoff k",
+            step=0.5,
             min_value=0.1,
+            max_value=50.0,
+            value=float(payoff.get("k", 8.0)),
+            help="Steepness of payoff logistic over normalized rank q.",
+        )
+        payoff["q0"] = c2.number_input(
+            "Payoff q0",
+            step=0.05,
+            min_value=0.0,
             max_value=1.0,
-            value=float(data["motivation_parameters"]["percent"]),
-            help="Percent of competition max",
+            value=float(payoff.get("q0", 0.5)),
+            help="Inflection point of payoff logistic.",
+        )
+        payoff["rank_tie_tolerance_m"] = c1.number_input(
+            "Rank tie tol [m]",
+            step=0.0005,
+            min_value=0.0001,
+            max_value=0.1,
+            value=float(payoff.get("rank_tie_tolerance_m", 0.001)),
+            format="%.4f",
+            help="Distance tolerance for equal rank assignment.",
+        )
+        payoff["update_interval_s"] = c2.number_input(
+            "Rank update [s]",
+            step=0.1,
+            min_value=0.01,
+            max_value=10.0,
+            value=float(payoff.get("update_interval_s", 1.0)),
+            help="Recompute ranks/payoff every N seconds.",
         )
 
 
@@ -339,7 +340,7 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
     with st.sidebar.expander("Motivation Mapping", expanded=True):
         mapping["mapping_function"] = st.selectbox(
             "Mapping function",
-            ["gompertz"],
+            ["logistic"],
             index=0,
             help="Function used to map motivation to model parameters.",
         )
@@ -351,23 +352,13 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
             step=0.01,
             help="Lower clamp for motivation.",
         )
-        fit_mode_options = ["exact_anchors", "sigmoid_preferred"]
-        fit_mode = str(mapping.get("fit_mode", "exact_anchors"))
-        if fit_mode not in fit_mode_options:
-            fit_mode = "exact_anchors"
-        mapping["fit_mode"] = st.selectbox(
-            "Gompertz fit mode",
-            fit_mode_options,
-            index=fit_mode_options.index(fit_mode),
-            help="exact_anchors: exact through low/normal/high. sigmoid_preferred: approximate anchors and keeps inflection in range.",
-        )
         mapping["inflection_target"] = st.number_input(
             "Inflection target (m)",
             min_value=0.1,
             max_value=3.0,
             value=float(mapping.get("inflection_target", 1.5)),
             step=0.1,
-            help="Used only in sigmoid_preferred mode.",
+            help="Logistic midpoint parameter m0.",
         )
 
         st.markdown("**Desired speed anchors**")
@@ -442,89 +433,83 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
             step=0.01,
         )
 
-        mapping["repulsion_strength_mode"] = st.selectbox(
-            "Strength mapping",
-            ["config_bounds"],
-            index=0,
-            help="Use a_ped_min/a_ped/a_ped_max as low/normal/high anchors.",
+        st.markdown("**Strength neighbor repulsion anchors**")
+        c1, c2, c3 = st.columns(3)
+        mapping["strength_neighbor_repulsion_anchors"]["low"] = c1.number_input(
+            "A low",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(mapping["strength_neighbor_repulsion_anchors"]["low"]),
+            step=0.01,
         )
-        mapping["range_neighbor_repulsion_mode"] = st.selectbox(
-            "Range mapping",
-            ["constant_d_ped"],
-            index=0,
-            help="Keep range_neighbor_repulsion fixed at d_ped.",
+        mapping["strength_neighbor_repulsion_anchors"]["normal"] = c2.number_input(
+            "A normal",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(mapping["strength_neighbor_repulsion_anchors"]["normal"]),
+            step=0.01,
         )
+        mapping["strength_neighbor_repulsion_anchors"]["high"] = c3.number_input(
+            "A high",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(mapping["strength_neighbor_repulsion_anchors"]["high"]),
+            step=0.01,
+        )
+        mapping["use_manual_logistic_k"] = st.checkbox(
+            "Use manual logistic k",
+            value=bool(mapping.get("use_manual_logistic_k", False)),
+            help="Override fitted k values per parameter while keeping low/high anchors.",
+        )
+        mapping.setdefault("logistic_k", {})
+        if mapping["use_manual_logistic_k"]:
+            st.markdown("**Manual k values**")
+            c1, c2 = st.columns(2)
+            mapping["logistic_k"]["desired_speed"] = c1.number_input(
+                "k(v0)",
+                value=float(mapping["logistic_k"].get("desired_speed", 1.0)),
+                step=0.1,
+                format="%.3f",
+            )
+            mapping["logistic_k"]["time_gap"] = c2.number_input(
+                "k(T)",
+                value=float(mapping["logistic_k"].get("time_gap", -1.0)),
+                step=0.1,
+                format="%.3f",
+            )
+            c1, c2 = st.columns(2)
+            mapping["logistic_k"]["buffer"] = c1.number_input(
+                "k(buffer)",
+                value=float(mapping["logistic_k"].get("buffer", -1.0)),
+                step=0.1,
+                format="%.3f",
+            )
+            mapping["logistic_k"]["strength_neighbor_repulsion"] = c2.number_input(
+                "k(A)",
+                value=float(
+                    mapping["logistic_k"].get("strength_neighbor_repulsion", 1.0)
+                ),
+                step=0.1,
+                format="%.3f",
+            )
 
         vparams = data["velocity_init_parameters"]
-        estimated_params: Dict[str, Dict[str, float]] = {}
         try:
             mapper = mmap.MotivationParameterMapper(
                 mapping_block=mapping,
                 normal_v_0=float(params["normal_v_0"]),
-                strength_default=float(vparams["a_ped"]),
-                strength_min=float(vparams["a_ped_min"]),
-                strength_max=float(vparams["a_ped_max"]),
                 range_default=float(vparams["d_ped"]),
             )
-            estimated_params = mapper.estimated_gompertz_parameters_as_dict()
-            mapping["gompertz_parameters"] = mapper.gompertz_parameters_as_dict()
+            st.markdown("**Fitted logistic k**")
+            for key, label in (
+                ("desired_speed", "k(v0)"),
+                ("time_gap", "k(T)"),
+                ("buffer", "k(buffer)"),
+                ("strength_neighbor_repulsion", "k(A)"),
+            ):
+                st.caption(f"{label} = {mapper.logistic_parameters[key].k:.2f}")
         except ValueError as exc:
-            st.error(f"Gompertz config error: {exc}")
-
-        mapping["use_manual_gompertz_parameters"] = st.checkbox(
-            "Use manual Gompertz parameters (a,b,c)",
-            value=bool(mapping.get("use_manual_gompertz_parameters", False)),
-            help="When enabled, the mapper uses the values below instead of fitted estimates.",
-        )
-
-        curve_labels = [
-            ("desired_speed", "Desired speed"),
-            ("time_gap", "Time gap"),
-            ("buffer", "Buffer"),
-            ("strength_neighbor_repulsion", "Strength"),
-        ]
-        mapping.setdefault("gompertz_parameters", {})
-        for curve_key, curve_title in curve_labels:
-            defaults = estimated_params.get(curve_key, {"a": 1.0, "b": 1.0, "c": 1.0})
-            current = mapping["gompertz_parameters"].get(curve_key, defaults)
-            if not isinstance(current, dict):
-                current = defaults
-
-            st.markdown(f"**{curve_title} Gompertz (a, b, c)**")
-            c1, c2, c3 = st.columns(3)
-            if mapping["use_manual_gompertz_parameters"]:
-                a_val = c1.number_input(
-                    f"{curve_key} a",
-                    value=float(current.get("a", defaults["a"])),
-                    key=f"{curve_key}_a",
-                    format="%.6f",
-                )
-                b_val = c2.number_input(
-                    f"{curve_key} b",
-                    value=float(current.get("b", defaults["b"])),
-                    key=f"{curve_key}_b",
-                    format="%.6f",
-                )
-                c_val = c3.number_input(
-                    f"{curve_key} c",
-                    value=float(current.get("c", defaults["c"])),
-                    key=f"{curve_key}_c",
-                    format="%.6f",
-                )
-                mapping["gompertz_parameters"][curve_key] = {
-                    "a": float(a_val),
-                    "b": float(b_val),
-                    "c": float(c_val),
-                }
-            else:
-                c1.caption(f"a = {defaults['a']:.6f}")
-                c2.caption(f"b = {defaults['b']:.6f}")
-                c3.caption(f"c = {defaults['c']:.6f}")
-                mapping["gompertz_parameters"][curve_key] = {
-                    "a": float(defaults["a"]),
-                    "b": float(defaults["b"]),
-                    "c": float(defaults["c"]),
-                }
+            st.error(f"Logistic config error: {exc}")
 
     params.update(mapping)
 
@@ -532,10 +517,10 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section."""
     c1, c2 = st.sidebar.columns(2)
-    motivation_strategy = st.sidebar.selectbox(
-        "Select model",
-        ["EVC", "EC-V"],
-        help="EVC: M = EVC, EC-V: M=(E.C).V",
+    motivation_mode = st.sidebar.selectbox(
+        "Select mode",
+        ["PVE", "E", "V", "P", "NO_MOTIVATION"],
+        help="PVE: M=P*V*E, E: expectancy only, V: value only, P: payoff only, NO_MOTIVATION: keep base CFSM parameters.",
     )
     data["motivation_parameters"]["normal_v_0"] = c1.number_input(
         "Normal V0:",
@@ -558,7 +543,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
         help="Seed for random generator for value",
     )
 
-    data["motivation_parameters"]["motivation_strategy"] = motivation_strategy
+    data["motivation_parameters"]["motivation_mode"] = motivation_mode
     title = "Expectancy Parameters"
     with st.sidebar.expander(title, expanded=True):
         c1, c2 = st.columns(2)
@@ -576,9 +561,8 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             value=float(data["motivation_parameters"]["height"]),
             help="Height of function defining distance dependency",
         )
-    if motivation_strategy != "default":
-        ui_value_parameters(data)
-        ui_competition_parameters(data)
+    ui_value_parameters(data)
+    ui_payoff_parameters(data)
     ui_mapping_parameters(data)
 
     st.sidebar.write("**At this line the motivation is maximal**")
@@ -612,6 +596,4 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
                         value=float(vertex[1]),
                         key=y_key,
                         step=1.0,
-                        min_value=10.0,
-                        max_value=19.0,
                     )

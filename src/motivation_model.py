@@ -166,6 +166,16 @@ class EVCStrategy(MotivationStrategy):
     seed_manager: Optional[SeedManager] = None
     value_probability: bool = True
     motivation_min: float = 0.1
+    motivation_mode: str = "PVE"
+    payoff_k: float = 8.0
+    payoff_q0: float = 0.5
+    rank_tie_tolerance_m: float = 1e-3
+    payoff_update_interval_s: float = 1.0
+    payoff_update_interval_steps: int = 1
+    payoff_cache: Dict[int, float] = field(default_factory=dict)
+    rank_abs_cache: Dict[int, int] = field(default_factory=dict)
+    rank_q_cache: Dict[int, float] = field(default_factory=dict)
+    _last_rank_update_iteration: int = -1
     # probability should be negligible (< 0.01) at self.width meters"
     # therefore: 0.01 = exp(-width/distance_decay)
     # Taking ln: ln(0.01) = -width/distance_decay
@@ -179,6 +189,12 @@ class EVCStrategy(MotivationStrategy):
         dx = pos[0] - self.motivation_door_center[0]
         dy = pos[1] - self.motivation_door_center[1]
         return math.sqrt(dx * dx + dy * dy)
+
+    def calculate_exit_distance_squared(self, pos: Point) -> float:
+        """Squared distance to door center (used for faster ranking)."""
+        dx = pos[0] - self.motivation_door_center[0]
+        dy = pos[1] - self.motivation_door_center[1]
+        return dx * dx + dy * dy
 
     def get_high_value_probability(self, pos: Point) -> float:
         """Calculate probability of being high value based on position.
@@ -270,6 +286,97 @@ class EVCStrategy(MotivationStrategy):
                     self.max_value_low,
                     self.get_derived_seed(self.seed, n),
                 )
+        self.motivation_mode = str(self.motivation_mode).upper()
+        if self.motivation_mode not in {"E", "V", "P", "PVE", "NO_MOTIVATION"}:
+            raise ValueError(
+                f"Unknown motivation_mode '{self.motivation_mode}'. "
+                "Use one of: E, V, P, PVE, NO_MOTIVATION."
+            )
+
+    def configure_payoff_update_interval(self, time_step: float) -> None:
+        """Configure payoff rank update cadence from seconds to simulation steps."""
+        if time_step <= 0:
+            raise ValueError(f"time_step must be > 0. Got {time_step}.")
+        self.payoff_update_interval_steps = max(
+            1, int(round(self.payoff_update_interval_s / time_step))
+        )
+
+    def _rank_tolerance_squared(self, distances_sq: List[float]) -> float:
+        """Convert linear tie tolerance (m) to squared-distance tolerance."""
+        if not distances_sq:
+            return self.rank_tie_tolerance_m * self.rank_tie_tolerance_m
+        mean_d = sum(math.sqrt(max(d2, 0.0)) for d2 in distances_sq) / len(distances_sq)
+        eps = self.rank_tie_tolerance_m
+        return 2.0 * mean_d * eps + eps * eps
+
+    def _compute_rank_and_payoff(
+        self, agent_positions: Dict[int, Point], number_agents_in_simulation: int
+    ) -> None:
+        """Compute rank and payoff for active agents."""
+        if number_agents_in_simulation <= 0:
+            self.payoff_cache.clear()
+            self.rank_abs_cache.clear()
+            self.rank_q_cache.clear()
+            return
+
+        items = [
+            (agent_id, self.calculate_exit_distance_squared(pos))
+            for agent_id, pos in agent_positions.items()
+        ]
+        items.sort(key=lambda x: x[1])
+        distances_sq = [d2 for _, d2 in items]
+        eps_sq = self._rank_tolerance_squared(distances_sq)
+
+        n_left = max(0, self.max_reward - number_agents_in_simulation)
+        new_rank_abs: Dict[int, int] = {}
+        new_rank_q: Dict[int, float] = {}
+        new_payoff: Dict[int, float] = {}
+
+        if not items:
+            self.payoff_cache = new_payoff
+            self.rank_abs_cache = new_rank_abs
+            self.rank_q_cache = new_rank_q
+            return
+
+        current_rank_in_room = 1
+        group_start_idx = 0
+        prev_d2 = items[0][1]
+
+        for idx, (agent_id, d2) in enumerate(items):
+            if abs(d2 - prev_d2) > eps_sq:
+                current_rank_in_room = group_start_idx + 1
+                group_start_idx = idx
+            rank_abs = n_left + current_rank_in_room
+            q = (rank_abs - 1) / max(1, self.max_reward - 1)
+            payoff = 1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0)))
+            new_rank_abs[agent_id] = rank_abs
+            new_rank_q[agent_id] = q
+            new_payoff[agent_id] = payoff
+            prev_d2 = d2
+
+        self.payoff_cache = new_payoff
+        self.rank_abs_cache = new_rank_abs
+        self.rank_q_cache = new_rank_q
+
+    def update_payoff_cache(
+        self,
+        iteration_count: int,
+        agent_positions: Dict[int, Point],
+        number_agents_in_simulation: int,
+    ) -> bool:
+        """Update rank/payoff cache on configured schedule."""
+        if iteration_count % self.payoff_update_interval_steps != 0:
+            return False
+        self._compute_rank_and_payoff(agent_positions, number_agents_in_simulation)
+        self._last_rank_update_iteration = iteration_count
+        return True
+
+    def get_rank_payoff(self, agent_id: int) -> Tuple[int, float, float]:
+        """Return cached rank_abs, rank_q, payoff for an agent."""
+        rank_abs = int(self.rank_abs_cache.get(agent_id, self.max_reward))
+        rank_q = float(self.rank_q_cache.get(agent_id, 1.0))
+        payoff = float(self.payoff_cache.get(agent_id, 0.0))
+        return rank_abs, rank_q, payoff
 
     @staticmethod
     def name() -> str:
@@ -332,30 +439,31 @@ class EVCStrategy(MotivationStrategy):
         return random.uniform(min_v, max_v)
 
     def motivation(self, params: dict[str, Any]) -> float:
-        """Define EVC model."""
-        number_agents_in_simulation = params["number_agents_in_simulation"]
+        """Define mode-based EVP model."""
         distance = params["distance"]
         agent_id = params["agent_id"]
-        got_reward = self.max_reward - number_agents_in_simulation
         if "seed" not in params:
             params["seed"] = None
 
-        value = self.pedestrian_value[agent_id] if self.evc else 1.0
-        V_unit = value  # / self.max_value_high
-        C_unit = EVCStrategy.competition(
-            N=got_reward,
-            c0=self.competition_max,
-            N0=self.competition_decay_reward,
-            percent=self.percent,
-            Nmax=self.max_reward,
-        )
+        value = self.pedestrian_value[agent_id]
+        V_unit = value
         E_unit = EVCStrategy.expectancy(
             distance,
             self.width,
             self.height,
         )
+        P_unit = float(self.payoff_cache.get(agent_id, 1.0))
 
-        M = V_unit * E_unit * C_unit
+        if self.motivation_mode == "NO_MOTIVATION":
+            M = 1.0
+        elif self.motivation_mode == "E":
+            M = E_unit
+        elif self.motivation_mode == "V":
+            M = V_unit
+        elif self.motivation_mode == "P":
+            M = P_unit
+        else:
+            M = V_unit * E_unit * P_unit
 
         max_human_v0 = 3.6
         max_M = max_human_v0 / self.normal_v_0
@@ -395,42 +503,19 @@ class EVCStrategy(MotivationStrategy):
         ax1.set_xlabel("# Agents", size=14)
         ax1.set_ylabel("Value", size=14)
         fig1.savefig("value.pdf")
-        # C
-        C = []
-        Nrange = np.arange(0, self.max_reward + 1)
-
-        for n in Nrange:
-            C.append(
-                self.competition(
-                    N=n,
-                    c0=self.competition_max,
-                    N0=self.competition_decay_reward,
-                    percent=self.percent,
-                    Nmax=self.max_reward,
-                )
-            )
-
-        ax2.plot(Nrange, C, ".-")
+        # P
+        q_vals = np.linspace(0.0, 1.0, 200)
+        p_vals = [1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0))) for q in q_vals]
+        ax2.plot(q_vals, p_vals, "-")
+        p0 = 1.0 / (1.0 + math.exp(self.payoff_k * (self.payoff_q0 - self.payoff_q0)))
+        ax2.axvline(self.payoff_q0, color="red", ls="--", lw=1.2)
+        ax2.scatter([self.payoff_q0], [p0], color="red", s=35, zorder=5)
         ax2.grid(alpha=0.3)
-        ax2.set_xlim((0, self.max_reward + 1))
-        ax2.set_ylim((-0.1, self.competition_max + 1))
-        ax2.set_xlabel("#agents left simulation", size=14)
-        ax2.set_ylabel(r"$C(N)$", size=14)
-        ax2.set_xticks(
-            [0, self.competition_decay_reward, self.max_reward * self.percent],
-            labels=[
-                "0",
-                f"N0={self.competition_decay_reward}",
-                f"Nmax={self.max_reward * self.percent:.0f}",
-            ],
-        )
-        ax2.set_yticks(
-            [0, self.competition_max], labels=["0", f"Max={self.competition_max:.1f}"]
-        )
-        # ax2.set_title(
-        #    f"{self.name()} - C ({self.percent * 100:.0f}% of max reward {self.max_reward:.0f})"
-        # )
-        fig2.savefig("competition.pdf")
+        ax2.set_xlim((0, 1))
+        ax2.set_ylim((-0.1, 1.1))
+        ax2.set_xlabel("Normalized rank q", size=14)
+        ax2.set_ylabel(r"$P(q)$", size=14)
+        fig2.savefig("payoff.pdf")
         # M
         max_value_id = max(
             self.pedestrian_value, key=lambda k: self.pedestrian_value[k]
@@ -444,7 +529,7 @@ class EVCStrategy(MotivationStrategy):
         # logging.info(
         #     f"id min value {min_value_id}: {self.pedestrian_value[min_value_id]}"
         # )
-        N_three = np.linspace(10, self.max_reward * self.percent, 3)
+        N_three = np.linspace(10, self.max_reward, 3)
         symbols = ["-", "--", "-."]
 
         for i, n in enumerate(N_three[1:2]):
@@ -494,36 +579,44 @@ class EVCStrategy(MotivationStrategy):
         # ax3.set_ylim([-0.1, 3])
         ax3.set_xlim((-0.1, 4))
         ax3.legend()
-        if self.evc:
-            title = (
-                f"{self.name()} - E.V.C (N={self.max_reward:.0f}, seed={self.seed:.0f})"
-            )
-        else:
-            title = f"EC-V -  E.C-V (N={self.max_reward:.0f}, seed={self.seed:.0f})"
+        title = (
+            f"{self.name()} - {self.motivation_mode} "
+            f"(N={self.max_reward:.0f}, seed={self.seed:.0f})"
+        )
         # ax3.set_title(title)
         ax3.set_xlabel(r"$d$ / m", size=14)
         ax3.set_ylabel("$M$", size=14)
         fig3.savefig("motivation.pdf")
         #
-        M = []
-        distance = self.width / 2
-        for agent_id, distance in zip(self.agent_ids, distances):
+        rank_m = []
+        for idx, agent_id in enumerate(self.agent_ids):
+            if idx < len(self.agent_positions):
+                distance = math.sqrt(
+                    self.calculate_exit_distance_squared(self.agent_positions[idx])
+                )
+            else:
+                distance = self.width / 2
             params = {
                 "distance": distance,
                 "number_agents_in_simulation": self.max_reward,
                 "seed": self.seed,
                 "agent_id": agent_id,
             }
-            M.append(self.motivation(params))
+            rank_abs, _, _ = self.get_rank_payoff(agent_id)
+            rank_m.append((int(rank_abs), int(agent_id), self.motivation(params)))
 
-        ax4.plot(self.agent_ids, M, ".-")
+        rank_m.sort(key=lambda item: (item[0], item[1]))
+        x_rank = [item[0] for item in rank_m]
+        m_sorted = [item[2] for item in rank_m]
+
+        ax4.plot(x_rank, m_sorted, ".-")
         ax4.grid(alpha=0.3)
         # ax3.set_ylim([-0.1, 3])
         # ax3.set_xlim([-0.1, 4])
         ax4.set_title(
-            f"{self.name()} - E.V.C (N={self.max_reward:.0f}). Each id at different distance"
+            f"{self.name()} | mode={self.motivation_mode} | M sorted by current rank"
         )
-        ax4.set_xlabel("Agent ids")
+        ax4.set_xlabel("Rank (absolute)")
         ax4.set_ylabel("Motivation")
 
         return [fig0, fig1, fig2, fig3, fig4]
@@ -577,11 +670,7 @@ class MotivationModel:
         """Plot model."""
         fig, ax = plt.subplots(ncols=1, nrows=1)
         fig1, ax1 = plt.subplots(ncols=1, nrows=1)
-        N_three = np.linspace(
-            10,
-            self.motivation_strategy.max_reward * self.motivation_strategy.percent,
-            3,
-        )
+        N_three = np.linspace(10, self.motivation_strategy.max_reward, 3)
         min_value_id = min(
             self.motivation_strategy.pedestrian_value,
             key=lambda k: self.motivation_strategy.pedestrian_value[k],

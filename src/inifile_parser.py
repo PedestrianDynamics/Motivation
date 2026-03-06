@@ -39,32 +39,18 @@ def parse_destinations(json_data: Dict[str, Any]) -> Dict[int, List[List[Point]]
 
 def parse_velocity_init_parameters(
     json_data: Dict[str, Any],
-) -> Tuple[float, float, float, float, float, float, float, float]:
+) -> Tuple[float, float, float, float]:
     """Parse init parameters for velocity model.
 
-    return a_ped, d_ped, a_wall, d_Wall
+    return a_ped, d_ped, a_wall, d_wall
     """
     if "velocity_init_parameters" in json_data:
         a_ped = float(json_data["velocity_init_parameters"]["a_ped"])
         d_ped = float(json_data["velocity_init_parameters"]["d_ped"])
-        a_ped_min = float(json_data["velocity_init_parameters"]["a_ped_min"])
-        a_ped_max = float(json_data["velocity_init_parameters"]["a_ped_max"])
-        d_ped_min = float(json_data["velocity_init_parameters"]["d_ped_min"])
-        d_ped_max = float(json_data["velocity_init_parameters"]["d_ped_max"])
         a_wall = float(json_data["velocity_init_parameters"]["a_wall"])
         d_wall = float(json_data["velocity_init_parameters"]["d_wall"])
-        return (
-            a_ped,
-            d_ped,
-            a_wall,
-            d_wall,
-            a_ped_min,
-            a_ped_max,
-            d_ped_min,
-            d_ped_max,
-        )
-    else:
-        return (8.0, 0.1, 5.0, 0.02, 0.1, 8.0, 0.1, 0.8)
+        return (a_ped, d_ped, a_wall, d_wall)
+    raise KeyError("Missing required block: velocity_init_parameters")
 
 
 def parse_radius(
@@ -79,6 +65,13 @@ def parse_radius(
 
     else:
         return 0.3
+
+
+def parse_theta_max_upper_bound(json_data: Dict[str, Any]) -> float:
+    """Parse theta upper bound for CFSM steering search (radians)."""
+    if "velocity_init_parameters" not in json_data:
+        raise KeyError("Missing required block: velocity_init_parameters")
+    return float(json_data["velocity_init_parameters"].get("theta_max_upper_bound", 1.0))
 
 
 def parse_way_points(
@@ -297,15 +290,34 @@ def parse_simulation_time(json_data: Dict[str, Any]) -> float:
 
 
 def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
-    """Get motivation strategy."""
+    """Get motivation mode (E, V, P, PVE, NO_MOTIVATION)."""
+    if "motivation_parameters" not in json_data:
+        raise ValueError("Missing motivation_parameters in config.")
+    params = json_data["motivation_parameters"]
+    if "motivation_mode" not in params:
+        raise ValueError("Missing motivation_parameters.motivation_mode in config.")
+    mode = str(params["motivation_mode"]).upper()
+    if mode not in {"E", "V", "P", "PVE", "NO_MOTIVATION"}:
+        raise ValueError(
+            "Invalid motivation_mode "
+            f"'{mode}'. Use E, V, P, PVE, or NO_MOTIVATION."
+        )
+    return mode
 
-    if (
-        "motivation_parameters" in json_data
-        and "motivation_strategy" in json_data["motivation_parameters"]
-    ):
-        return str(json_data["motivation_parameters"]["motivation_strategy"])
 
-    return "default"
+def parse_payoff_update_interval(json_data: Dict[str, Any]) -> float:
+    """Get payoff rank update interval in seconds."""
+    try:
+        interval = float(json_data["motivation_parameters"]["payoff"]["update_interval_s"])
+    except Exception as exc:
+        raise ValueError(
+            "Missing motivation_parameters.payoff.update_interval_s in config."
+        ) from exc
+    if interval <= 0:
+        raise ValueError(
+            f"payoff.update_interval_s must be > 0. Got {interval}."
+        )
+    return interval
 
 
 def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> int:

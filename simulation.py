@@ -33,11 +33,13 @@ from src.inifile_parser import (
     parse_fps,
     parse_motivation_doors,
     parse_motivation_strategy,
+    parse_payoff_update_interval,
     parse_normal_time_gap,
     parse_normal_v_0,
     parse_number_agents,
     parse_radius,
     parse_simulation_time,
+    parse_theta_max_upper_bound,
     parse_time_step,
     parse_velocity_init_parameters,
     parse_way_points,
@@ -57,6 +59,9 @@ from src.utilities import (
 
 
 Point: TypeAlias = Tuple[float, float]
+MOTIVATION_CSV_HEADER = (
+    "frame,id,time,motivation,x,y,value,rank_abs,rank_q,payoff_p,rank_update_flag"
+)
 
 
 def polygon_to_xml(
@@ -245,77 +250,48 @@ def init_motivation_model(
 
     normal_v_0 = parse_normal_v_0(_data)
     normal_time_gap = parse_normal_time_gap(_data)
+    time_step = parse_time_step(_data)
     mapping_block = mmap.ensure_mapping_block(_data["motivation_parameters"])
-    choose_motivation_strategy = parse_motivation_strategy(_data)
+    motivation_mode = parse_motivation_strategy(_data)
     number_agents = parse_number_agents(_data)
-    competition_max = _data["motivation_parameters"]["competition_max"]
-    competition_decay_reward = _data["motivation_parameters"][
-        "competition_decay_reward"
-    ]
-    percent = _data["motivation_parameters"]["percent"]
-    logging.info(f"{choose_motivation_strategy = }")
+    payoff_params = _data["motivation_parameters"]["payoff"]
+    payoff_update_interval_s = parse_payoff_update_interval(_data)
+    logging.info(f"{motivation_mode = }")
     # =================
-    motivation_strategy: mm.MotivationStrategy
-    if choose_motivation_strategy == "default":
-        motivation_strategy = mm.DefaultMotivationStrategy(width=width, height=height)
-    if choose_motivation_strategy == "EVC":
-        logging.info(f"init EVC with {width = }, {height = }, {seed = }")
-        motivation_strategy = mm.EVCStrategy(
-            width=width,
-            height=height,
-            max_reward=number_agents,
-            seed=seed,
-            max_value_high=float(_data["motivation_parameters"]["max_value_high"]),
-            min_value_high=float(_data["motivation_parameters"]["min_value_high"]),
-            max_value_low=float(_data["motivation_parameters"]["max_value_low"]),
-            min_value_low=float(_data["motivation_parameters"]["min_value_low"]),
-            number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
-            nagents=number_agents,
-            agent_ids=ped_ids,
-            agent_positions=ped_positions,
-            motivation_door_center=motivation_door_center,
-            competition_decay_reward=competition_decay_reward,
-            competition_max=competition_max,
-            percent=percent,
-            evc=True,
-            value_probability=_data["motivation_parameters"][
-                "value_probability_sorting"
-            ],
-            motivation_min=float(mapping_block["motivation_min"]),
-        )
-    if choose_motivation_strategy == "EC-V":
-        motivation_strategy = mm.EVCStrategy(
-            width=width,
-            height=height,
-            max_reward=number_agents,
-            seed=seed,
-            max_value_high=float(_data["motivation_parameters"]["max_value_high"]),
-            min_value_high=float(_data["motivation_parameters"]["min_value_high"]),
-            max_value_low=float(_data["motivation_parameters"]["max_value_low"]),
-            min_value_low=float(_data["motivation_parameters"]["min_value_low"]),
-            number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
-            nagents=number_agents,
-            agent_ids=ped_ids,
-            agent_positions=ped_positions,
-            competition_decay_reward=competition_decay_reward,
-            competition_max=competition_max,
-            percent=percent,
-            motivation_door_center=motivation_door_center,
-            evc=False,
-            motivation_min=float(mapping_block["motivation_min"]),
-        )
+    motivation_strategy: mm.MotivationStrategy = mm.EVCStrategy(
+        width=width,
+        height=height,
+        max_reward=number_agents,
+        seed=seed,
+        max_value_high=float(_data["motivation_parameters"]["max_value_high"]),
+        min_value_high=float(_data["motivation_parameters"]["min_value_high"]),
+        max_value_low=float(_data["motivation_parameters"]["max_value_low"]),
+        min_value_low=float(_data["motivation_parameters"]["min_value_low"]),
+        number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
+        nagents=number_agents,
+        agent_ids=ped_ids,
+        agent_positions=ped_positions,
+        motivation_door_center=motivation_door_center,
+        value_probability=bool(
+            _data["motivation_parameters"]["value_probability_sorting"]
+        ),
+        motivation_min=float(mapping_block["motivation_min"]),
+        motivation_mode=motivation_mode,
+        payoff_k=float(payoff_params["k"]),
+        payoff_q0=float(payoff_params["q0"]),
+        rank_tie_tolerance_m=float(payoff_params["rank_tie_tolerance_m"]),
+        payoff_update_interval_s=payoff_update_interval_s,
+    )
+    motivation_strategy.configure_payoff_update_interval(time_step=time_step)
 
-    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
-        parse_velocity_init_parameters(_data)
-    )
-    parameter_mapper = mmap.MotivationParameterMapper(
-        mapping_block=mapping_block,
-        normal_v_0=normal_v_0,
-        strength_default=a_ped,
-        strength_min=a_ped_min,
-        strength_max=a_ped_max,
-        range_default=d_ped,
-    )
+    parameter_mapper = None
+    if motivation_mode != "NO_MOTIVATION":
+        _, d_ped, _, _ = parse_velocity_init_parameters(_data)
+        parameter_mapper = mmap.MotivationParameterMapper(
+            mapping_block=mapping_block,
+            normal_v_0=normal_v_0,
+            range_default=d_ped,
+        )
     # =================
     motivation_model = mm.MotivationModel(
         door_point1=(motivation_doors[0][0][0], motivation_doors[0][0][1]),
@@ -364,8 +340,8 @@ def init_simulation(
             [
                 (-10, -20),
                 (-3.57, -3),
-                (-2, -3),
-                (-2, -2.8),
+                # (-2, -3),
+                # (-2, -2.8),
                 (-3.57, -2.8),
                 (-3.57, 19.57),
                 (-1.52, 19.57),
@@ -392,8 +368,8 @@ def init_simulation(
             [
                 (10, -20),
                 (3.57, -3),
-                (2, -3),
-                (2, -2.8),
+                # (2, -3),
+                # (2, -2.8),
                 (3.57, -2.8),
                 (3.64, 19.64),
                 (1.47, 19.57),
@@ -417,32 +393,33 @@ def init_simulation(
                 (10, -20),
             ],
             # Bottom strip
-            # [(3.55, -3), (2, -3), (2, -3.2), (3.55, -3.2),(3.55, -3)],
-            # [(-3.55, -3), (-2, -3), (-2, -3.2), (-3.55, -3.2),(-3.55, -3)]
+            # [(3.55, -3), (2, -3), (2, -3.2), (3.55, -3.2), (3.55, -3)],
+            # [(-3.55, -3), (-2, -3), (-2, -3.2), (-3.55, -3.2), (-3.55, -3)],
         ]
 
         # Door coordinates
         door = [(-0.41, 20), (0.37, 20), (0.37, 21), (-0.41, 21), (-0.41, 20)]
-        door2 = [
-            (-0.41, 19.9),
-            (0.37, 19.9),
-            (0.37, 19.8),
-            (-0.41, 19.8),
-            (-0.41, 19.9),
-        ]
+        #  door2 = [
+        #     (-0.41, 19.9),
+        #     (0.37, 19.9),
+        #     (0.37, 19.8),
+        #     (-0.41, 19.8),
+        #     (-0.41, 19.9),
+        # ]
 
         # Create closed geometry (with door)
         geometry_closed = Polygon(exterior, interior_rings + [door])
 
         # Create open geometry (without door)
         geometry_open = Polygon(exterior, interior_rings)
+
     else:
         logging.info("Init geometry from data")
         geometry_open = build_geometry(accessible_areas)
         geometry_closed = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     simulation = jps.Simulation(
-        model=jps.CollisionFreeSpeedModelV2(),
+        model=jps.CollisionFreeSpeedModelV3(),
         geometry=geometry_closed,
         dt=_time_step,
         trajectory_writer=jps.SqliteTrajectoryWriter(
@@ -499,64 +476,14 @@ def adjust_radius_with_distance(
     return min_value + (motivation_radius - min_value) * distance_factor
 
 
-def adjust_parameter_linearly(
-    motivation_i: float,
-    min_value: float = 0.01,
-    default_value: float = 0.5,
-    max_value: float = 1.0,
-    min_motivation: float = 1,
-) -> float:
-    """
-    Adjust the a parameter based on agent's motivation level (1 <= motivation_i <= 3).
-
-    :param motivation_i: The agent's motivation level, expected to be a positive value less than 1.
-    :param min_value: Minimum repulsion range for very low motivation.
-    :param default_value: Default repulsion range for mid motivation.
-    :param max_value: Maximum repulsion range for high motivation.
-    :return: Adjusted range_neighbor_repulsion value.
-    """
-    # Linear interpolation between min_value and max_value based on motivation_i
-    return min_value + (max_value - min_value) * 0.5 * (motivation_i - min_motivation)
-
-
-def adjust_buffer_size_linearly(
-    value_i: float,
-    min_size: float = 0.1,
-    max_size: float = 1.5,
-    min_motivation: float = 0.5,
-    max_motivation: float = 3.0,
-) -> float:
-    """
-    Adjust the buffer size based on agent's motivation level (1 <= motivation_i <= 3).
-
-    :param motivation_i: The agent's motivation level.
-    :param min_size: The minimum buffer size at highest motivation.
-    :param max_size: The maximum buffer size at lowest motivation.
-    :param min_motivation: Motivation level corresponding to max_size.
-    :param max_motivation: Motivation level corresponding to min_size.
-    :return: Adjusted buffer size.
-    """
-    # Clamp motivation_i between min and max motivation
-    value_i = max(min_motivation, min(value_i, max_motivation))
-
-    # Inverse linear interpolation
-    t = (value_i - min_motivation) / (max_motivation - min_motivation)
-    return max_size - (max_size - min_size) * t
-
-
 def process_agent(
     agent: jps.Agent,
     door: Point,
     simulation: jps.Simulation,
     motivation_model: mm.MotivationModel,
-    a_ped_min: float,
-    a_ped_max: float,
-    d_ped_min: float,
-    d_ped_max: float,
-    default_strength: float,
-    default_range: float,
     file_handle: _io.TextIOWrapper,
     frame_to_write: int,
+    rank_update_flag: int,
     _data: Dict[str, Any],
 ) -> str:
     """Process an individual agent by calculating motivation and updating model parameters."""
@@ -573,48 +500,33 @@ def process_agent(
     if motivation_model.parameter_mapper is not None:
         motivation_i = motivation_model.parameter_mapper.clamp_motivation(motivation_i)
     agent_value = motivation_model.motivation_strategy.get_value(agent_id=agent.id)
+    rank_abs, rank_q, payoff_p = motivation_model.motivation_strategy.get_rank_payoff(
+        agent.id
+    )
     # if motivation_i > 1:
     #     logging.error(
     #         f"Motivation too high. Count: {simulation.iteration_count()}. Agent: {agent.id}. Motivation: {motivation_i = }"
     #     )
 
-    v_0, time_gap = motivation_model.calculate_motivation_state(motivation_i, agent.id)
     if motivation_model.parameter_mapper is not None:
+        v_0, time_gap = motivation_model.calculate_motivation_state(
+            motivation_i, agent.id
+        )
         agent.model.strength_neighbor_repulsion = (
             motivation_model.parameter_mapper.strength_neighbor_repulsion(motivation_i)
         )
         agent.model.range_neighbor_repulsion = (
             motivation_model.parameter_mapper.range_neighbor_repulsion(motivation_i)
         )
-    else:
-        min_motivtion = _data["motivation_parameters"]["min_value_low"]
-        # Adjust agent parameters based on motivation
-        agent.model.strength_neighbor_repulsion = adjust_parameter_linearly(
-            motivation_i=motivation_i,
-            min_value=a_ped_min,
-            default_value=default_strength,
-            max_value=a_ped_max,
-            min_motivation=min_motivtion,
-        )
-        agent.model.range_neighbor_repulsion = adjust_parameter_linearly(
-            motivation_i=motivation_i,
-            min_value=d_ped_min,
-            default_value=default_range,
-            max_value=d_ped_max,
-            min_motivation=min_motivtion,
-        )
 
     do_adjust_buffer = True
     if "do_adjust_buffer" in _data["motivation_parameters"]:
         do_adjust_buffer = _data["motivation_parameters"]["do_adjust_buffer"]
 
-    if do_adjust_buffer:
-        if motivation_model.parameter_mapper is not None:
-            agent.model.agent_buffer = motivation_model.parameter_mapper.buffer(
-                motivation_i
-            )
-        else:
-            agent.model.agent_buffer = 0
+    if do_adjust_buffer and motivation_model.parameter_mapper is not None:
+        agent.model.agent_buffer = motivation_model.parameter_mapper.buffer(
+            motivation_i
+        )
 
     # Usage in the agent model
     do_adjust_radius = False
@@ -643,12 +555,17 @@ def process_agent(
 
         # 0,3
         # 1,6
-    agent.model.v0 = v_0
-    agent.model.time_gap = time_gap
+    if motivation_model.parameter_mapper is not None:
+        agent.model.desired_speed = v_0
+        agent.model.time_gap = time_gap
     # print(
     #     f"{agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {agent.model.v0 =}, {agent.model.time_gap = }"
     # )
-    return f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {position[0]:.2f}, {position[1]:.2f}, {agent_value:.2f}"
+    return (
+        f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, "
+        f"{motivation_i:.4f}, {position[0]:.4f}, {position[1]:.4f}, "
+        f"{agent_value:.4f}, {rank_abs}, {rank_q:.6f}, {payoff_p:.6f}, {rank_update_flag}"
+    )
 
 
 def run_simulation_loop(
@@ -658,12 +575,6 @@ def run_simulation_loop(
     motivation_model: mm.MotivationModel,
     simulation_time: float,
     open_door_time: float,
-    a_ped_min: float,
-    a_ped_max: float,
-    d_ped_min: float,
-    d_ped_max: float,
-    default_strength: float,
-    default_range: float,
     every_nth_frame: int,
     motivation_file: pathlib.Path,
     data: Dict[str, Any],
@@ -675,12 +586,6 @@ def run_simulation_loop(
         door (Point): The coordinates of the door.
         motivation_model (mm.MotivationModel): The motivation model used for agents.
         simulation_time (float): The total simulation time.
-        a_ped_min (float): Minimum value for adjusting agent strength based on motivation.
-        a_ped_max (float): Maximum value for adjusting agent strength based on motivation.
-        d_ped_min (float): Minimum value for adjusting agent range based on motivation.
-        d_ped_max (float): Maximum value for adjusting agent range based on motivation.
-        default_strength (float): Default strength value for agents.
-        default_range (float): Default range value for agents.
         every_nth_frame (int): Write to file every nth frame.
         motivation_file (pathlib.Path): Path to the motivation file to write.
 
@@ -690,6 +595,7 @@ def run_simulation_loop(
     buffer = []
 
     with open(motivation_file, "w", encoding="utf-8") as file_handle:
+        file_handle.write(MOTIVATION_CSV_HEADER + "\n")
         frame_to_write = 0
 
         while (
@@ -701,6 +607,16 @@ def run_simulation_loop(
                 logging.info(f"Open Door at {open_door_time} s")
                 simulation.switch_geometry(geometry_open)
 
+            active_positions = {
+                agent.id: cast(Point, agent.position) for agent in simulation.agents()
+            }
+            rank_updated = motivation_model.motivation_strategy.update_payoff_cache(
+                iteration_count=simulation.iteration_count(),
+                agent_positions=active_positions,
+                number_agents_in_simulation=simulation.agent_count(),
+            )
+            rank_update_flag = 1 if rank_updated else 0
+
             if simulation.iteration_count() % every_nth_frame == 0:
                 for agent in simulation.agents():
                     ret = process_agent(
@@ -708,14 +624,9 @@ def run_simulation_loop(
                         door,
                         simulation,
                         motivation_model,
-                        a_ped_min,
-                        a_ped_max,
-                        d_ped_min,
-                        d_ped_max,
-                        default_strength,
-                        default_range,
                         file_handle,
                         frame_to_write,
+                        rank_update_flag,
                         data,
                     )
                     buffer.append(ret)
@@ -729,7 +640,7 @@ def run_simulation_loop(
 
 def create_agent_parameters(
     _data: Dict[str, Any], simulation: jps.Simulation
-) -> Tuple[List[jps.CollisionFreeSpeedModelV2AgentParameters], List[List[Point]]]:
+) -> Tuple[List[jps.CollisionFreeSpeedModelV3AgentParameters], List[List[Point]]]:
     """Create the model parameters."""
     way_points = parse_way_points(_data)
     way_points = []
@@ -742,10 +653,9 @@ def create_agent_parameters(
     normal_time_gap = parse_normal_time_gap(_data)
     radius = parse_radius(_data)
     agent_buffer = _data["motivation_parameters"]["agent_buffer"]
+    theta_max_upper_bound = parse_theta_max_upper_bound(_data)
     agent_parameters_list = []
-    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
-        parse_velocity_init_parameters(_data)
-    )
+    a_ped, d_ped, a_wall, d_wall = parse_velocity_init_parameters(_data)
 
     if not wp_ids:
         stage_id = exit_ids[0]
@@ -753,11 +663,11 @@ def create_agent_parameters(
         stage_id = wp_ids[0]
 
     for exit_id in exit_ids:
-        agent_parameters = jps.CollisionFreeSpeedModelV2AgentParameters(
+        agent_parameters = jps.CollisionFreeSpeedModelV3AgentParameters(
             journey_id=journey_id,
             stage_id=stage_id,
             radius=radius,
-            v0=normal_v_0,
+            desired_speed=normal_v_0,
             time_gap=normal_time_gap,
             strength_neighbor_repulsion=a_ped,
             range_neighbor_repulsion=d_ped,
@@ -765,6 +675,10 @@ def create_agent_parameters(
             range_geometry_repulsion=d_wall,
             agent_buffer=agent_buffer,
         )
+        if hasattr(agent_parameters, "theta_max_upper_bound"):
+            setattr(agent_parameters, "theta_max_upper_bound", theta_max_upper_bound)
+        elif hasattr(agent_parameters, "thetaMaxUpperBound"):
+            setattr(agent_parameters, "thetaMaxUpperBound", theta_max_upper_bound)
         agent_parameters_list.append(agent_parameters)
 
     return (agent_parameters_list, destinations)
@@ -866,9 +780,6 @@ def init_and_run_simulation(
     simulation, geometry_open = init_simulation(
         _data, _time_step, _fps, _trajectory_path, from_file=True
     )
-    a_ped, d_ped, a_wall, d_wall, a_ped_min, a_ped_max, d_ped_min, d_ped_max = (
-        parse_velocity_init_parameters(_data)
-    )
     agent_parameters_list, exit_positions = create_agent_parameters(_data, simulation)
 
     positions, _ = get_agent_positions(_data)
@@ -891,12 +802,6 @@ def init_and_run_simulation(
         motivation_model=motivation_model,
         simulation_time=_simulation_time,
         open_door_time=_open_door_time,
-        a_ped_min=a_ped_min,
-        a_ped_max=a_ped_max,
-        d_ped_min=d_ped_min,
-        d_ped_max=d_ped_max,
-        default_strength=a_ped,
-        default_range=d_ped,
         every_nth_frame=_data["simulation_parameters"]["fps"],
         motivation_file=motivation_file,
         data=_data,
@@ -1105,13 +1010,16 @@ def main(
         logging.info(
             "No variations file provided. Running simulation with base configuration."
         )
+        motivation_mode = str(base_config["motivation_parameters"]["motivation_mode"])
 
         # Optionally, you can save a copy of the base configuration in the output directory.
-        config_file = output_dir / f"{inifile.stem}_base_{timestamp}.json"
+        config_file = output_dir / f"{inifile.stem}_{motivation_mode}_{timestamp}.json"
         with open(config_file, "w") as f:
             json.dump(base_config, f, indent=4)
 
-        output_path = output_dir / f"{inifile.stem}_base_{timestamp}.sqlite"
+        output_path = (
+            output_dir / f"{inifile.stem}_{motivation_mode}_{timestamp}.sqlite"
+        )
 
         try:
             evac_time, motivation_model = start_simulation(
@@ -1149,18 +1057,19 @@ def main(
             trajectory_data, walkable_area = read_sqlite_file(output_path)
             output_file = "jpsvis_files" + pathlib.Path(output_path).stem + ".txt"
             geometry_file = pathlib.Path(output_path).stem + "_geometry.xml"
+            logging.info(f"Using:  {geometry_file} ")
             v0_mean = 1.2
             export_trajectory_to_txt(
                 trajectory_data,
                 motivation_model,
                 output_file=output_file,
-                geometry_file="geometry.xml",
+                geometry_file=geometry_file,
                 df=10,
                 v0=v0_mean,
                 by_speed=True,
             )
 
-            # polygon_to_xml(walkable_area=walkable_area, output_file=geometry_file)
+            polygon_to_xml(walkable_area=walkable_area, output_file=geometry_file)
             print(">>> ", output_file)
             print(">>> ", geometry_file)
             command = ["/Applications/jpsvis.app/Contents/MacOS/jpsvis", output_file]

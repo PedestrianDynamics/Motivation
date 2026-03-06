@@ -28,6 +28,30 @@ from .plotting import (
 from .ui import ui_measurement_parameters
 
 
+def _read_motivation_csv(path: Path) -> pd.DataFrame:
+    """Read motivation csv with new or legacy schema."""
+    df = pd.read_csv(path)
+    if "frame" in df.columns and "motivation" in df.columns:
+        return df
+    # Legacy fallback without header
+    return pd.read_csv(
+        path,
+        names=[
+            "frame",
+            "id",
+            "time",
+            "motivation",
+            "x",
+            "y",
+            "value",
+            "rank_abs",
+            "rank_q",
+            "payoff_p",
+            "rank_update_flag",
+        ],
+    )
+
+
 def get_first_frame_pedestrian_passes_line(
     filename: Path, passing_line_y: float = 20.0
 ) -> Tuple[pd.DataFrame, Optional[int]]:
@@ -147,9 +171,7 @@ def handle_heatmap(walkable_area: pedpy.WalkableArea) -> None:
     )
 
     if selected_heatmap_file and Path(selected_heatmap_file).exists():
-        df = pd.read_csv(
-            selected_heatmap_file, names=["frame", "id", "time", "motivation", "x", "y"]
-        )
+        df = _read_motivation_csv(Path(selected_heatmap_file))
         if not df.empty:
             x_values = df["x"].to_numpy()
             y_values = df["y"].to_numpy()
@@ -384,11 +406,10 @@ def compute_speed_or_motivation(
         )
     else:
         # Read motivation from file
-        speed = pd.read_csv(
-            motivation_file,
-            names=[FRAME_COL, ID_COL, "time", "speed", "x", "y", "value"],
-            dtype={ID_COL: "int64", FRAME_COL: "int64"},
-        )
+        motivation = _read_motivation_csv(motivation_file)
+        speed = motivation.rename(columns={"motivation": "speed"})
+        speed[ID_COL] = speed[ID_COL].astype("int64")
+        speed[FRAME_COL] = speed[FRAME_COL].astype("int64")
     return speed
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, List
 
 MOTIVATION_LOW = 0.1
 MOTIVATION_NORMAL = 1.0
@@ -13,17 +13,15 @@ MOTIVATION_HIGH = 3.0
 FIT_EPSILON = 1e-6
 
 DEFAULT_MAPPING_BLOCK: Dict[str, Any] = {
-    "mapping_function": "gompertz",
+    "mapping_function": "logistic",
     "motivation_min": MOTIVATION_LOW,
-    "fit_mode": "exact_anchors",
     "inflection_target": 1.5,
     "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
     "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
     "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
-    "repulsion_strength_mode": "config_bounds",
-    "range_neighbor_repulsion_mode": "constant_d_ped",
-    "use_manual_gompertz_parameters": False,
-    "gompertz_parameters": {},
+    "strength_neighbor_repulsion_anchors": {"low": 0.0, "normal": 0.1, "high": 0.9},
+    "use_manual_logistic_k": False,
+    "logistic_k": {},
 }
 
 
@@ -44,12 +42,13 @@ def clamp_motivation(
 
 
 @dataclass(frozen=True)
-class GompertzParams:
-    """Parameters for y = A*exp(-B*exp(-C*x))."""
+class LogisticParams:
+    """Parameters for y = y_min + (y_max-y_min)/(1+exp(-k*(x-m0)))."""
 
-    a: float
-    b: float
-    c: float
+    y_min: float
+    y_max: float
+    k: float
+    m0: float
 
 
 @dataclass(frozen=True)
@@ -82,115 +81,101 @@ class AnchorValues:
         )
 
 
-def _gompertz_difference(
-    asymptote: float,
-    x1: float,
-    y1: float,
-    x2: float,
-    y2: float,
-    x3: float,
-    y3: float,
-) -> float:
-    """Return C12-C23 for a given asymptote A."""
-    s1 = -math.log(y1 / asymptote)
-    s2 = -math.log(y2 / asymptote)
-    s3 = -math.log(y3 / asymptote)
-
-    c12 = math.log(s1 / s2) / (x2 - x1)
-    c23 = math.log(s2 / s3) / (x3 - x2)
-    return c12 - c23
+def _logistic_fraction(x: float, k: float, m0: float) -> float:
+    return 1.0 / (1.0 + math.exp(-k * (x - m0)))
 
 
-def fit_gompertz_exact(points: Iterable[Tuple[float, float]]) -> GompertzParams:
-    """Fit Gompertz parameters exactly through three positive points."""
-    sorted_points = sorted((float(x), float(y)) for x, y in points)
-    if len(sorted_points) != 3:
-        raise ValueError("fit_gompertz_exact requires exactly 3 points.")
-
-    x1, y1 = sorted_points[0]
-    x2, y2 = sorted_points[1]
-    x3, y3 = sorted_points[2]
-
-    if x1 == x2 or x2 == x3 or x1 == x3:
-        raise ValueError("x values must be distinct.")
-
-    if y1 <= 0 or y2 <= 0 or y3 <= 0:
-        raise ValueError("y values must be strictly positive.")
-
-    a_min = max(y1, y2, y3) * (1 + 1e-9)
-    a_low = a_min
-    f_low = _gompertz_difference(a_low, x1, y1, x2, y2, x3, y3)
-
-    if abs(f_low) < 1e-12:
-        a_star = a_low
-    else:
-        a_high = a_low * 2.0
-        bracketed = False
-        for _ in range(120):
-            f_high = _gompertz_difference(a_high, x1, y1, x2, y2, x3, y3)
-            if abs(f_high) < 1e-12:
-                a_star = a_high
-                bracketed = True
-                break
-
-            if f_low * f_high < 0:
-                bracketed = True
-                break
-
-            a_high *= 2.0
-
-        if not bracketed:
-            raise ValueError("Could not bracket Gompertz asymptote for exact fit.")
-
-        if "a_star" not in locals():
-            for _ in range(200):
-                a_mid = 0.5 * (a_low + a_high)
-                f_mid = _gompertz_difference(a_mid, x1, y1, x2, y2, x3, y3)
-                if abs(f_mid) < 1e-14:
-                    a_low = a_high = a_mid
-                    break
-                if f_low * f_mid < 0:
-                    a_high = a_mid
-                else:
-                    a_low = a_mid
-                    f_low = f_mid
-
-            a_star = 0.5 * (a_low + a_high)
-
-    s1 = -math.log(y1 / a_star)
-    s2 = -math.log(y2 / a_star)
-    s3 = -math.log(y3 / a_star)
-
-    c12 = math.log(s1 / s2) / (x2 - x1)
-    c23 = math.log(s2 / s3) / (x3 - x2)
-    c_star = 0.5 * (c12 + c23)
-    b_star = s1 * math.exp(c_star * x1)
-
-    return GompertzParams(a=a_star, b=b_star, c=c_star)
+def _predict_y2_from_k(k: float, anchors: AnchorValues, m0: float) -> float:
+    x1, x2, x3 = MOTIVATION_LOW, MOTIVATION_NORMAL, MOTIVATION_HIGH
+    s1 = _logistic_fraction(x1, k, m0)
+    s2 = _logistic_fraction(x2, k, m0)
+    s3 = _logistic_fraction(x3, k, m0)
+    denom = s3 - s1
+    if abs(denom) < 1e-14:
+        raise ValueError("Degenerate logistic fit: s3 == s1.")
+    delta = (anchors.high - anchors.low) / denom
+    y_min = anchors.low - delta * s1
+    return y_min + delta * s2
 
 
-def evaluate_gompertz(x: float, params: GompertzParams) -> float:
-    """Evaluate Gompertz function."""
-    return params.a * math.exp(-params.b * math.exp(-params.c * x))
+def fit_logistic_from_anchors(
+    anchors: AnchorValues, inflection_target: float
+) -> LogisticParams:
+    """Fit logistic parameters from three anchors with fixed inflection target."""
+    if not anchors.is_monotonic():
+        raise ValueError(
+            "Anchor values must be monotonic for logistic mapping. "
+            f"Got low={anchors.low}, normal={anchors.normal}, high={anchors.high}."
+        )
+
+    if not (MOTIVATION_LOW <= inflection_target <= MOTIVATION_HIGH):
+        raise ValueError(
+            f"inflection_target must be in [{MOTIVATION_LOW}, {MOTIVATION_HIGH}]. "
+            f"Got {inflection_target}."
+        )
+
+    increasing = anchors.high >= anchors.low
+    k_candidates = [i * 0.05 for i in range(1, 2001)]
+    if not increasing:
+        k_candidates = [-k for k in k_candidates]
+
+    best_k = k_candidates[0]
+    best_err = float("inf")
+    for k in k_candidates:
+        y2 = _predict_y2_from_k(k, anchors, inflection_target)
+        err = abs(y2 - anchors.normal)
+        if err < best_err:
+            best_err = err
+            best_k = k
+
+    s1 = _logistic_fraction(MOTIVATION_LOW, best_k, inflection_target)
+    s3 = _logistic_fraction(MOTIVATION_HIGH, best_k, inflection_target)
+    denom = s3 - s1
+    delta = (anchors.high - anchors.low) / denom
+    y_min = anchors.low - delta * s1
+    y_max = y_min + delta
+    return LogisticParams(y_min=y_min, y_max=y_max, k=best_k, m0=inflection_target)
+
+
+def logistic_from_endpoints_and_k(
+    low: float, high: float, k: float, m0: float
+) -> LogisticParams:
+    """Build logistic params from low/high anchor endpoints and chosen k."""
+    s1 = _logistic_fraction(MOTIVATION_LOW, k, m0)
+    s3 = _logistic_fraction(MOTIVATION_HIGH, k, m0)
+    denom = s3 - s1
+    if abs(denom) < 1e-12:
+        raise ValueError("Manual k is too close to zero and causes degenerate mapping.")
+    delta = (high - low) / denom
+    y_min = low - delta * s1
+    y_max = y_min + delta
+    return LogisticParams(y_min=y_min, y_max=y_max, k=k, m0=m0)
+
+
+def evaluate_logistic(x: float, params: LogisticParams) -> float:
+    """Evaluate logistic function."""
+    s = _logistic_fraction(x, params.k, params.m0)
+    return params.y_min + (params.y_max - params.y_min) * s
 
 
 @dataclass
-class GompertzCurve:
-    """Gompertz curve with exact endpoint clamping."""
+class LogisticCurve:
+    """Logistic curve with endpoint clamping."""
 
     anchors: AnchorValues
     x_low: float = MOTIVATION_LOW
     x_normal: float = MOTIVATION_NORMAL
     x_high: float = MOTIVATION_HIGH
-    params: GompertzParams | None = None
-    _params: GompertzParams = field(init=False, repr=False)
+    params: LogisticParams | None = None
+    _params: LogisticParams = field(init=False, repr=False)
+    inflection_target: float = 1.5
 
     def __post_init__(self) -> None:
         if self.params is not None:
             self._params = self.params
             return
 
-        self._params = estimate_gompertz_from_anchors(self.anchors)
+        self._params = fit_logistic_from_anchors(self.anchors, self.inflection_target)
 
     def evaluate(self, x: float) -> float:
         """Evaluate with hard endpoint clamping."""
@@ -199,67 +184,10 @@ class GompertzCurve:
         if x >= self.x_high:
             return self.anchors.high
 
-        y = evaluate_gompertz(x, self._params)
-        y_min = min(self.anchors.low, self.anchors.high)
-        y_max = max(self.anchors.low, self.anchors.high)
+        y = evaluate_logistic(x, self._params)
+        y_min = min(self.anchors.low, self.anchors.normal, self.anchors.high)
+        y_max = max(self.anchors.low, self.anchors.normal, self.anchors.high)
         return clamp(y, y_min, y_max)
-
-
-def estimate_gompertz_from_anchors(anchors: AnchorValues) -> GompertzParams:
-    """Estimate Gompertz params from low/normal/high anchors."""
-    if not anchors.is_monotonic():
-        raise ValueError(
-            "Anchor values must be monotonic for Gompertz mapping. "
-            f"Got low={anchors.low}, normal={anchors.normal}, high={anchors.high}."
-        )
-
-    fit_points = [
-        (MOTIVATION_LOW, max(anchors.low, FIT_EPSILON)),
-        (MOTIVATION_NORMAL, max(anchors.normal, FIT_EPSILON)),
-        (MOTIVATION_HIGH, max(anchors.high, FIT_EPSILON)),
-    ]
-    return fit_gompertz_exact(fit_points)
-
-
-def estimate_gompertz_sigmoid_preferred(
-    anchors: AnchorValues, inflection_target: float
-) -> GompertzParams:
-    """Approximate Gompertz fit with an inflection target in the plotted range."""
-    if not anchors.is_monotonic():
-        raise ValueError(
-            "Anchor values must be monotonic for Gompertz mapping. "
-            f"Got low={anchors.low}, normal={anchors.normal}, high={anchors.high}."
-        )
-
-    x_vals = [MOTIVATION_LOW, MOTIVATION_NORMAL, MOTIVATION_HIGH]
-    y_vals = [anchors.low, anchors.normal, anchors.high]
-
-    increasing = anchors.high >= anchors.low
-    c_sign = 1.0 if increasing else -1.0
-    best: GompertzParams | None = None
-    best_err = float("inf")
-    max_y = max(y_vals)
-
-    for c_mag in [0.05 + i * 0.01 for i in range(1, 501)]:
-        c = c_sign * c_mag
-        # x_inflection = ln(B) / C => choose B from target inflection.
-        b = math.exp(c * inflection_target)
-        k_vals = [math.exp(-b * math.exp(-c * x)) for x in x_vals]
-        denom = sum(k * k for k in k_vals)
-        if denom <= 0:
-            continue
-        a = sum(k * y for k, y in zip(k_vals, y_vals)) / denom
-        a = max(a, max_y * (1 + 1e-9))
-
-        preds = [a * k for k in k_vals]
-        err = sum((p - y) ** 2 for p, y in zip(preds, y_vals))
-        if err < best_err:
-            best_err = err
-            best = GompertzParams(a=a, b=b, c=c)
-
-    if best is None:
-        raise ValueError("Could not estimate sigmoid-preferred Gompertz parameters.")
-    return best
 
 
 def merge_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -268,23 +196,22 @@ def merge_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]
     for key in (
         "mapping_function",
         "motivation_min",
-        "fit_mode",
         "inflection_target",
-        "repulsion_strength_mode",
-        "range_neighbor_repulsion_mode",
-        "use_manual_gompertz_parameters",
+        "use_manual_logistic_k",
     ):
         if key in motivation_parameters:
             merged[key] = motivation_parameters[key]
 
-    for key in ("desired_speed_anchors", "time_gap_anchors", "buffer_anchors"):
+    for key in (
+        "desired_speed_anchors",
+        "time_gap_anchors",
+        "buffer_anchors",
+        "strength_neighbor_repulsion_anchors",
+    ):
         if isinstance(motivation_parameters.get(key), dict):
             merged[key].update(motivation_parameters[key])
-
-    if isinstance(motivation_parameters.get("gompertz_parameters"), dict):
-        merged["gompertz_parameters"] = copy.deepcopy(
-            motivation_parameters["gompertz_parameters"]
-        )
+    if isinstance(motivation_parameters.get("logistic_k"), dict):
+        merged["logistic_k"] = copy.deepcopy(motivation_parameters["logistic_k"])
 
     return merged
 
@@ -302,24 +229,18 @@ class MotivationParameterMapper:
 
     mapping_block: Dict[str, Any]
     normal_v_0: float
-    strength_default: float
-    strength_min: float
-    strength_max: float
     range_default: float
 
     def __post_init__(self) -> None:
         block = merge_mapping_block(self.mapping_block)
         self.mapping_function = str(block["mapping_function"])
+        if self.mapping_function != "logistic":
+            raise ValueError(
+                f"Unsupported mapping_function '{self.mapping_function}'. Use 'logistic'."
+            )
         self.motivation_min = float(block["motivation_min"])
-        self.fit_mode = str(block["fit_mode"])
         self.inflection_target = float(block["inflection_target"])
-        self.repulsion_strength_mode = str(block["repulsion_strength_mode"])
-        self.range_neighbor_repulsion_mode = str(
-            block["range_neighbor_repulsion_mode"]
-        )
-        self.use_manual_gompertz_parameters = bool(
-            block["use_manual_gompertz_parameters"]
-        )
+        self.use_manual_logistic_k = bool(block["use_manual_logistic_k"])
 
         self.desired_speed_anchors = AnchorValues.from_dict(
             block["desired_speed_anchors"], DEFAULT_MAPPING_BLOCK["desired_speed_anchors"]
@@ -330,102 +251,87 @@ class MotivationParameterMapper:
         self.buffer_anchors = AnchorValues.from_dict(
             block["buffer_anchors"], DEFAULT_MAPPING_BLOCK["buffer_anchors"]
         )
-        self.strength_anchors = AnchorValues(
-            low=float(self.strength_min),
-            normal=float(self.strength_default),
-            high=float(self.strength_max),
+        self.strength_anchors = AnchorValues.from_dict(
+            block["strength_neighbor_repulsion_anchors"],
+            DEFAULT_MAPPING_BLOCK["strength_neighbor_repulsion_anchors"],
         )
 
-        self.estimated_gompertz_parameters = {
-            "desired_speed": self._estimate_curve_params(self.desired_speed_anchors),
-            "time_gap": self._estimate_curve_params(self.time_gap_anchors),
-            "buffer": self._estimate_curve_params(self.buffer_anchors),
-            "strength_neighbor_repulsion": self._estimate_curve_params(
-                self.strength_anchors
+        self.logistic_parameters = {
+            "desired_speed": fit_logistic_from_anchors(
+                self.desired_speed_anchors, self.inflection_target
+            ),
+            "time_gap": fit_logistic_from_anchors(
+                self.time_gap_anchors, self.inflection_target
+            ),
+            "buffer": fit_logistic_from_anchors(
+                self.buffer_anchors, self.inflection_target
+            ),
+            "strength_neighbor_repulsion": fit_logistic_from_anchors(
+                self.strength_anchors,
+                self.inflection_target,
             ),
         }
+        if self.use_manual_logistic_k:
+            manual_k = block.get("logistic_k", {})
+            self.logistic_parameters = self._build_manual_k_params(manual_k)
 
-        manual_parameters = block.get("gompertz_parameters", {})
-        self.gompertz_parameters = self._resolve_active_parameters(manual_parameters)
-        self.mapping_block["gompertz_parameters"] = self.gompertz_parameters_as_dict()
-        self.mapping_block["use_manual_gompertz_parameters"] = (
-            self.use_manual_gompertz_parameters
-        )
-        self.mapping_block["fit_mode"] = self.fit_mode
         self.mapping_block["inflection_target"] = self.inflection_target
+        self.mapping_block["use_manual_logistic_k"] = self.use_manual_logistic_k
+        self.mapping_block["logistic_k"] = {
+            name: params.k for name, params in self.logistic_parameters.items()
+        }
 
-        self.speed_curve = GompertzCurve(
-            self.desired_speed_anchors, params=self.gompertz_parameters["desired_speed"]
+        self.speed_curve = LogisticCurve(
+            self.desired_speed_anchors,
+            params=self.logistic_parameters["desired_speed"],
+            inflection_target=self.inflection_target,
         )
-        self.time_gap_curve = GompertzCurve(
-            self.time_gap_anchors, params=self.gompertz_parameters["time_gap"]
+        self.time_gap_curve = LogisticCurve(
+            self.time_gap_anchors,
+            params=self.logistic_parameters["time_gap"],
+            inflection_target=self.inflection_target,
         )
-        self.buffer_curve = GompertzCurve(
-            self.buffer_anchors, params=self.gompertz_parameters["buffer"]
+        self.buffer_curve = LogisticCurve(
+            self.buffer_anchors,
+            params=self.logistic_parameters["buffer"],
+            inflection_target=self.inflection_target,
         )
-        self.strength_curve = GompertzCurve(
+        self.strength_curve = LogisticCurve(
             self.strength_anchors,
-            params=self.gompertz_parameters["strength_neighbor_repulsion"],
+            params=self.logistic_parameters["strength_neighbor_repulsion"],
+            inflection_target=self.inflection_target,
         )
 
-    def _resolve_active_parameters(
-        self, manual_parameters: Dict[str, Any]
-    ) -> Dict[str, GompertzParams]:
-        """Use manual parameters when enabled, otherwise use estimated values."""
-        if not self.use_manual_gompertz_parameters:
-            return copy.deepcopy(self.estimated_gompertz_parameters)
-
-        expected = (
+    def _build_manual_k_params(
+        self, manual_k: Dict[str, Any]
+    ) -> Dict[str, LogisticParams]:
+        keys = (
             "desired_speed",
             "time_gap",
             "buffer",
             "strength_neighbor_repulsion",
         )
-        active: Dict[str, GompertzParams] = {}
-        for name in expected:
-            params = manual_parameters.get(name)
-            if not isinstance(params, dict):
+        anchors_by_key = {
+            "desired_speed": self.desired_speed_anchors,
+            "time_gap": self.time_gap_anchors,
+            "buffer": self.buffer_anchors,
+            "strength_neighbor_repulsion": self.strength_anchors,
+        }
+        params: Dict[str, LogisticParams] = {}
+        for key in keys:
+            if key not in manual_k:
                 raise ValueError(
-                    f"Missing manual Gompertz parameters for '{name}'. "
-                    "Disable manual mode or provide a,b,c."
+                    f"Missing manual logistic k for '{key}'. "
+                    "Disable manual mode or provide all k values."
                 )
-            try:
-                active[name] = GompertzParams(
-                    a=float(params["a"]),
-                    b=float(params["b"]),
-                    c=float(params["c"]),
-                )
-            except Exception as exc:
-                raise ValueError(
-                    f"Invalid manual Gompertz parameters for '{name}'. Expected numeric a,b,c."
-                ) from exc
-        return active
-
-    def _estimate_curve_params(self, anchors: AnchorValues) -> GompertzParams:
-        """Estimate Gompertz params according to fit mode."""
-        if self.fit_mode == "exact_anchors":
-            return estimate_gompertz_from_anchors(anchors)
-        if self.fit_mode == "sigmoid_preferred":
-            return estimate_gompertz_sigmoid_preferred(
-                anchors, inflection_target=self.inflection_target
+            k = float(manual_k[key])
+            params[key] = logistic_from_endpoints_and_k(
+                low=anchors_by_key[key].low,
+                high=anchors_by_key[key].high,
+                k=k,
+                m0=self.inflection_target,
             )
-        raise ValueError(
-            f"Unknown fit_mode '{self.fit_mode}'. Use 'exact_anchors' or 'sigmoid_preferred'."
-        )
-
-    def gompertz_parameters_as_dict(self) -> Dict[str, Dict[str, float]]:
-        """Serialize active Gompertz parameters."""
-        return {
-            name: {"a": p.a, "b": p.b, "c": p.c}
-            for name, p in self.gompertz_parameters.items()
-        }
-
-    def estimated_gompertz_parameters_as_dict(self) -> Dict[str, Dict[str, float]]:
-        """Serialize estimated Gompertz parameters."""
-        return {
-            name: {"a": p.a, "b": p.b, "c": p.c}
-            for name, p in self.estimated_gompertz_parameters.items()
-        }
+        return params
 
     def clamp_motivation(self, motivation: float) -> float:
         """Clamp motivation according to configured lower bound and physical upper bound."""
@@ -442,41 +348,26 @@ class MotivationParameterMapper:
     def desired_speed(self, motivation: float) -> float:
         """Desired speed mapping."""
         m = self.clamp_motivation(motivation)
-        if self.mapping_function == "gompertz":
-            return self.speed_curve.evaluate(m)
-        return self.normal_v_0 * m
+        return self.speed_curve.evaluate(m)
 
     def time_gap(self, motivation: float, normal_time_gap: float) -> float:
         """Time gap mapping."""
         m = self.clamp_motivation(motivation)
-        if self.mapping_function == "gompertz":
-            return self.time_gap_curve.evaluate(m)
-        return normal_time_gap / m
+        return self.time_gap_curve.evaluate(m)
 
     def buffer(self, motivation: float) -> float:
         """Buffer mapping."""
         m = self.clamp_motivation(motivation)
-        if self.mapping_function == "gompertz":
-            return self.buffer_curve.evaluate(m)
-        t = (m - 0.5) / (3.0 - 0.5)
-        t = clamp(t, 0.0, 1.0)
-        return 1.5 - (1.5 - 0.1) * t
+        return self.buffer_curve.evaluate(m)
 
     def strength_neighbor_repulsion(self, motivation: float) -> float:
         """Neighbor repulsion strength mapping."""
         m = self.clamp_motivation(motivation)
-        if self.mapping_function == "gompertz":
-            if self.repulsion_strength_mode == "config_bounds":
-                return self.strength_curve.evaluate(m)
-            return self.strength_default
-        return self.strength_min + (self.strength_max - self.strength_min) * 0.5 * (
-            m - 1.0
-        )
+        return self.strength_curve.evaluate(m)
 
     def range_neighbor_repulsion(self, motivation: float) -> float:
         """Neighbor repulsion range mapping."""
-        if self.range_neighbor_repulsion_mode == "constant_d_ped":
-            return self.range_default
+        _ = motivation
         return self.range_default
 
     def sample_curve_data(
@@ -510,7 +401,7 @@ def plot_parameter_mappings(
     import matplotlib.pyplot as plt
 
     data = mapper.sample_curve_data(normal_time_gap=normal_time_gap, num_points=300)
-    fig, axes = plt.subplots(3, 2, figsize=(10, 10), constrained_layout=True)
+    fig, axes = plt.subplots(3, 2, figsize=(10, 10))
 
     plots = [
         ("desired_speed", "Desired speed", "m/s"),
@@ -519,19 +410,53 @@ def plot_parameter_mappings(
         ("strength_neighbor_repulsion", "Strength neighbor repulsion", "-"),
         ("range_neighbor_repulsion", "Range neighbor repulsion", "m"),
     ]
+    anchors_by_key = {
+        "desired_speed": mapper.desired_speed_anchors,
+        "time_gap": mapper.time_gap_anchors,
+        "buffer": mapper.buffer_anchors,
+        "strength_neighbor_repulsion": mapper.strength_anchors,
+        "range_neighbor_repulsion": AnchorValues(
+            low=mapper.range_default,
+            normal=mapper.range_default,
+            high=mapper.range_default,
+        ),
+    }
 
     axes_flat = axes.flatten()
     for idx, (key, title, unit) in enumerate(plots):
         ax = axes_flat[idx]
         ax.plot(data["motivation"], data[key], lw=2)
-        ax.grid(alpha=0.3)
         ax.set_title(title)
         ax.set_xlabel("Motivation")
         ax.set_ylabel(unit)
         ax.axvline(MOTIVATION_LOW, color="gray", ls="--", lw=0.8)
         ax.axvline(MOTIVATION_NORMAL, color="gray", ls="--", lw=0.8)
         ax.axvline(MOTIVATION_HIGH, color="gray", ls="--", lw=0.8)
+        anchors = anchors_by_key[key]
+        for y in (anchors.low, anchors.normal, anchors.high):
+            ax.axhline(y, color="gray", ls=":", lw=0.8, alpha=0.8)
+        if key in mapper.logistic_parameters:
+            m0 = mapper.logistic_parameters[key].m0
+            if key == "desired_speed":
+                y0 = mapper.desired_speed(m0)
+            elif key == "time_gap":
+                y0 = mapper.time_gap(m0, normal_time_gap)
+            elif key == "buffer":
+                y0 = mapper.buffer(m0)
+            else:
+                y0 = mapper.strength_neighbor_repulsion(m0)
+            ax.axvline(m0, color="tab:red", ls=":", lw=1.0, alpha=0.9)
+            ax.scatter([m0], [y0], color="tab:red", s=28, zorder=5)
+            ax.text(
+                m0,
+                y0,
+                f"  m0={m0:.2f}",
+                fontsize=8,
+                va="bottom",
+                color="tab:red",
+            )
 
     axes_flat[-1].axis("off")
     fig.suptitle("Active Motivation Parameter Mapping")
+    fig.tight_layout(rect=[0, 0.03, 1, 0.97])
     return fig

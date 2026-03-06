@@ -32,8 +32,9 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
         A dictionary of extracted and converted motivation parameters.
     """
     params = data["motivation_parameters"]
+    payoff = params["payoff"]
     extracted_params = {
-        "strategy": params["motivation_strategy"],
+        "strategy": params["motivation_mode"],
         "width": float(params["width"]),
         "height": float(params["height"]),
         "max_value_high": float(params["max_value_high"]),
@@ -42,29 +43,20 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
         "min_value_low": float(params["min_value_low"]),
         "number_high_value": int(params["number_high_value"]),
         "seed": params["seed"],
-        "competition_max": params["competition_max"],
-        "competition_decay_reward": params["competition_decay_reward"],
-        "percent": params["percent"],
+        "payoff_k": float(payoff["k"]),
+        "payoff_q0": float(payoff["q0"]),
+        "rank_tie_tolerance_m": float(payoff["rank_tie_tolerance_m"]),
+        "payoff_update_interval_s": float(payoff["update_interval_s"]),
     }
     mapping_block = mmap.ensure_mapping_block(params)
     extracted_params["mapping_block"] = mapping_block
     extracted_params["normal_v_0"] = parse_normal_v_0(data)
     extracted_params["normal_time_gap"] = parse_normal_time_gap(data)
+    extracted_params["time_step"] = parse_time_step(data)
     extracted_params["motivation_doors"] = parse_motivation_doors(data)
-    (
-        a_ped,
-        d_ped,
-        _a_wall,
-        _d_wall,
-        a_ped_min,
-        a_ped_max,
-        _d_ped_min,
-        _d_ped_max,
-    ) = parse_velocity_init_parameters(data)
+    a_ped, d_ped, _a_wall, _d_wall = parse_velocity_init_parameters(data)
     extracted_params["a_ped"] = a_ped
     extracted_params["d_ped"] = d_ped
-    extracted_params["a_ped_min"] = a_ped_min
-    extracted_params["a_ped_max"] = a_ped_max
     # calculate positions
     positions, num_agents = get_agent_positions(data)
     extracted_params["number_agents"] = num_agents
@@ -107,7 +99,7 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
                 msg,
             )
         except ValueError as exc:
-            st.error(f"Gompertz configuration error: {exc}")
+            st.error(f"Logistic configuration error: {exc}")
             return
 
     msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
@@ -123,11 +115,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
         An instance of a motivation strategy.
     """
     strategy = params["strategy"]
-    if strategy == "default":
-        return mm.DefaultMotivationStrategy(
-            width=params["width"], height=params["height"]
-        )
-    elif strategy in ["EVC", "EC-V"]:
+    if strategy in ["E", "V", "P", "PVE", "NO_MOTIVATION"]:
         door_point1 = (
             params["motivation_doors"][0][0][0],
             params["motivation_doors"][0][0][1],
@@ -139,7 +127,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
         x_door = 0.5 * (door_point1[0] + door_point2[0])
         y_door = 0.5 * (door_point1[1] + door_point2[1])
         motivation_door_center = (x_door, y_door)
-        return mm.EVCStrategy(
+        strategy_obj = mm.EVCStrategy(
             width=params["width"],
             height=params["height"],
             max_reward=params["number_agents"],
@@ -153,12 +141,27 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
             nagents=params["number_agents"],
             agent_positions=params["positions"],
             motivation_door_center=motivation_door_center,
-            competition_decay_reward=params["competition_decay_reward"],
-            competition_max=params["competition_max"],
-            percent=params["percent"],
-            evc=strategy == "EVC",
+            motivation_mode=strategy,
+            payoff_k=params["payoff_k"],
+            payoff_q0=params["payoff_q0"],
+            rank_tie_tolerance_m=params["rank_tie_tolerance_m"],
+            payoff_update_interval_s=params["payoff_update_interval_s"],
             motivation_min=float(params["mapping_block"]["motivation_min"]),
         )
+        strategy_obj.configure_payoff_update_interval(
+            time_step=float(params["time_step"])
+        )
+        strategy_obj.update_payoff_cache(
+            iteration_count=0,
+            agent_positions={
+                agent_id: pos
+                for agent_id, pos in zip(
+                    list(range(params["number_agents"])), params["positions"]
+                )
+            },
+            number_agents_in_simulation=int(params["number_agents"]),
+        )
+        return strategy_obj
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
 
@@ -170,18 +173,17 @@ def plot_motivation_model(params: Dict[str, Any]) -> None:
         params: A dictionary of parameters required for creating and plotting the motivation model.
     """
     strategy = create_motivation_strategy(params)
-    try:
-        mapper = mmap.MotivationParameterMapper(
-            mapping_block=params["mapping_block"],
-            normal_v_0=params["normal_v_0"],
-            strength_default=params["a_ped"],
-            strength_min=params["a_ped_min"],
-            strength_max=params["a_ped_max"],
-            range_default=params["d_ped"],
-        )
-    except ValueError as exc:
-        st.error(f"Gompertz configuration error: {exc}")
-        return
+    mapper = None
+    if params["strategy"] != "NO_MOTIVATION":
+        try:
+            mapper = mmap.MotivationParameterMapper(
+                mapping_block=params["mapping_block"],
+                normal_v_0=params["normal_v_0"],
+                range_default=params["d_ped"],
+            )
+        except ValueError as exc:
+            st.error(f"Logistic configuration error: {exc}")
+            return
 
     motivation_model = mm.MotivationModel(
         door_point1=(
