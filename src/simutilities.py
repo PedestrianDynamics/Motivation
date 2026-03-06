@@ -209,6 +209,6 @@ def plot_motivation_model(params: Dict[str, Any]) -> None:
                 normal_time_gap=params["normal_time_gap"],
             )
         )
-    with st.expander("Plot model", expanded=False):
+    with st.expander("Plot model", expanded=True):
         for fig in figs:
             st.pyplot(fig)

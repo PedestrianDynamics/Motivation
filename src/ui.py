@@ -13,7 +13,6 @@ from .utilities import delete_txt_files, load_json, save_json
 
 TAB_INFO = [
     {"name": "Simulation", "icon": "info-square"},
-    {"name": "Analysis", "icon": "bar-chart-line"},
     {"name": "Documentation", "icon": "book"},
 ]
 
