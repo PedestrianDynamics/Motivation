@@ -151,6 +151,7 @@ def export_trajectory_to_txt(
     motivation_model: mm.MotivationModel,
     output_file="output.txt",
     geometry_file="geometry.xml",
+    motivation_csv: pathlib.Path | None = None,
     df=10,
     v0=1.2,
     radius=0.18,
@@ -174,14 +175,10 @@ def export_trajectory_to_txt(
         # Sort by frame within each trajectory
         group = group.sort_values(by="frame")
         traj = group[["x", "y"]].values
-        agent_value = motivation_model.motivation_strategy.get_value(agent_id=traj_id)
 
         # Calculate speed for this trajectory
         speed = compute_speed(traj, df, fps)
-        # if agent_value > 1.0:#green
-        values.extend([-1] * len(speed))
-        # else:#blue
-        #    values.extend([10]*len(speed))
+        values.extend([0.0] * len(speed))
 
         # Store speed and corresponding frame indices
         speeds.extend(speed)
@@ -194,9 +191,42 @@ def export_trajectory_to_txt(
         df_data.loc[frame_indices, "speed"] = speed_series
         df_data["color"] = (df_data["speed"] / v0 * 255).clip(0, 255).astype(int)
     else:
-        value_series = pd.Series(values, index=frame_indices)
-        df_data.loc[frame_indices, "value"] = value_series
-        df_data["color"] = df_data["value"]
+        if motivation_csv is not None and motivation_csv.exists():
+            motivation_df = pd.read_csv(motivation_csv)
+            if not ("frame" in motivation_df.columns and "id" in motivation_df.columns):
+                motivation_df = pd.read_csv(
+                    motivation_csv,
+                    names=[
+                        "frame",
+                        "id",
+                        "time",
+                        "motivation",
+                        "x",
+                        "y",
+                        "value",
+                        "rank_abs",
+                        "rank_q",
+                        "payoff_p",
+                        "rank_update_flag",
+                    ],
+                )
+            motivation_slice = motivation_df[["frame", "id", "motivation"]].copy()
+            df_data = df_data.merge(
+                motivation_slice,
+                on=["frame", "id"],
+                how="left",
+                suffixes=("", "_m"),
+            )
+            if "motivation_m" in df_data.columns:
+                df_data["motivation"] = df_data["motivation"].fillna(
+                    df_data["motivation_m"]
+                )
+                df_data.drop(columns=["motivation_m"], inplace=True)
+            df_data["motivation"] = df_data["motivation"].fillna(0.0)
+        else:
+            value_series = pd.Series(values, index=frame_indices)
+            df_data.loc[frame_indices, "motivation"] = value_series
+        df_data["color"] = (df_data["motivation"] * 255).clip(0, 255).astype(int)
 
     # Write the formatted data to the output file
     with open(output_file, "w") as f:
@@ -430,52 +460,6 @@ def init_simulation(
     return simulation, geometry_open
 
 
-def adjust_radius_with_distance(
-    position_y: float,
-    motivation_i: float,
-    min_value: float = 0.1,
-    max_value: float = 0.5,
-    y_min: float = -1,  # Start reducing radius from this y position
-    y_max: float = 19,  # Exit position where radius should be min_value
-    min_motivation: float = 1,
-) -> float:
-    """
-    Adjust the radius based on agent's motivation level and distance to exit.
-
-    :param position_y: The pedestrian's current y position.
-    :param motivation_i: The agent's motivation level (1 <= motivation_i <= 3).
-    :param min_value: Minimum radius near the exit (y_max).
-    :param max_value: Maximum radius when far from the exit.
-    :param y_min: Position where radius starts decreasing.
-    :param y_max: Position where radius is minimal.
-    :return: Adjusted radius.
-    """
-    max_motivation = 3.6 / 1.2
-    # Ensure position_y is within the defined range
-    position_y = max(min(position_y, y_max), y_min)
-
-    # Compute distance-based factor (1 when far, 0 when at exit)
-    distance_factor = (y_max - position_y) / (y_max - y_min)
-
-    # Compute motivation-dependent base radius (inverse relationship)
-    motivation_radius = max_value - (max_value - min_value) * (
-        motivation_i - min_motivation
-    ) / (max_motivation - min_motivation)
-    # print("-----------------------")
-    # print(f"{y_min = }, {y_max = }")
-    # print(f"{min_value = }, {max_value = }")
-    # print(
-    #     f"{position_y = }, {motivation_i = }, {min_motivation = }, {motivation_radius = } "
-    # )
-    # print(
-    #     f"{min_value = }, {motivation_radius = }, {distance_factor = }, --> {min_value + (motivation_radius - min_value) * distance_factor}"
-    # )
-    # input()
-
-    # Scale radius based on distance factor
-    return min_value + (motivation_radius - min_value) * distance_factor
-
-
 def process_agent(
     agent: jps.Agent,
     door: Point,
@@ -528,30 +512,7 @@ def process_agent(
             motivation_i
         )
 
-    # Usage in the agent model
-    do_adjust_radius = False
-    if "do_adjust_radius" in _data["motivation_parameters"]:
-        do_adjust_radius = _data["motivation_parameters"]["do_adjust_radius"]
-
-    if do_adjust_radius:  # Adjust radius based on distance to exit
-        min_value_y = _data["motivation_parameters"]["adjust_radius_y_min"]
-        max_value_y = _data["motivation_parameters"]["adjust_radius_y_max"]
-        min_value_radius = _data["motivation_parameters"]["min_radius"]
-        max_value_radius = _data["motivation_parameters"]["max_radius"]
-        min_motivation = _data["motivation_parameters"]["min_value_low"]
-        agent.model.radius = adjust_radius_with_distance(
-            position_y=position[1],
-            motivation_i=motivation_i,
-            min_value=min_value_radius,  # Smallest radius near the exit
-            max_value=max_value_radius,  # Largest radius when far away
-            y_min=min_value_y,  # Start decreasing radius here
-            y_max=max_value_y,  # Minimum radius at exit
-            min_motivation=min_motivation,
-        )
-    else:
-        agent.model.radius = _data["velocity_init_parameters"][
-            "radius"
-        ]  # Fixed radius at the exit
+    agent.model.radius = _data["velocity_init_parameters"]["radius"]
 
         # 0,3
         # 1,6
@@ -1057,6 +1018,7 @@ def main(
             trajectory_data, walkable_area = read_sqlite_file(output_path)
             output_file = "jpsvis_files" + pathlib.Path(output_path).stem + ".txt"
             geometry_file = pathlib.Path(output_path).stem + "_geometry.xml"
+            motivation_csv = output_path.with_name(output_path.stem + "_motivation.csv")
             logging.info(f"Using:  {geometry_file} ")
             v0_mean = 1.2
             export_trajectory_to_txt(
@@ -1064,9 +1026,10 @@ def main(
                 motivation_model,
                 output_file=output_file,
                 geometry_file=geometry_file,
+                motivation_csv=motivation_csv,
                 df=10,
                 v0=v0_mean,
-                by_speed=True,
+                by_speed=False,
             )
 
             polygon_to_xml(walkable_area=walkable_area, output_file=geometry_file)

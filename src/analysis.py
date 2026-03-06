@@ -452,6 +452,21 @@ def plot_distance_to_entrance(
     unit_text: str,
 ) -> matplotlib_fig:
     """Plot the distance to entrance with speed or motivation coloring."""
+    if df_time_distance.empty or speed.empty:
+        fig, ax = plt.subplots()
+        ax.set_title("Distance to entrance/Time to entrance")
+        ax.set_xlabel("Distance / m")
+        ax.set_ylabel("Time / s")
+        ax.text(
+            0.5,
+            0.5,
+            "No trajectory data available for selected input.",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
+        return fig
+
     norm = Normalize(speed["speed"].min(), speed["speed"].max())
     # cmap = cm.jet
     cmap = cm.get_cmap("jet")
@@ -460,8 +475,11 @@ def plot_distance_to_entrance(
 
     # Plot each trajectory
     trajectory_ids = df_time_distance[ID_COL].unique()
+    line = None
     for traj_id in trajectory_ids:
         traj_data = df_time_distance[df_time_distance[ID_COL] == traj_id]
+        if len(traj_data) < 2:
+            continue
         speed_id = speed[speed[ID_COL] == traj_id]["speed"].to_numpy()
         points = traj_data[["distance", "time_seconds"]].to_numpy()
         segments = [
@@ -484,8 +502,9 @@ def plot_distance_to_entrance(
     )
 
     # Add colorbar and labels
-    cbar = fig.colorbar(line, ax=ax)
-    cbar.set_label(unit_text)
+    if line is not None:
+        cbar = fig.colorbar(line, ax=ax)
+        cbar.set_label(unit_text)
 
     # Set plot properties
     ax.autoscale()
@@ -495,7 +514,8 @@ def plot_distance_to_entrance(
     ax.set_xlabel("Distance / m")
     ax.set_ylabel("Time / s")
     ax.set_ylim(top=yaxis_max)
-    line.set_clim(vmax=colorbar_max)
+    if line is not None:
+        line.set_clim(vmax=colorbar_max)
 
     return fig
 
