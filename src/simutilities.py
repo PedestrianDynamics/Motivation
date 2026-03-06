@@ -1,25 +1,65 @@
 """Utilities for simulation."""
 
-import json
+import csv
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import streamlit as st
-import logging
-from simulation import get_agent_positions, init_and_run_simulation
 from src import motivation_model as mm
 from src import motivation_mapping as mmap
 from src.inifile_parser import (
-    parse_fps,
     parse_motivation_doors,
     parse_motivation_strategy,
     parse_normal_time_gap,
     parse_normal_v_0,
     parse_number_agents,
-    parse_simulation_time,
     parse_time_step,
     parse_velocity_init_parameters,
 )
+
+Point = Tuple[float, float]
+
+
+def _preview_agent_positions(data: Dict[str, Any]) -> Tuple[List[Point], int]:
+    """Load deterministic preview positions for app plots without simulation runtime."""
+    n_agents = parse_number_agents(data)
+    init_file = data.get("init_trajectories_file")
+    if init_file:
+        path = Path(str(init_file))
+        if path.exists():
+            with path.open("r", encoding="utf8") as f:
+                reader = csv.reader(f, delimiter="\t")
+                rows: List[Tuple[int, int, float, float]] = []
+                for row in reader:
+                    if not row or row[0].startswith("#"):
+                        continue
+                    if len(row) < 4:
+                        continue
+                    try:
+                        pid = int(float(row[0]))
+                        frame = int(float(row[1]))
+                        x = float(row[2])
+                        y = float(row[3])
+                    except ValueError:
+                        continue
+                    rows.append((pid, frame, x, y))
+            if rows:
+                first_frame = min(r[1] for r in rows)
+                seen: set[int] = set()
+                positions: List[Point] = []
+                for pid, frame, x, y in sorted(rows, key=lambda r: (r[1], r[0])):
+                    if frame != first_frame or pid in seen:
+                        continue
+                    seen.add(pid)
+                    positions.append((x, y))
+                    if len(positions) >= n_agents:
+                        break
+                if positions:
+                    return positions, len(positions)
+
+    # Fallback deterministic synthetic positions for plotting.
+    positions = [(float(i % 10), float(i // 10)) for i in range(n_agents)]
+    return positions, n_agents
 
 
 def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -57,52 +97,11 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
     a_ped, d_ped, _a_wall, _d_wall = parse_velocity_init_parameters(data)
     extracted_params["a_ped"] = a_ped
     extracted_params["d_ped"] = d_ped
-    # calculate positions
-    positions, num_agents = get_agent_positions(data)
+    # preview positions for plotting only
+    positions, num_agents = _preview_agent_positions(data)
     extracted_params["number_agents"] = num_agents
     extracted_params["positions"] = positions
     return extracted_params
-
-
-def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) -> None:
-    """Run the simulation based on the provided configuration and data.
-
-    Args:
-        config_file: Path to the configuration file.
-        output_file: Desired path for the simulation output file.
-        data: Data dictionary containing simulation parameters.
-    """
-    msg = st.empty()
-    if Path(output_file).exists():
-        Path(output_file).unlink()
-    logging.info(f"in call simulation {data['simulation_parameters']['number_agents']}")
-    logging.info(f"in call simulation {data['simulation_parameters']['number_agents']}")
-    number_agents = parse_number_agents(data)
-    logging.info(f"Call simulation {number_agents = }")
-    fps = parse_fps(data)
-    time_step = parse_time_step(data)
-    simulation_time = parse_simulation_time(data)
-    open_door_time = float(data["simulation_parameters"].get("open_door_time", 0.0))
-    strategy = parse_motivation_strategy(data)
-
-    msg.code(f"Running simulation with {number_agents}. Strategy: <{strategy}>...")
-
-    with st.spinner("Simulating..."):
-        try:
-            evac_time, _ = init_and_run_simulation(
-                fps,
-                time_step,
-                simulation_time,
-                open_door_time,
-                data,
-                Path(output_file),
-                msg,
-            )
-        except ValueError as exc:
-            st.error(f"Logistic configuration error: {exc}")
-            return
-
-    msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
 
 
 def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:

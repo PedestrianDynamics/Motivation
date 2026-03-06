@@ -69,7 +69,7 @@ def save_variations(
 
 def main(
     inifile: pathlib.Path = typer.Option(
-        pathlib.Path("files/inifile.json"),
+        pathlib.Path("files/base.json"),
         help="Path to the initial configuration file",
     ),
     param: str = typer.Option(

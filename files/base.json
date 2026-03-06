@@ -18,8 +18,8 @@
     "simulation_parameters": {
         "fps": 5,
         "time_step": 0.01,
-        "number_agents": 35,
-        "simulation_time": 99,
+        "number_agents": 85,
+        "simulation_time": 500,
         "open_door_time": 100
     },
     "measurement_line": {
@@ -63,17 +63,17 @@
         "seed": 12.0,
         "max_value_high": 1.8,
         "min_value_high": 1.5,
-        "max_value_low": 1.3,
-        "min_value_low": 1.0,
-        "number_high_value": 15,
-        "agent_buffer": 0.5,
-        "do_adjust_buffer": false,
+        "max_value_low": 1.0,
+        "min_value_low": 0.8,
+        "number_high_value": 60,
+        "agent_buffer": 1.0,
+        "do_adjust_buffer": true,
         "value_probability_sorting": false,
         "payoff": {
-            "k": 2,
-            "q0": 0.5,
+            "k": 14,
+            "q0": 0.4,
             "rank_tie_tolerance_m": 0.001,
-            "update_interval_s": 1.0
+            "update_interval_s": 0.2
         },
         "mapping_function": "logistic",
         "motivation_min": 0.0,

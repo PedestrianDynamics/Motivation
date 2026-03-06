@@ -247,36 +247,51 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
     """Set Value function."""
     with st.sidebar.expander("Value Parameters", expanded=True):
         c1, c2 = st.columns(2)
+        high_options = [round(float(v), 2) for v in np.arange(0.7, 2.6, 0.1)]
+        low_options = [round(float(v), 2) for v in np.arange(0.1, 1.1, 0.1)]
+
+        def _closest_option(options: list[float], value: float) -> float:
+            return min(options, key=lambda opt: abs(opt - value))
+
+        high_max = _closest_option(
+            high_options, float(data["motivation_parameters"]["max_value_high"])
+        )
+        high_min = _closest_option(
+            high_options, float(data["motivation_parameters"]["min_value_high"])
+        )
+        if high_max > high_min:
+            high_max, high_min = high_min, high_max
+
         min_value_high, max_value_high = st.select_slider(
             "**Value high**",
             key="value_high",
-            options=np.arange(
-                0.7,
-                2.6,
-                0.1,
-            ),
-            #
-            #
+            options=high_options,
             value=[
-                float(data["motivation_parameters"]["max_value_high"]),
-                float(data["motivation_parameters"]["min_value_high"]),
+                high_max,
+                high_min,
             ],
             format_func=lambda x: f"{x:.2f}",
             help="Upper/Lower limit of high Value people.",
         )
         data["motivation_parameters"]["min_value_high"] = min_value_high
         data["motivation_parameters"]["max_value_high"] = max_value_high
+
+        low_min = _closest_option(
+            low_options, float(data["motivation_parameters"]["min_value_low"])
+        )
+        low_max = _closest_option(
+            low_options, float(data["motivation_parameters"]["max_value_low"])
+        )
+        if low_min > low_max:
+            low_min, low_max = low_max, low_min
+
         min_value_low, max_value_low = st.select_slider(
             "**Value low**",
             key="value_low",
-            options=np.arange(
-                0.1,  # float(data["motivation_parameters"]["min_value_low"]),
-                1.1,  # float(data["motivation_parameters"]["max_value_low"]),
-                0.1,
-            ),
+            options=low_options,
             value=[
-                float(data["motivation_parameters"]["min_value_low"]),
-                float(data["motivation_parameters"]["max_value_low"]),
+                low_min,
+                low_max,
             ],
             help="Upper/Lower limit of low Value people.",
             format_func=lambda x: f"{x:.2f}",

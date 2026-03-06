@@ -503,7 +503,6 @@ def process_agent(
             motivation_model.parameter_mapper.range_neighbor_repulsion(motivation_i)
         )
 
-    do_adjust_buffer = True
     if "do_adjust_buffer" in _data["motivation_parameters"]:
         do_adjust_buffer = _data["motivation_parameters"]["do_adjust_buffer"]
 
@@ -513,15 +512,9 @@ def process_agent(
         )
 
     agent.model.radius = _data["velocity_init_parameters"]["radius"]
-
-        # 0,3
-        # 1,6
     if motivation_model.parameter_mapper is not None:
         agent.model.desired_speed = v_0
         agent.model.time_gap = time_gap
-    # print(
-    #     f"{agent.id}, {simulation.elapsed_time():.2f}, {motivation_i:.2f}, {agent.model.v0 =}, {agent.model.time_gap = }"
-    # )
     return (
         f"{frame_to_write}, {agent.id}, {simulation.elapsed_time():.2f}, "
         f"{motivation_i:.4f}, {position[0]:.4f}, {position[1]:.4f}, "
