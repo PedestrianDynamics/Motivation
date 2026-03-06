@@ -62,7 +62,9 @@ def ui_simulation_controls(data: Dict[str, Any]) -> Tuple[str, str, int]:
     c1, c2, c3 = st.columns(3)
     config_files = sorted(list(set(st.session_state.all_files)), reverse=True)
     default_config = "files/base.json"
-    default_index = config_files.index(default_config) if default_config in config_files else 0
+    default_index = (
+        config_files.index(default_config) if default_config in config_files else 0
+    )
     CONFIG_FILE = str(
         c2.selectbox(
             "Select config file",
@@ -72,9 +74,7 @@ def ui_simulation_controls(data: Dict[str, Any]) -> Tuple[str, str, int]:
     )
 
     # Extract strategy from the loaded data for naming the output file
-    strategy = data.get("motivation_parameters", {}).get(
-        "motivation_mode", "PVE"
-    )
+    strategy = data.get("motivation_parameters", {}).get("motivation_mode", "PVE")
     name, extension = CONFIG_FILE.rsplit(".", 1)
     sqlite_filename = f"{name}_{strategy}.{extension.replace('json', 'sqlite')}"
 
@@ -120,11 +120,8 @@ def ui_load_save_config() -> Tuple[str, str]:
     """
     with st.sidebar.expander("Save/load config"):
         column_1, column_2 = st.columns((1, 1))
-        file_name = str(
-            column_1.selectbox(
-                "Load", sorted(list(set(st.session_state.all_files)), reverse=True)
-            )
-        )
+        file_name = str(column_1.selectbox("Load", "files/base.json"))
+
         new_json_name = column_2.text_input(
             "Save", help="Save config file: ", value="files/bottleneck2.json"
         )
