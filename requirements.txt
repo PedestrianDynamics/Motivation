@@ -1,7 +1,7 @@
 streamlit
 shapely
 jsonschema
-jupedsim @ git+https://github.com/chraibi/jupedsim.git@csm-v3
+jupedsim
 plotly
 matplotlib
 pedpy
