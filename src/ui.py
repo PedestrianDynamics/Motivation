@@ -531,6 +531,10 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
 
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section."""
+    params = data["motivation_parameters"]
+    params.setdefault("weight_v", 1.0)
+    params.setdefault("weight_e", 2.0)
+    params.setdefault("weight_p", 1.0)
     c1, c2 = st.sidebar.columns(2)
     motivation_mode = st.sidebar.selectbox(
         "Select mode",
@@ -541,24 +545,47 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
         "Normal V0:",
         min_value=0.1,
         max_value=2.5,
-        value=float(data["motivation_parameters"]["normal_v_0"]),
+        value=float(params["normal_v_0"]),
     )
     data["motivation_parameters"]["normal_time_gap"] = c2.number_input(
         "Normal Time Gap:",
         min_value=0.1,
         max_value=3.0,
         step=0.1,
-        value=float(data["motivation_parameters"]["normal_time_gap"]),
+        value=float(params["normal_time_gap"]),
     )
     data["motivation_parameters"]["seed"] = c1.number_input(
         "Seed",
         key="seed",
         step=1.0,
-        value=float(data["motivation_parameters"]["seed"]),
+        value=float(params["seed"]),
         help="Seed for random generator for value",
     )
 
     data["motivation_parameters"]["motivation_mode"] = motivation_mode
+    with st.sidebar.expander("Combination Weights", expanded=True):
+        c1, c2, c3 = st.columns(3)
+        params["weight_v"] = c1.number_input(
+            "V",
+            min_value=0.0,
+            step=0.1,
+            value=float(params["weight_v"]),
+            help="Weight of normalized value in combined motivation.",
+        )
+        params["weight_e"] = c2.number_input(
+            "E",
+            min_value=0.0,
+            step=0.1,
+            value=float(params["weight_e"]),
+            help="Weight of normalized expectancy in combined motivation.",
+        )
+        params["weight_p"] = c3.number_input(
+            "P",
+            min_value=0.0,
+            step=0.1,
+            value=float(params["weight_p"]),
+            help="Weight of normalized payoff in combined motivation.",
+        )
     title = "Expectancy Parameters"
     with st.sidebar.expander(title, expanded=True):
         c1, c2 = st.columns(2)
@@ -566,14 +593,14 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             "Width",
             key="width",
             step=0.5,
-            value=float(data["motivation_parameters"]["width"]),
+            value=float(params["width"]),
             help="width of function defining distance dependency",
         )
         data["motivation_parameters"]["height"] = c2.number_input(
             "Height",
             key="hight",
             step=0.5,
-            value=float(data["motivation_parameters"]["height"]),
+            value=float(params["height"]),
             help="Height of function defining distance dependency",
         )
     ui_value_parameters(data)

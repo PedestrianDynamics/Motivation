@@ -226,7 +226,9 @@ def export_trajectory_to_txt(
         else:
             value_series = pd.Series(values, index=frame_indices)
             df_data.loc[frame_indices, "motivation"] = value_series
-        df_data["color"] = (df_data["motivation"] * 255).clip(0, 255).astype(int)
+
+        
+        df_data["color"] = ((1-df_data["motivation"]) * 255).clip(0, 255).astype(int)
 
     # Write the formatted data to the output file
     with open(output_file, "w") as f:

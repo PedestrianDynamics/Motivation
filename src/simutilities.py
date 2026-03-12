@@ -1,6 +1,5 @@
 """Utilities for simulation."""
 
-import csv
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -25,21 +24,26 @@ def _preview_agent_positions(data: Dict[str, Any]) -> Tuple[List[Point], int]:
     n_agents = parse_number_agents(data)
     init_file = data.get("init_trajectories_file")
     if init_file:
-        path = Path(str(init_file))
-        if path.exists():
+        candidate_paths = [
+            Path(str(init_file)),
+            Path(__file__).resolve().parents[1] / str(init_file),
+        ]
+        path = next((p for p in candidate_paths if p.exists()), None)
+        if path is not None:
             with path.open("r", encoding="utf8") as f:
-                reader = csv.reader(f, delimiter="\t")
                 rows: List[Tuple[int, int, float, float]] = []
-                for row in reader:
-                    if not row or row[0].startswith("#"):
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
                         continue
-                    if len(row) < 4:
+                    parts = line.split()
+                    if len(parts) < 4:
                         continue
                     try:
-                        pid = int(float(row[0]))
-                        frame = int(float(row[1]))
-                        x = float(row[2])
-                        y = float(row[3])
+                        pid = int(float(parts[0]))
+                        frame = int(float(parts[1]))
+                        x = float(parts[2])
+                        y = float(parts[3])
                     except ValueError:
                         continue
                     rows.append((pid, frame, x, y))
@@ -55,7 +59,14 @@ def _preview_agent_positions(data: Dict[str, Any]) -> Tuple[List[Point], int]:
                     if len(positions) >= n_agents:
                         break
                 if positions:
-                    return positions, len(positions)
+                    if len(positions) < n_agents:
+                        positions.extend(
+                            [
+                                (float(i % 10), float(i // 10))
+                                for i in range(len(positions), n_agents)
+                            ]
+                        )
+                    return positions[:n_agents], n_agents
 
     # Fallback deterministic synthetic positions for plotting.
     positions = [(float(i % 10), float(i // 10)) for i in range(n_agents)]
@@ -77,6 +88,9 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
         "strategy": params["motivation_mode"],
         "width": float(params["width"]),
         "height": float(params["height"]),
+        "weight_v": float(params.get("weight_v", 1.0)),
+        "weight_e": float(params.get("weight_e", 2.0)),
+        "weight_p": float(params.get("weight_p", 1.0)),
         "max_value_high": float(params["max_value_high"]),
         "min_value_high": float(params["min_value_high"]),
         "max_value_low": float(params["max_value_low"]),
@@ -141,6 +155,9 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
             agent_positions=params["positions"],
             motivation_door_center=motivation_door_center,
             motivation_mode=strategy,
+            weight_v=params["weight_v"],
+            weight_e=params["weight_e"],
+            weight_p=params["weight_p"],
             payoff_k=params["payoff_k"],
             payoff_q0=params["payoff_q0"],
             rank_tie_tolerance_m=params["rank_tie_tolerance_m"],

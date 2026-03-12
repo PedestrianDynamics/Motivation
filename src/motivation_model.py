@@ -172,6 +172,9 @@ class EVCStrategy(MotivationStrategy):
     rank_tie_tolerance_m: float = 1e-3
     payoff_update_interval_s: float = 1.0
     payoff_update_interval_steps: int = 1
+    weight_v: float = 1.0
+    weight_e: float = 2.0
+    weight_p: float = 1.0
     payoff_cache: Dict[int, float] = field(default_factory=dict)
     rank_abs_cache: Dict[int, int] = field(default_factory=dict)
     rank_q_cache: Dict[int, float] = field(default_factory=dict)
@@ -479,7 +482,15 @@ class EVCStrategy(MotivationStrategy):
         elif self.motivation_mode == "P":
             M = P_unit
         else:
-            M = V_unit * E_unit * P_unit
+            total_weight = self.weight_v + self.weight_e + self.weight_p
+            if total_weight <= 0:
+                M = 0.0
+            else:
+                M = (
+                    self.weight_v * V_unit
+                    + self.weight_e * E_unit
+                    + self.weight_p * P_unit
+                ) / total_weight
 
         return clamp(M, self.motivation_min, 1.0)
 

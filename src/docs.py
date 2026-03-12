@@ -56,17 +56,50 @@ def main() -> None:
     """Documentation tab for current PVE + logistic model."""
     st.markdown("## Motivation Model (PVE + Logistic)")
     st.markdown(
-        "This app uses mode-based motivation (`E`, `V`, `P`, `PVE`) and logistic parameter mapping."
+        "This app uses normalized `E`, `V`, `P` components, a weighted combination in `PVE` mode, and logistic parameter mapping."
     )
     st.markdown("### Core equations")
-    st.latex(r"M_i \in \{E_i,\;V_i,\;P_i,\;P_iV_iE_i\}")
-    st.latex(r"P_i(q_i) = \frac{1}{1 + \exp\left(k_p\,(q_i-q_0)\right)}")
+    st.latex(r"V_i^{\mathrm{unit}} = \mathrm{clip}\left(\frac{V_i - V_{\min}}{V_{\max} - V_{\min}},\;0,\;1\right)")
+    st.latex(r"E_i^{\mathrm{unit}} = \mathrm{clip}\left(\frac{E(d_i) - E_{\min}}{E_{\max} - E_{\min}},\;0,\;1\right)")
+    st.latex(r"r_i = n_{\mathrm{left}} + r_i^{\mathrm{room}}")
+    st.latex(r"q_i = \frac{r_i - 1}{\max\left(1,\;N_{\max} - 1\right)}")
+    st.latex(r"P_i^{\mathrm{unit}}(q_i) = \frac{1}{1 + \exp\left(k_p\,(q_i-q_0)\right)}")
+    st.latex(r"M_i \in \left\{E_i^{\mathrm{unit}},\;V_i^{\mathrm{unit}},\;P_i^{\mathrm{unit}},\;\frac{w_V V_i^{\mathrm{unit}} + w_E E_i^{\mathrm{unit}} + w_P P_i^{\mathrm{unit}}}{w_V + w_E + w_P}\right\}")
     st.latex(r"m_i^{\mathrm{used}} = \mathrm{clip}\left(m_i,\; m_{\min},\; 1\right)")
     st.latex(
         r"y(m) = y_{\min} + \frac{y_{\max} - y_{\min}}{1 + \exp\left(-k\,(m - m_0)\right)}"
     )
     st.markdown(
-        "Where `y(m)` is one mapped operational parameter and `m0` is set by `inflection_target`."
+        "Here `r_i` is the absolute rank, `q_i` is the normalized rank, `w_V`, `w_E`, `w_P` are the combination weights, and `y(m)` is one mapped operational parameter with `m0 = inflection_target`."
+    )
+    st.markdown("### Unit Construction")
+    st.markdown(
+        """
+`V_unit`
+- Start from each agent's absolute value `V_i`.
+- Normalize it with the configured low/high value bounds.
+- Clip to `[0, 1]`.
+
+`E_unit`
+- Compute the raw expectancy from the current distance to the motivation door.
+- Normalize the raw expectancy between its configured minimum and maximum.
+- Clip to `[0, 1]`.
+
+`Rank` and `P_unit`
+- For each active agent, compute the squared distance to the door center.
+- Sort agents by distance; the closest active agent gets in-room rank `1`.
+- Agents within the tie tolerance share the same in-room rank.
+- Add the number of already-left agents to obtain the absolute rank `r_i`.
+- Normalize the absolute rank to `q_i in [0,1]`.
+- Evaluate the logistic payoff `P_unit(q_i)`.
+
+`M`
+- `E` mode uses `E_unit`.
+- `V` mode uses `V_unit`.
+- `P` mode uses `P_unit`.
+- `PVE` mode uses the weighted average of `V_unit`, `E_unit`, and `P_unit`.
+- `weight_v`, `weight_e`, and `weight_p` control the relative influence of the three normalized components.
+"""
     )
 
     st.markdown("### Requirements (Current)")
