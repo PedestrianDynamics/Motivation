@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 import pedpy
 import plotly.graph_objects as go
+from matplotlib.patches import Circle
+from matplotlib.figure import Figure as MatplotlibFigure
 from plotly.graph_objs import Figure, Scatter
 from plotly.graph_objs.layout import Shape
 from shapely import Polygon
@@ -141,8 +143,6 @@ def _get_colormap(
     )
 
     return [scatter_trace]
-
-
 def _get_shapes_for_frame(
     frame_data: pd.DataFrame,
     min_value: float,
@@ -444,3 +444,54 @@ def animate(
         height=height,
         title_note=title_note,
     )
+def plot_frame_fast(
+    data_df: pd.DataFrame,
+    area: pedpy.WalkableArea,
+    frame_num: int,
+    *,
+    radius: float = 0.1,
+    xlim: Tuple[float, float] | None = None,
+    ylim: Tuple[float, float] | None = None,
+) -> MatplotlibFigure:
+    """Render a single frame with matplotlib for fast inspection."""
+    frame_data = data_df[data_df["frame"] == frame_num].copy()
+    frame_data["radius"] = radius
+    min_value = float(data_df["motivation"].min())
+    max_value = float(data_df["motivation"].max())
+
+    fig, ax = plt.subplots(figsize=(7, 9), constrained_layout=True)
+    x, y = area.polygon.exterior.xy
+    ax.plot(np.array(x), np.array(y), color="black", linewidth=1.0)
+    for inner in area.polygon.interiors:
+        xi, yi = zip(*inner.coords[:])
+        ax.plot(np.array(xi), np.array(yi), color="black", linewidth=1.0)
+
+    cmap = plt.cm.jet_r
+    norm = plt.Normalize(vmin=min_value, vmax=max_value if max_value > min_value else min_value + 1.0)
+    for row in frame_data.itertuples():
+        circle = Circle(
+            (row.x, row.y),
+            radius=row.radius,
+            facecolor=cmap(norm(row.motivation)),
+            edgecolor="none",
+        )
+        ax.add_patch(circle)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    fig.colorbar(sm, ax=ax, label="Motivation")
+    minx, miny, maxx, maxy = area.bounds
+    if xlim is None:
+        xlim = (minx - 0.5, maxx + 0.5)
+    if ylim is None:
+        ylim = (miny - 0.5, maxy + 0.5)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_aspect("equal")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    return fig
