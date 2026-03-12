@@ -22,10 +22,14 @@ from shapely import Polygon
 DUMMY_SPEED = -1000
 
 
-def _speed_to_color(speed: float, min_speed: float, max_speed: float) -> str:
-    """Map a speed value to a color using a colormap."""
-    normalized_speed = (speed - min_speed) / (max_speed - min_speed)
-    r, g, b = plt.cm.jet_r(normalized_speed)[:3]  # type: ignore
+def _value_to_color(value: float, min_value: float, max_value: float) -> str:
+    """Map a scalar value to a color using a colormap."""
+    if max_value <= min_value:
+        normalized_value = 0.5
+    else:
+        normalized_value = (value - min_value) / (max_value - min_value)
+    normalized_value = min(max(normalized_value, 0.0), 1.0)
+    r, g, b = plt.cm.jet_r(normalized_value)[:3]  # type: ignore
     return f"rgba({r*255:.0f}, {g*255:.0f}, {b*255:.0f}, 0.5)"
 
 
@@ -85,7 +89,10 @@ def _get_geometry_traces(area: Polygon) -> Scatter:
 
 
 def _get_colormap(
-    frame_data: pd.DataFrame, max_speed: float, color_mode: str
+    frame_data: pd.DataFrame,
+    min_value: float,
+    max_value: float,
+    color_mode: str,
 ) -> List[Scatter]:
     """Utilize scatter plots with varying colors for each agent instead of individual shapes.
 
@@ -97,8 +104,17 @@ def _get_colormap(
             "color": frame_data["speed"],
             "colorscale": "Jet_r",
             "colorbar": {"title": "Speed [m/s]"},
-            "cmin": 0,
-            "cmax": max_speed,
+            "cmin": min_value,
+            "cmax": max_value,
+        }
+    elif color_mode == "Motivation":
+        marker_dict = {
+            "size": frame_data["radius"] * 2,
+            "color": frame_data["motivation"],
+            "colorscale": "Jet_r",
+            "colorbar": {"title": "Motivation"},
+            "cmin": min_value,
+            "cmax": max_value,
         }
     else:
         colors = frame_data["gender"].map({2: "blue", 1: "green"})
@@ -113,7 +129,13 @@ def _get_colormap(
         y=frame_data["y"],
         mode="markers",
         marker=marker_dict,
-        text=frame_data["speed"] if color_mode == "speed" else frame_data["gender"],
+        text=(
+            frame_data["speed"]
+            if color_mode == "Speed"
+            else frame_data["motivation"]
+            if color_mode == "Motivation"
+            else frame_data["gender"]
+        ),
         showlegend=False,
         hoverinfo="none",
     )
@@ -122,7 +144,10 @@ def _get_colormap(
 
 
 def _get_shapes_for_frame(
-    frame_data: pd.DataFrame, min_speed: float, max_speed: float, color_mode: str
+    frame_data: pd.DataFrame,
+    min_value: float,
+    max_value: float,
+    color_mode: str,
 ) -> Tuple[Shape, Scatter, Shape]:
     """Construct circles as Shapes for agents, Hover and Directions."""
 
@@ -162,7 +187,9 @@ def _get_shapes_for_frame(
                 _create_orientation_line(row, color="rgba(255,255,255,0)"),
             )
         if color_mode == "Speed":
-            color = _speed_to_color(row["speed"], min_speed, max_speed)
+            color = _value_to_color(row["speed"], min_value, max_value)
+        elif color_mode == "Motivation":
+            color = _value_to_color(row["motivation"], min_value, max_value)
         else:
             gender_colors = {
                 1: "blue",  # Assuming 1 is for female
@@ -301,7 +328,14 @@ def _get_processed_frame_data(
     """Process frame data and ensure it matches the maximum agent count."""
     frame_data = data_df[data_df["frame"] == frame_num]
     agent_count = len(frame_data)
-    dummy_agent_data = {"x": 0, "y": 0, "radius": 0, "speed": DUMMY_SPEED}
+    dummy_agent_data = {
+        "x": 0,
+        "y": 0,
+        "radius": 0,
+        "speed": DUMMY_SPEED,
+        "motivation": 0.0,
+        "gender": 0,
+    }
     while len(frame_data) < max_agents:
         dummy_df = pd.DataFrame([dummy_agent_data])
         frame_data = pd.concat([frame_data, dummy_df], ignore_index=True)
@@ -326,8 +360,15 @@ def animate(
     """Animate a trajectory."""
     data_df["radius"] = radius
     frames = data_df["frame"].unique()
-    min_speed = data_df["speed"].min()
-    max_speed = data_df["speed"].max()
+    if color_mode == "Speed":
+        min_value = data_df["speed"].min()
+        max_value = data_df["speed"].max()
+    elif color_mode == "Motivation":
+        min_value = data_df["motivation"].min()
+        max_value = data_df["motivation"].max()
+    else:
+        min_value = 0.0
+        max_value = 1.0
     max_agents = data_df.groupby("frame").size().max()
     frames = []
     steps = []
@@ -340,14 +381,16 @@ def animate(
         initial_shapes,
         initial_hover_trace,
         initial_arrows,
-    ) = _get_shapes_for_frame(initial_frame_data, min_speed, max_speed, color_mode)
-    color_map_trace = _get_colormap(initial_frame_data, max_speed, color_mode)
+    ) = _get_shapes_for_frame(initial_frame_data, min_value, max_value, color_mode)
+    color_map_trace = _get_colormap(
+        initial_frame_data, min_value, max_value, color_mode
+    )
     for frame_num in selected_frames:
         frame_data, agent_count = _get_processed_frame_data(
             data_df, frame_num, max_agents
         )
         shapes, hover_traces, arrows = _get_shapes_for_frame(
-            frame_data, min_speed, max_speed, color_mode
+            frame_data, min_value, max_value, color_mode
         )
         # title = f"<b>{title_note + '  |  ' if title_note else ''}N: {agent_count}</b>"
         title = f"<b>{title_note + '  |  ' if title_note else ''}Number  of Agents: {initial_agent_count}</b>"

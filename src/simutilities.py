@@ -1,5 +1,6 @@
 """Utilities for simulation."""
 
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -7,11 +8,13 @@ import streamlit as st
 from src import motivation_model as mm
 from src import motivation_mapping as mmap
 from src.inifile_parser import (
+    parse_fps,
     parse_motivation_doors,
     parse_motivation_strategy,
     parse_normal_time_gap,
     parse_normal_v_0,
     parse_number_agents,
+    parse_simulation_time,
     parse_time_step,
     parse_velocity_init_parameters,
 )
@@ -180,6 +183,43 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
         return strategy_obj
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
+
+
+def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) -> None:
+    """Run the simulation based on the provided configuration and data."""
+    from simulation import init_and_run_simulation
+
+    msg = st.empty()
+    output_path = Path(output_file)
+    if output_path.exists():
+        output_path.unlink()
+
+    number_agents = parse_number_agents(data)
+    fps = parse_fps(data)
+    time_step = parse_time_step(data)
+    simulation_time = parse_simulation_time(data)
+    open_door_time = float(data["simulation_parameters"].get("open_door_time", 0.0))
+    strategy = parse_motivation_strategy(data)
+
+    logging.info(f"Call simulation {number_agents = }")
+    msg.code(f"Running simulation with {number_agents}. Strategy: <{strategy}>...")
+
+    with st.spinner("Simulating..."):
+        try:
+            evac_time, _ = init_and_run_simulation(
+                fps,
+                time_step,
+                simulation_time,
+                open_door_time,
+                data,
+                output_path,
+                msg,
+            )
+        except ValueError as exc:
+            st.error(f"Logistic configuration error: {exc}")
+            return
+
+    msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
 
 
 def plot_motivation_model(params: Dict[str, Any]) -> None:
