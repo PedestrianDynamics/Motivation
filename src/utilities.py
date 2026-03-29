@@ -317,4 +317,4 @@ def plot_crossing_order_vs_area(
     plt.savefig(output_path, bbox_inches="tight")
 
     print(f"Plot: {output_path}")
-    plt.show()
+    # plt.show()

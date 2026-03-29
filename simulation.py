@@ -859,6 +859,11 @@ def main(
         pathlib.Path("files/variations"),
         help="Directory for output files",
     ),
+    vis: bool = typer.Option(
+        False,
+        "--vis",
+        help="Launch jpsvis after a completed single simulation run.",
+    ),
 ) -> None:
     """Run simulations with parameter variations or, if no variations file is provided, run a single simulation using the base configuration."""
     init_logger()
@@ -1009,7 +1014,6 @@ def main(
         print(timestamp)
 
         if status == "completed":
-            logging.info("JPSVIS")
             trajectory_data, walkable_area = read_sqlite_file(output_path)
             output_file = "jpsvis_files" + pathlib.Path(output_path).stem + ".txt"
             geometry_file = pathlib.Path(output_path).stem + "_geometry.xml"
@@ -1030,8 +1034,10 @@ def main(
             polygon_to_xml(walkable_area=walkable_area, output_file=geometry_file)
             print(">>> ", output_file)
             print(">>> ", geometry_file)
-            command = ["/Applications/jpsvis.app/Contents/MacOS/jpsvis", output_file]
-            result = subprocess.run(command, capture_output=True, text=True)
+            if vis:
+                logging.info("Launching JPSVIS")
+                command = ["/Applications/jpsvis.app/Contents/MacOS/jpsvis", output_file]
+                subprocess.run(command, capture_output=True, text=True)
 
             (
                 df_merged_simulation,

@@ -1,0 +1,1177 @@
+%Version 3.1 December 2024
+% See section 11 of the User Manual for version history
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                 %%
+%% Please do not use \input{...} to include other tex files.       %%
+%% Submit your LaTeX manuscript as one .tex document.              %%
+%%                                                                 %%
+%% All additional figures and files should be attached             %%
+%% separately and not embedded in the \TeX\ document itself.       %%
+%%                                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%\documentclass[referee,sn-basic]{sn-jnl}% referee option is meant for double line spacing
+
+%%=======================================================%%
+%% to print line numbers in the margin use lineno option %%
+%%=======================================================%%
+
+%%\documentclass[lineno,pdflatex,sn-basic]{sn-jnl}% Basic Springer Nature Reference Style/Chemistry Reference Style
+
+%%=========================================================================================%%
+%% the documentclass is set to pdflatex as default. You can delete it if not appropriate.  %%
+%%=========================================================================================%%
+
+%%\documentclass[sn-basic]{sn-jnl}% Basic Springer Nature Reference Style/Chemistry Reference Style
+
+%%Note: the following reference styles support Namedate and Numbered referencing. By default the style follows the most common style. To switch between the options you can add or remove Numbered in the optional parenthesis. 
+%%The option is available for: sn-basic.bst, sn-chicago.bst%  
+ 
+%%\documentclass[pdflatex,sn-nature]{sn-jnl}% Style for submissions to Nature Portfolio journals
+%%\documentclass[pdflatex,sn-basic]{sn-jnl}% Basic Springer Nature Reference Style/Chemistry Reference Style
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}% Math and Physical Sciences Numbered Reference Style
+%%\documentclass[pdflatex,sn-mathphys-ay]{sn-jnl}% Math and Physical Sciences Author Year Reference Style
+%%\documentclass[pdflatex,sn-aps]{sn-jnl}% American Physical Society (APS) Reference Style
+%%\documentclass[pdflatex,sn-vancouver-num]{sn-jnl}% Vancouver Numbered Reference Style
+%%\documentclass[pdflatex,sn-vancouver-ay]{sn-jnl}% Vancouver Author Year Reference Style
+%%\documentclass[pdflatex,sn-apa]{sn-jnl}% APA Reference Style
+%%\documentclass[pdflatex,sn-chicago]{sn-jnl}% Chicago-based Humanities Reference Style
+
+%%%% Standard Packages
+%%<additional latex packages if required can be included here>
+
+\usepackage{graphicx}%
+\usepackage{multirow}%
+\usepackage{amsmath,amssymb,amsfonts}%
+\usepackage{amsthm}%
+\usepackage{mathrsfs}%
+\usepackage[title]{appendix}%
+\usepackage{xcolor}%
+\usepackage{textcomp}%
+\usepackage{manyfoot}%
+\usepackage{booktabs}%
+\usepackage{algorithm}%
+\usepackage{algorithmicx}%
+\usepackage{algpseudocode}%
+\usepackage{listings}%
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage[capitalise,noabbrev]{cleveref}
+\usepackage{tikz}
+\usepackage{subcaption}
+\usepackage{float}
+\usetikzlibrary{arrows.meta, calc, positioning, decorations.markings}
+\usepackage{cleveref}
+% Color palette
+\definecolor{agent}{HTML}{1a1a1a}
+\definecolor{goal}{HTML}{2E8B57}
+\definecolor{edes}{HTML}{1f4e79}
+\definecolor{eref}{HTML}{4a6fa5}
+\definecolor{emove}{HTML}{b35d16}
+\definecolor{neighbor}{HTML}{666666}
+\definecolor{selected}{HTML}{c41e3a}
+\definecolor{annotation}{HTML}{333333}
+
+%%%%
+
+%%%%%=============================================================================%%%%
+%%%%  Remarks: This template is provided to aid authors with the preparation
+%%%%  of original research articles intended for submission to journals published 
+%%%%  by Springer Nature. The guidance has been prepared in partnership with 
+%%%%  production teams to conform to Springer Nature technical requirements. 
+%%%%  Editorial and presentation requirements differ among journal portfolios and 
+%%%%  research disciplines. You may find sections in this template are irrelevant 
+%%%%  to your work and are empowered to omit any such section if allowed by the 
+%%%%  journal you intend to submit to. The submission guidelines and policies 
+%%%%  of the journal take precedence. A detailed User Manual is available in the 
+%%%%  template package for technical guidance.
+%%%%%=============================================================================%%%%
+
+%% as per the requirement new theorem styles can be included as shown below
+\theoremstyle{thmstyleone}%
+\newtheorem{theorem}{Theorem}%  meant for continuous numbers
+%%\newtheorem{theorem}{Theorem}[section]% meant for sectionwise numbers
+%% optional argument [theorem] produces theorem numbering sequence instead of independent numbers for Proposition
+\newtheorem{proposition}[theorem]{Proposition}% 
+%%\newtheorem{proposition}{Proposition}% to get separate numbers for theorem and proposition etc.
+
+\theoremstyle{thmstyletwo}%
+\newtheorem{example}{Example}%
+\newtheorem{remark}{Remark}%
+
+\theoremstyle{thmstylethree}%
+\newtheorem{definition}{Definition}%
+
+\raggedbottom
+%%\unnumbered% uncomment this for unnumbered level heads
+
+\begin{document}
+
+\title[Article Title]{Modeling the impact of motivation on pedestrian dynamics Or: A dynamic model for the impact of motivation on pedestrian movement}
+
+%%=============================================================%%
+%% GivenName	-> \fnm{Joergen W.}
+%% Particle	-> \spfx{van der} -> surname prefix
+%% FamilyName	-> \sur{Ploeg}
+%% Suffix	-> \sfx{IV}
+%% \author*[1,2]{\fnm{Joergen W.} \spfx{van der} \sur{Ploeg} 
+%%  \sfx{IV}}\email{iauthor@gmail.com}
+%%=============================================================%%
+
+\author*[1,2]{\fnm{First} \sur{Author}}\email{iauthor@gmail.com}
+
+\author[2,3]{\fnm{Second} \sur{Author}}\email{iiauthor@gmail.com}
+\equalcont{These authors contributed equally to this work.}
+
+\author[1,2]{\fnm{Third} \sur{Author}}\email{iiiauthor@gmail.com}
+\equalcont{These authors contributed equally to this work.}
+
+\affil*[1]{\orgdiv{Department}, \orgname{Organization}, \orgaddress{\street{Street}, \city{City}, \postcode{100190}, \state{State}, \country{Country}}}
+
+\affil[2]{\orgdiv{Department}, \orgname{Organization}, \orgaddress{\street{Street}, \city{City}, \postcode{10587}, \state{State}, \country{Country}}}
+
+\affil[3]{\orgdiv{Department}, \orgname{Organization}, \orgaddress{\street{Street}, \city{City}, \postcode{610101}, \state{State}, \country{Country}}}
+
+%%==================================%%
+%% Sample for unstructured abstract %%
+%%==================================%%
+
+\abstract{The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. Authors are advised to check the author instructions for the journal they are submitting to for word limits and if structural elements like subheadings, citations, or equations are permitted.}
+
+%%================================%%
+%% Sample for structured abstract %%
+%%================================%%
+
+% \abstract{\textbf{Purpose:} The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. The abstract must not include subheadings (unless expressly permitted in the journal's Instructions to Authors), equations or citations. As a guide the abstract should not exceed 200 words. Most journals do not set a hard limit however authors are advised to check the author instructions for the journal they are submitting to.
+% 
+% \textbf{Methods:} The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. The abstract must not include subheadings (unless expressly permitted in the journal's Instructions to Authors), equations or citations. As a guide the abstract should not exceed 200 words. Most journals do not set a hard limit however authors are advised to check the author instructions for the journal they are submitting to.
+% 
+% \textbf{Results:} The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. The abstract must not include subheadings (unless expressly permitted in the journal's Instructions to Authors), equations or citations. As a guide the abstract should not exceed 200 words. Most journals do not set a hard limit however authors are advised to check the author instructions for the journal they are submitting to.
+% 
+% \textbf{Conclusion:} The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. The abstract must not include subheadings (unless expressly permitted in the journal's Instructions to Authors), equations or citations. As a guide the abstract should not exceed 200 words. Most journals do not set a hard limit however authors are advised to check the author instructions for the journal they are submitting to.}
+
+\keywords{keyword1, Keyword2, Keyword3, Keyword4}
+
+%%\pacs[JEL Classification]{D8, H51}
+
+%%\pacs[MSC Classification]{35A01, 65L10, 65L12, 65L20, 65L70}
+
+\maketitle
+
+\section{Introduction}\label{sec1}
+
+In pedestrian dynamics, the propulsive drive of moving agents plays a fundamental role, as it directly and strongly influences the collective behavior of the crowd. The intensity with which agents accelerate, how fast they move, how closely they approach to one another, the pressure they exert on those in front of them in high density conditions, and their tendency to overtake others can all be interpreted as behavioral expressions of how strongly they are oriented toward their goal. In this article, we use the psychological concept of motivation to describe this propulsive drive. Originating from the Latin word \textit{movere} (“to move”), motivation is commonly defined as "an internal state that propels individuals to engage in goal-directed behavior. It is often understood as a drive that explains why people or animals initiate, continue, or terminate a certain behavior at a particular time." %(Wikipedia, I will find a better source). 
+
+% Motivation can be understood as the dynamic interplay of forces within the person–environment field that determines the direction, intensity, and persistence of behavior (Lewin, 1942).
+
+In computational models of pedestrian dynamics, this goal-directed drive is typically operationalized through movement parameters. All agent-based models in pedestrian dynamics can, and some explicitly do, represent motivational differences in a simple manner. The parameter most commonly used to reflect motivational level is the free speed $\vec{v}^0$, also referred to as intended, desired, or preferred speed. The underlying assumption here is that high motivation goes hand in hand with a high preferred speed. This parameter can be specified in two principle ways: First, all agents can be uniformly assigned high or low intended speeds, allowing the model to distinguish between situations in which everyone wants to move quickly (i.e., rushing to catch a departing train) and situations in which speed is of little relevance (i.e. the train has not yet arrived). Second, heterogeneity can be introduced by implementing a distribution of intended speeds across agents, thereby, the simulation takes individual differences in motivational level into account. In both cases the motivation remains static, either fixed for the entire simulation or fixed at the individual person. We therefore refer to this as a \textbf{static approach} to modelling motivation.
+
+The motivation model proposed in this paper extends this approach in two ways. First, it assumes that motivation is an underlying psychological construct that influences not only intended speed but most (if not all) parameters of a movement model. These include interpersonal distance, the frequency and intensity of directional changes in movement, reaction times, and acceleration or speed changes. Secondly, and most importantly, the motivation is treated as dynamically evolving in the pedestrian context, depending on an individual's position relative to the spatial surroundings (i.e. the entrance) and to the other pedestrians. Consider the following two examples: A person on the way to a concert entrance may initially be highly motivated to enter early. If she is repeatedly overtaken by others and perceives that reaching the front is unlikely, eventually her motivation will decrease because it does not seem worth trying to be one of the first anymore. Conversly, a person waiting at the end of a very long queue at the supermarket ckeckout may show little motivation to move fast or close gaps to the person in front. If a second checkout opens, the same individual may suddenly become very motivated to be one of the first in the queue. We formalize these dynamic changes in motivation using the psychological expectancy-value model. The motivation value determined using this model is dynamically updated over time and then incorporated into the key parameters of our movement model.
+
+With this model, we pursue three objectives, which are reflected in the following three parts of the introduction. First, the model is based on empirical findings from research on crowd dynamics. Accordingly, the first part reviews how motivation has been integrated into previous studies and what behavioral effects have been demonstrated. Second, the model is intended to be psychologically sound. The second part therefore introduces the psychological expectancy value theory and adapts it to the context of pedestrian movement. Third, the model is based on state-of-the-art pedestrian modeling approaches. The third part places the proposed framework in the context of these movement models.
+
+\subsection{Part One} 
+
+This section discusses the effects of motivation across a variety of settings in pedestrian dynamics. It mainly focuses on controlled pedestrian experiments rather than field studies. It should be noted, however, that although the effects of motivation have been frequently described in the literature, the term “motivation” itself has not always been used explicitly, depending on the disciplinary context of the work. In this review, we integrate studies that address motivational constructs both implicitly or explicitly, even when different terminology is used. 
+
+Most empirical studies in the field that explore the role of motivation do so in the context of bottlenecks as the primary spatial structure. Such bottlenecks are not accidental; they are intentionally integrated into modern public infrastructure, commonly implemented at concerts, event venues, building exits, and transportation hubs for constructional efficiency. These environments, now integral to everyday life, create settings in which personal motivation interacts with physical limitations and social context, making them ideal for studying how internal states (e.g., motivation) are expressed in observable movement patterns. Only a limited number of studies have investigated motivational influences in other contexts, such as the fundamental diagram \cite{ye_pedestrian_2021, ziemer_mikroskopische_2020} or the staircase capacity \cite{graat_complex_1999}. The focus on bottlenecks is closely linked to the well-known “faster-is-slower effect” and the associated phenomenon of clogging, which will be elaborated on below.
+
+The effects of high motivation are particularly evident in pre-bottleneck density and flow rate. High motivation groups tend to show significantly higher density in front of the bottleneck \cite{sieben_collective_2017, adrian_crowds_2020, li_bottleneck_2021}. However, the influence of motivation on the flow through the bottleneck is more complex. In a relevant article, Muir et al. \cite{muir_effects_1996} demonstrated in an aircraft evacuation study that a high motivation lead to shorter evacuation times (higher flow) when the bottleneck is wide. In contrast, narrow bottlenecks tended to trigger temporary clogs, resulting in longer evacuation times (lower flow). 
+
+Further studies examining the effect of motivation on clogging probability, flow rate reduction, or, equivalently, the extension of the clearance time, can be found in Müller \cite{muller_fluchtwegen_1981}, Pastor \cite{pastor_experimental_2015}, Garcimartín \cite{garcimartin_flow_2016}, and Li (with kindergarten children) \cite{li_bottleneck_2020} as well as Li \cite{li_motivation_2024}. In summary, these findings show that a reduction of the flow due to clogging only occurs when bottleneck width is below approximately 80 cm and only under conditions of very high motivation. This is commonly referred to as the “faster-is-slower effect” effect. However, despite its widespread use, the term requires cautious and critical examination, as the phenomenon occurs only under very specific conditions. Its practical relevance should therefore be carefully considered; a point we return to later in this article.
+
+A closer look at the experimental designs shows that the studies use various methods and instructions to increase or vary the motivation level of the participants. Some studies manipulated motivation through explicit instructions about movement speed (e.g., “normal”, “fast”, or “as fast as possible”, \cite{peschl_passage_1971, muller_fluchtwegen_1981}), or through directives regarding physical contact (e.g. “no contact”, “only accidental contact”, “contact allowed”, or “pushing allowed”%Garcimartin, 2015
+). In the bottleneck experiments described in Boomers at al. \cite{boomers_crowd_2023}, both speed and contact instructions are systematically varied across three motivational levels. Other studies manipulate motivation more implicitly by creating context specific scenarios, such as an emergency evacuations. Some experiments are conducted without any additional incentive \cite{li_bottleneck_2020, li_bottleneck_2021}, while others introduce a reward structure alongside the scenario. In these experiments, participants receive an additional sum $X$ if they are among the first $m$ out of $N$ individuals to pass through the bottleneck \cite{mintz_nonadaptive_1951, muir_effects_1996, li_motivation_2024}. Other studies create a contextual motivation through imaginative framing, such as attending a concert \cite{sieben_collective_2017, adrian_crowds_2020, sieben_repertoires_2025}. This approach relies entirely on the imagination of the participants, using instructions such as: "Imagine you are attending a concert by your favorite artist and are waiting in line to get in."
+
+It is worth noting that related constructs (such as competitiveness and cooperativeness) frequently appear in the literature and are sometimes equated with motivation \cite{mintz_nonadaptive_1951, sime_escape_1983}. Some authors assume that high motivation implies competitive behavior. A common example can be found in evacuation scenarios, where it is often presumed that individuals, being highly motivated to exit quickly, will therefore act selfishly and competitively. However, this assumption has been proven inaccurate by several studies that reconstruct behavior during emergencies, showing instead that cooperation often occurs \cite{drury_collective_2009, levine_identity_2005}. We argue that  cooperation or competition are not universal indicators of motivational strength but instead depend on social norms of the setting and strategic considerations. In contexts such as sports (i.e., race), for example, high motivation is inherently linked to competition (i.e., to be the first, winning), whereas in other settings, strategic cooperation may be the optimal path to goal achievement. The role of strategic decisions leading to either cooperation or competition has also been extensively studied in the game theory research \cite{axelrod_evolution_1981}. 
+
+In addition to this conceptual dichotomy, experimental research often relies on a further simplifying assumption. Most studies presented so far implicitly assume that all participants in the “high motivation” condition would behave uniformly, in a way that collectively represented a high-motivation group. However, in real-world scenarios, crowd motivation is not monolithic. Individuals may vary in their motivation: some may be highly driven to reach to the front (e.g., to secure a spot or leave quickly), while others may be indifferent, preferring to arrive later or simply follow the crowd. Fortunately, even in the controlled settings of these experiments, participants did not behave uniformly. Some appeared to treat the experiment as a game, displaying high motivation and assertive movement; others simply followed instructions without extra effort; and some disengaged entirely, remaining at the back and avoiding the denser parts of the crowd (see Fig. 6 and 7 in \cite{adrian_crowds_2020}). This behavioral variability reflects the underlying heterogeneity of crowd composition, even in intentionally uniform and homogeneous experimental setups. 
+
+Finally, some studies also show that motivation changes dynamically over time and space. In real-world entrance scenarios involving large numbers of people (such as a concert or festival) an individual’s motivation can fluctuate due to various situational factors: how far they are from the entrance, how many people are ahead of them, or whether they believe they will reach the exit  relatively on time. Motivation may increase as the goal becomes more attainable (as suggested by the goal proximity hypothesis \cite{jhang_impatience_2015}), or decrease when the situation seems less likely (e.g., when the density ahead is too high). Similar to many real-life navigation contexts, motivation evolves over time as situational variables change, and this temporal variability in turn shapes behavioral responses.
+
+This dynamism can be observed and quantified. Psychological research has demonstrated that individual behavior variations can be meaningfully captured by coding movement intensity, by assigning ordinal values to pushing behavior, thus quantifying the degree of forward motion across participants and time. Researchers developed a four-level ordinal scale and rated individuals accordingly for each time unit available: \textit{falling behind, just walking, mild pushing, and strong pushing} (ranging from least to most intense) \cite{usten_pushing_2022}. The results indicated that pedestrian behavior varied considerably over time; individuals rarely remained fixed in a single category, and the distribution of behaviors was broadly heterogeneous, even though participants were uniformly instructed to adopt either high or low motivation. Moreover, within this behavioral variability, distinct patterns emerged. Forward motion intensity appears to increase as individuals approach the bottleneck, reinforcing the idea that motivation is dynamically shaped by both spatial and social context. \cite{usten_dynamic_2023}. 
+
+Taken together, this body of research and conceptual groundwork points to a crucial insight: motivation in crowd scenarios is characterized, first, by the overarching (and static) context, for example, whether the situation involves an evacuation, an exit from a festival, or entry during Black Friday shopping. At the same time, motivation in crowd is also shaped by both heterogeneity between individuals and temporal dynamism within individuals. Any effort to model pedestrian motivation must therefore move beyond static assumptions and incorporate a psychological framework capable of capturing moment-to-moment motivational change across pedestrians.
+
+
+\subsection{Part Two} 
+Motivation has long been a central topic in psychology, with influential theories developed across domains such as basic needs, academic performance, occupational achievement, and long-term goal pursuit (e.g., \cite{lewin_field_1942,atkinson_introduction_1964,vroom_work_1964}). These frameworks have been foundational in advancing our understanding of behavior, but they predominantly address long-term or domain-specific patterns (career development, academic achievement, or interpersonal relationships). In contrast, pedestrian movement unfolds over seconds, not seasons. It involves highly situated, moment-to-moment decisions within dynamic physical and social environments, often under time pressure and spatial constraint. Despite over 80 years of motivational research, this type of short-timescale, movement-oriented behavior remains largely undertheorized. The aim of this study is to bridge that gap: to develop a framework for modeling motivation in specific pedestrian contexts, where internal states are expressed through immediate, observable movement patterns.
+
+In this work, we adapt \textit{expectancy-value theory} \cite{atkinson_introduction_1964, vroom_work_1964, wigfield_expectancy-value_2000, eccles_expectancy_2020} of motivation, originally developed for achievement contexts. Expectancy-value theories attribute motivation to two main components: the \textbf{value} of a potential outcome and the \textbf{expectation} that this outcome can be achieved. Both factors are subjective – they are based on the person's own assessment at that moment. In achievement context, for example, a person will put effort in studying for an exam if the outcome is highly valued and they believe it is possible to succeed through studying. Conversely, a person who considers passing the exam important but believes success to be unlikely may study less, even if additional studying would objectively improve their chances. Over the 60 years of its existence, expectancy-value theory has been refined and extended, with most authors maintaining core idea that motivation arises from the interaction of value and expectancy. More recent developments, such as situated expectancy-value theory, also takes into account the cultural and milieu-specific contexts under which expectations and values are formed \cite{eccles_motivational_2002}.
+
+The application of expectancy-value theory to pedestrian behaviour is to our knowledge an innovative approach. While expectancy-value frameworks have typically been used to explain long-term outcomes, their core logic (that motivation is shaped by perceived likelihood of success and the subjective value of the goal) translates well to short-term crowd scenarios. In this context, motivation becomes a key driver of movement behavior, contributing to the emergent dynamics at entrances. Here, we explain the central concepts of value and expectancy first. We then add a third concept which is more specific for the field of pedestrian dynamics: the payoff structure. This additional concept operationalizes expectations in situations with limited resources (such as the sequential passing of the bottleneck), hence, takes the collective context of crowd movement into account.
+
+\textit{Value:} The concept of value refers to the perceived desirability or attractiveness of the potential outcome that can be achieved through individual behavior \cite{vroom_work_1964, porter_managerial_1968}. It can be understood as the subjective reward associated with reaching a specific goal. This could be the individual significance of a good grade in an exam. In the context of crowds in front of bottlenecks, the value refers to the subjective attractiveness of reaching the bottleneck. The perceived value may vary among pedestrians depending on the urgency of their need to reach the bottleneck. For example, some pedestrians may be highly motivated to exit quickly due to time-sensitive obligations (e.g., catching a train or attending an appointment), while others may experience little urgency and assign lower value to early passage. 
+
+\textit{Expectancy:} The concept of expectancy refers to the degree to which a person believes a particular goal is probable \cite{vroom_work_1964}. In simpler terms, it reflects an individual’s moment-to-moment assessment regarding the likelihood of achieving a specific goal. The greater the perceived likelihood of success, the higher the motivation of the individual. In the context of pedestrian dynamics, especially in bottleneck situations, the initial perceived likelihood of success is primarily determined by an individual’s initial position within the crowd. Individuals closer to the exit are more likely to believe that success is attainable, while those farther back may anticipate delays. As a person gets closer to the exit, their perceived likelihood of success increases. Since an individual’s position is constantly changing, this likelihood also fluctuates based on their proximity to the exit and the information regarding how much of the crowd has already exited the bottleneck. Here, the temporal dimension differs significantly from the original contexts of the theory: in crowds, expectations can change rapidly within a matter of seconds, resulting in dynamic changes in motivation. 
+
+\textit{Payoff structure:} In addition to the temporal component, crowds are strongly shaped by the presence and behavior of the individuals within the crowd. In a situation involving only a single person, movement toward a goal (the entrence) would mainly depend on that individual's level of motivation, without needing to account for the presence of others. However, in crowds, where such scenarios involve multiple individuals, movement is constrained by the physical presence of other bodies. Human bodies occupy space, and in bottleneck environments, physical limitations prevent individuals from advancing freely once crowd density increases. Furthermore, the movement of crowds can take the form of a competitive process. Related findings (unfortunately do not use expectancy-value theory explicitly) come from the field of competitive sports. For example, studies examine the dynamic changes in performance and risk-taking after interim results have been published. The most motivated individuals turn out to be those who are ranked just behind the leaders. Similarly, Lackner \cite{lackner_effort_2023} shows that the presence of a clear "superstar" in a tournament can reduce the effort of other participants than without a superstar, as their perceived chances of success decline.  These observations are consistent with expectancy-value theory: people perceive their own success as less likely as their expectancy decrease. At the same time, not all crowd situations are structured like a sports competition. In many other situations, individuals simply aim to reach a destination together or, for example, in an evacuation the objective is not to win but to exit early enough to not be harmed. To capture these different collective contexts, we added a third factor to our model: the payoff structure. We borrow the concept from game theory without adopting a comprehensive game-theoretical framework. The payoff structure specifies which outcomes are associated with particular strategies and what possible gains and losses they involve, often represented conceptually in the form of a payoff matrix. 
+
+We propose that presence or absence competition (captured here in the form of a payoff structure) should be explicitly incorporated as a key motivational factor, even though classical expectancy–value formulations typically treat competition only as a modifier of expectancy (e.g., Vroom \cite{vroom_work_1964}). In our framework, we restrict the expectancy component to spatial parameters, such as proximity to the bottleneck. By contrast, the payoff structure captures the social dimension of goal pursuit: individuals evaluate their position in terms of both absolute distance to the bottleneck and relative position to others. For participants in a crowd, it is therefore essential to understand what their relative position means in terms of potential success or failure. For instance, if participants are instructed to be among the first ten to pass through a bottleneck, being in position fifty would be disadvantageous, even though many others may still be behind them. In this case, only the first ten participants would win and all the others would lose. Alternatively, the same group of participants could be instructed to pass through the bottleneck together and succeed only if the overall passage time is as  short as possible. Here, the payoff structure allows all of the participants to succeed. Another possibility is a payoff structure in which only the 50 percent of the crowd succeeds. In reality, of course, the payoff structure is not perceived in exact numerical terms, but rather through estimated quantities, such as "only the first few", "most of us", or "everyone".  
+
+
+Let's go through a typical crowd situation to illustrate the interplay of expectancy, value, and payoff structure: A large number of pedestrians are on the way to a concert. Some indeed arrive early, expecting to be among the first to enter the venue (value). They might run towards the gate when the venue is opened because reaching the goal seems plausible (expectancy). Others, who share the same value, arrive later (for example because their train was delayed and arrived far too late), and find that many others are already queuing. Their expectancy of being among of the first is therefore low, so despite their high value they might walk more slowly as additional effort (e.g., running) wouldn't make any difference. Ultimately, the payoff structure is determined by the spatial layout of the concert venue. How large is it? Are there different areas? In a large concert hall, several hundred visitors may still stand close to the stage, whereas in a small venue perhaps only a few dozen people can occupy the front area. This influences how many individuals it is worth trying to be among the first to enter (payoff structure).
+
+\subsection{Part Three} 
+
+
+%Motivation in modelling approaches: Faster is slower, Rzenonka, A lot of panic models , fight or flight models, contagions in panic models changes the movement parameter in realtime.
+
+In addition to empirical findings and psychological theory, the way of proposed model framework operates (through dynamically adapting parameters) can be also observed, although in a more limited and simplified form, in existing modeling approaches in pedestrian dynamics. Many models already incorporate mechanisms in which behavioral parameters (e.g., desired speed) change in real time in response to situational factors. Examples include models addressing the faster-is-slower effect, panic and evacuation models, fight-or-flight formulations, or approaches that incorporate behavioral contagion within crowds. In most of these cases, however, parameter changes are introduced heuristically and lack an explicit psychological foundation.
+
+
+
+
+
+
+
+
+\section{Old Introduction}\label{sec1}
+
+%The Introduction section, of referenced text \cite{bib1} expands on the background of the work (some overlap with the Abstract is acceptable). The introduction should not include subheadings.
+
+%Springer Nature does not impose a strict layout as standard however authors are advised to check the individual requirements for the journal they are planning to submit to as there may be journal-level preferences. When preparing your text please also be aware that some stylistic choices are not supported in full text XML (publication version), including coloured font. These will not be replicated in the typeset article if it is accepted. 
+
+
+
+\textit{Between-condition effects of motivation}
+This section discusses group-level effects of motivation across a variety of settings in pedestrian dynamics. It mainly focuses on pedestrian experiments and less on field studies. Most empirical studies in the field that explore the role of motivation do so in the context of bottlenecks as the primary spatial structure. Only a few studies have investigated motivational influences on other aspects, such as the fundamental diagram \cite{ye_pedestrian_2021} %(Ziemer, 2020) 
+or the staircase capacity \cite{graat_complex_1999}. The focus on bottlenecks is closely linked to the well-known “faster-is-slower effect” and the associated phenomenon of clogging, which will be elaborated on below.
+
+The effects of high motivation are particularly evident in pre-bottleneck density and flow rate. High motivation groups tend to show significantly higher density in front of the bottleneck \cite{sieben_collective_2017, adrian_crowds_2020, li_bottleneck_2021}. However, the influence of motivation on the flow through the bottleneck is more complex. In a relevant article, Muir et al. \cite{muir_effects_1996} demonstrated in an aircraft evacuation study that a high motivation lead to shorter evacuation times (higher flow) if the bottleneck is wide. In contrast, narrow bottlenecks tended to trigger temporary clogs, resulting in longer evacuation times (lower flow). 
+
+Further studies on the effect of motivation on clogging probability, flow rate reduction, or, equivalently, the extension of the clearance time, can be find in Müller \cite{muller_fluchtwegen_1981}, %Helbing (2005), 
+Pastor \cite{pastor_experimental_2015}, Garcimartín \cite{garcimartin_flow_2016}, and Li (with kindergarten children) \cite{li_bottleneck_2020} as well as Li \cite{li_motivation_2024}. In summary, these findings show that a reduction of the flow due to clogging only occurs when bottleneck width is below approximately 80 cm and only under conditions of very high motivation. This is commonly referred to as the “faster-is-slower effect” effect. However, despite its widespread use, the term requires cautious and critical examination, as the phenomenon occurs only under very specific conditions. Its practical relevance should therefore be carefully considered; a point we return to later in this article.
+
+A word of caution: although the effects of motivation have been frequently described in the literature, the term “motivation” has not always been explicitly used, depending on the disciplinary context of the work. In this review, we group together a range of studies that implicitly or explicitly address motivational constructs, even when terminology differs.
+
+A closer look at the experimental designs shows that the studies use various methods and instructions to increase or vary the motivation level of the participants. Some studies manipulated motivation through explicit instructions about movement speed (e.g., “normal”, “fast”, or “as fast as possible”, \cite{peschl_passage_1971, muller_fluchtwegen_1981}), or through directives regarding physical contact (e.g. “no contact”, “only accidental contact”, “contact allowed”, or “pushing allowed”%Garcimartin, 2015
+). In the bottleneck experiments described in Boomers at al. \cite{boomers_crowd_2023}, both speed and contact instructions are systematically varied across three motivational levels. Other studies manipulate motivation more implicitly by creating context specific scenarios, such as an emergency evacuations.
+
+Some experiments are conducted without any additional incentive \cite{li_bottleneck_2020, li_bottleneck_2021}, while others introduce a reward structure alongside the scenario. In these experiments, participants receive an additional sum $X$ if they are among the first $m$ out of $N$ individuals to pass through the bottleneck \cite{mintz_nonadaptive_1951, muir_effects_1996, li_motivation_2024}. Other studies create a contextual motivation through imaginative framing, such as attending a concert \cite{sieben_collective_2017, adrian_crowds_2020, sieben_repertoires_2025}. This approach relies entirely on the imagination of the participants, using instructions such as: "Imagine you are attending a concert by your favorite artist and are waiting in line to get in."
+
+Finally, it is worth noting that related constructs (such as competitiveness and cooperativeness) frequently appear in the literature and are sometimes equated with motivation \cite{mintz_nonadaptive_1951, sime_escape_1983}. Some authors assume that high motivation implies competitive behavior. A common example can be found in evacuation scenarios, where it is often preasumed that individuals, being highly motivated to exit quickly, will therefore act selfishly and competitively. However, this assumption has been proven inaccurate by several studies that reconstruct behavior during emergencies, showing instead that cooperation often occurs \cite{drury_collective_2009, levine_identity_2005}. We argue that  cooperation or competition are not universal indicators of motivational strength but instead depend on social norms of the setting and strategic considerations. In contexts such as sports (i.e., race), for example, high motivation is inherently linked to competition (i.e., to be the first, winning), whereas in other settings, strategic cooperation may be the optimal path to goal achievement. The role of strategic decisions leading to either cooperation or competition has also been extensively studied in the game theory research \cite{axelrod_evolution_1981}. 
+
+This diversity in experimental designs highlights two distinct layers of motivation: On the one hand, there is a (1) contextual layer that defines the intensity of motivation, for example, an emergency evacuation, or a concert entry. On the other hand, there is a (2) behavioral layer that reflects how different degrees of motivation manifests in movement, such as high speed, reduced interpersonal distance, or physical contact such as pushing and shoving. The aim of this article is to introduce a model that conceptually and empirically links these two layers in a coherent framework.
+
+%All participants were instructed to achieve the same level of motivation using a simple high/low motivation instruction context \cite{pastor2015,sieben2017,adrian2020,li2020,li2021,ye2021,boomers2023} (add:  Müller1981dis,Muir1996 Garcimartin2015, Li2020 (KindergardenChildren), Li2021, Li2024). In these studies, participants were typically instructed to imagine scenarios that increased their motivation, e.g., “Imagine you are on your way to a concert by your favorite artist…” Compared to low-motivation groups, highly motivated crowds showed more active behavior, moving more quickly and assertively toward the bottleneck.  
+
+
+
+
+\textit{Within-condition and individual effects of motivation}
+This section addresses the within-condition effects of motivation; an area that has been largely neglected in the pedestrian dynamics literature. While many studies have explored the effects of motivation by comparing group conditions (e.g., high vs. low motivation), two important dimensions remain underexplored. First, individual differences within motivational conditions are often overlooked; and second, intra-individual fluctuations in motivation over time have yet to be systematically considered.
+
+Regarding the first point, most studies implicitly assume that all participants in the “high motivation” condition would behave uniformly, in a way that collectively represented a high-motivation group. However, in real-world scenarios, crowd motivation is not monolithic. Individuals may vary in their motivation: some may be highly driven to reach to the front (e.g., to secure a spot or leave quickly), while others may be indifferent, preferring to arrive later or simply follow the crowd. These individual differences more accurately reflect real-life crowd compositions. Fortunately, even in the controlled settings of these experiments, participants did not behave uniformly. Some appeared to treat the experiment as a game, displaying high motivation and assertive movement; others simply followed instructions without extra effort; and some disengaged entirely, remaining at the back and avoiding the denser parts of the crowd (see Fig. 6 and 7 in \cite{adrian_crowds_2020}). This behavioral variability reflects the underlying heterogeneity of crowd composition, even in intentionally uniform and homogeneous experimental setups. 
+
+The second neglected aspect is the dynamic nature of motivation within individuals over time. In real-world entrance scenarios involving large numbers of people (such as a concert or festival) an individual’s motivation can fluctuate due to various situational factors: how far they are from the entrance, how many people are ahead of them, or whether they believe they will reach the exit  relatively on time. Motivation may increase as the goal becomes more attainable (as suggested by the goal proximity hypothesis \cite{jhang_impatience_2015}), or decrease when the situation seems less likely (e.g., when the density ahead is too high). Similar to many real-life navigation contexts, motivation evolves over time as situational variables change, and this temporal variability in turn shapes behavioral responses.
+
+This dynamism and heterogeneity can be quantified. Psychological research has demonstrated that individual behavior variations can be meaningfully captured by coding movement intensity, by assigning ordinal values to pushing behavior, thus quantifying the degree of forward motion across participants and time. Researchers developed a four-level ordinal scale and rated individuals accordingly for each time unit available: \textit{falling behind, just walking, mild pushing, and strong pushing} (ranging from least to most intense) \cite{usten_pushing_2022}. The results indicated that pedestrian behavior varied considerably over time; individuals rarely remained fixed in a single category, and the distribution of behaviors was broadly heterogeneous, even though participants were uniformly instructed to adopt either high or low motivation. Moreover, within this behavioral variability, distinct patterns emerged. Forward motion intensity appears to increase as individuals approach the bottleneck, reinforcing the idea that motivation is dynamically shaped by both spatial and social context. \cite{usten_dynamic_2023}. 
+
+Taken together, this body of research and conceptual groundwork points to a crucial insight: crowd behavior in entrance scenarios is characterized by both heterogeneity between individuals and temporal dynamism within individuals. Any effort to model pedestrian motivation must therefore move beyond fixed-condition assumptions and incorporate a psychological framework capable of capturing moment-to-moment motivational change across pedestrians.
+
+
+
+
+\subsection{Parameter of movement models} 
+Although different types of models (such as acceleration or velocity models) use varying sets of parameters, the movement operations characterized by these parameters are quite similar. All models use intended speed to define how fast a pedestrian moves without restrictions and how the actual speed changes in response to environmental conditions. They also use parameters that define the interpersonal spacing while walking or waiting with others. Additionally, most models introduce parameters to characterize how strong and frequent directional changes should happen.     
+
+The most commonly used parameter in movement models to represent motivational levels is the free speed $\vec{v}^0$, also called intended, desired or preferred speed. The idea here is that high motivation goes hand in hand with a high preferred speed. However, the level of motivation not only shapes intended speed of pedestrians when they move without getting restricted by others, but also how they move in relation to those around them. This includes distance to neighbors, the frequency and intensity of directional changes in movement, reaction times, and acceleration or speed changes. In other words, most (if not all) parameters in movement models depend on motivation and must therefore be adjusted accordingly when modeling motivation.  
+
+%(Optional discuss inappropriate terminology of faster is slower effect: One prominent example is the faster is slower effect, which stands for the effect that high motivation, achieved through high free walking speeds, can lead to blockages at bottlenecks and thus to lower flow rates and longer clearance times. However, even if the effect can be triggered by the free walking speed parameter, this walking speed is not achieved in congested situations and cannot be observed. Rather, in force models, this parameter causes people walking at a slow speed to exert a large force on the people standing in front of them. This discussion shows that the speed parameter has influence on other variables like the distance to others or the force transferred to neighbors.) 
+
+
+
+
+\subsection{Psychological foundations of motivation for pedestrian dynamics}
+
+
+Motivation has long been a central topic in psychology, with influential theories developed across domains such as basic needs, academic performance, occupational achievement, and long-term goal pursuit (e.g., \cite{lewin_field_1942,atkinson_introduction_1964,vroom_work_1964}). These frameworks have been foundational in advancing our understanding of behavior, but they predominantly address long-term or domain-specific patterns (career development, academic achievement, or interpersonal relationships). In contrast, pedestrian movement unfolds over seconds, not seasons. It involves highly situated, moment-to-moment decisions within dynamic physical and social environments, often under time pressure and spatial constraint. Despite over 80 years of motivational research, this type of short-timescale, movement-oriented behavior remains largely undertheorized. The aim of this study is to bridge that gap: to develop a framework for modeling motivation in specific pedestrian contexts, where internal states are expressed through immediate, observable movement patterns.
+
+In this work, we adapt \textit{expectancy-value theory} \cite{atkinson_introduction_1964, vroom_work_1964, wigfield_expectancy-value_2000, eccles_expectancy_2020} of motivation, originally developed for achievement contexts. Expectancy-value theories attribute motivation to two factors: the value of the possible outcome of an action and the expectation that this outcome can be achieved. Both factors are subjective – they are based on the person's own assessment at that moment. In the context of performance, this means for example that a person will study for an exam if the result is highly valued and they believe it is possible to succeed and improve their own performance through studying. A person for whom passing the exam is very important but who does not expect to pass may study less, even if they objectively need to. Over the 60 years of its existence, expectancy-value theory has been refined, with most authors sticking to the two factors but differentiating them. Situated expectancy-value theory also takes into account the cultural and milieu-specific context of the formation of expectations and becoming (zitieren: Eccles, J. S., Wigfield, A. (2002). Motivational beliefs, values, and goals. Annual Review of Psychology, 53, 109–132. https://doi.org/10.1146/annurev.psych.53.100901.135153).
+
+The application of expectancy-value theory to pedestrian behaviour is to our knowledge an innovative approach. While expectancy-value frameworks have typically been used to explain long-term outcomes, their core logic (that motivation is shaped by perceived likelihood of success and the subjective value of the goal) translates well to short-term crowd scenarios. In this context, motivation becomes a key driver of movement behavior, contributing to the emergent dynamics at entrances. Here, we explain the central concepts of value and expectancy first, before we introduce a third concept which is more specific for the field of pedestrian dynamics, namely the payoff structure. This additional concept takes the collective context of crowd movement into account.
+
+\textit{Value:} The concept of value refers to the perceived desirability or attractiveness of the potential outcome that can be achieved through individual behavior \cite{vroom_work_1964, porter_managerial_1968}. It can be understood as the subjective reward associated with reaching a specific goal. This could be the individual significance of a good grade in an exam. In the context of crowds in front of bottlenecks, the value refers to the subjective attractiveness of reaching the bottleneck. The perceived value may vary among pedestrians depending on the urgency of their need to reach the bottleneck. For example, some pedestrians may be highly motivated to exit quickly due to time-sensitive obligations (e.g., catching a train or attending an appointment), while others may experience little urgency and assign lower value to early passage. 
+
+\textit{Expectancy:} The concept of expectancy refers to the degree to which a person believes a particular goal is probable \cite{vroom_work_1964}. In simpler terms, it reflects an individual’s moment-to-moment assessment regarding the likelihood of achieving a specific goal. The greater the perceived likelihood of success, the higher the motivation of the individual. In the context of pedestrian dynamics, especially in bottleneck situations, the initial perceived likelihood of success is primarily determined by an individual’s initial position within the crowd. Individuals closer to the exit are more likely to believe that success is attainable, while those farther back may anticipate delays. As a person gets closer to the exit, their perceived likelihood of success increases. Since an individual’s position is constantly changing, this likelihood also fluctuates based on their proximity to the exit and the information regarding how much of the crowd has already exited the bottleneck. Here, the temporal dimension differs significantly from the original contexts of the theory: in crowds, expectations can change rapidly within a matter of seconds, so that we can also assume dynamic changes in motivation. 
+
+\textit{Payoff structure:}
+In addition to the temporal component, the strong influence of other people and their behaviour is particularly noticeable in crowds. In a situation involving only a single person, the individual would typically move more or less fast, depending on the motivation, toward the entrance or goal without needing to account for the presence of others. However, in crowds, where such scenarios involve multiple individuals, movement is constrained by the physical presence of other bodies. Human bodies occupy space, and in bottleneck environments, physical limitations prevent individuals from advancing freely once crowd density increases. Furthermore, the movement of crowds can take the form of a competition. Interesting studies that are relevant to this paper, but unfortunately do not use expectancy-value theory explicitly, come from the field of competitive sports. For example, xy examine the dynamic changes in performance and risk-taking after interim results have been published. The most motivated individuals turn out to be those who are ranked just behind the leaders. Lackner (Lackner, M. (2023). Effort and risk-taking in tournaments with superstars – evidence for teams. Applied Economics, 55(57), 6776–6792. https://doi.org/10.1080/00036846.2023.2165621) shows that if there is a clear "superstar" in a competition this dominance leads to other participants performing less well than without a superstar. Again, this fits to expectancy-value theory in that people perceive their own success as less likey. But not all crowd situations are structured like a sports competition. In other situations, the crowd just wants to get somewhere together or, for example, in an evacuation everyone wants to get out. In an evacuation it is not important to win but to exit early enough to not be harmed. To capture these different collective contexts, we added a third factor to our model: the payoff structure. We borrow the concept from game theory without introducing a comprehensive game-theoretical framework. The payoff structure shows which strategy can lead to which possible gains and losses and is often presented in the form of a matrix.  (p). 
+
+We propose that competition in the form of a payoff structure should be explicitly incorporated as a key motivational factor, despite it traditionally being treated as a modifier of expectancy (Vroom). However, this is not ideal in the context of pedestrian dynamics. In our framework, we restrict the expectancy component to spatial parameters, such as proximity to the bottleneck. By contrast, the payoff structure captures the social dimension of goal pursuit: individuals evaluate their position in terms of both absolute distance to the bottleneck and relative position to others. For participants in a crowd, it is essential to understand what their relative position means in terms of winning or losing the game. For instance, if participants are instructed to be among the first ten to walk through the bottleneck, being in position fifty would be disadvantageous (although, in this example, two hundred participants may still be behind). In this case, only the first ten participants would win and all the others would lose. Alternatively, the 200 participants could be instructed to walk through the bottleneck together, winning only if they do so in the shortest possible time. Here, the payoff structure would mean that all of the participants could win. Another possibility is a payoff structure of 50 per cent, in which case the participants need to know that the first half to walk through the bottleneck wins. In reality, of course, the payoff structure is not perceived in terms of numbers, but rather in terms of estimated quantities, such as 'only the first few people', 'most of us', or 'all of us'.  
+
+
+Let's go through a typical crowd situation in terms of expectancy, value, and payoff structure: A large number of pedestrians is on the way to a concert. Some people did indeed arrive early, expecting to be among the first to enter the concert. They might run towards the gate because reaching the goal seems possible (expectancy). Others, who share the same value, were on a train that arrived far too late. By the time they arrive at the venue, many others are already queuing. Their expectancy of being one of the first is low, so despite their high value, they might walk slowly because running wouldn't make any difference. Ultimately, the payoff structure is determined by the spatial layout of the concert venue. How large is it? Are there different areas? In a large venue, several hundred visitors can be close to the stage; in a small venue, perhaps only fifty. This influences how many visitors it is worth trying to be among the first (payoff structure).
+
+\subsection{Objectives for modelling motivation in pedestrian dynamics}
+Unlike models that rely solely on fixed heterogeneity (where agents are assigned static parameters to capture variability) our approach introduces a structured system for dynamically updating agent parameters based on motivation. This shift from static to dynamic modeling is grounded in psychological theory and serves three key purposes:
+
+\begin{enumerate}
+    \item \textbf{Psychological Soundness:} The model draws from expectancy-value theory and competition principles to better reflect how real individuals evaluate and adapt their behavior in evacuation scenarios.
+    
+    \item \textbf{Situation-Driven Scenarios:} By incorporating domain knowledge from psychology and human behavior, the model can simulate not only average outcomes but also diverse behavioral strategies that arise under different situational pressures, such as exhaustion or reward, when specific scenarios are provided.
+    
+    \item \textbf{Spatio-Temporal Adaptation:} Agent parameters (e.g., desired speed, reactivity) are updated dynamically based on the calculated motivation, which itself is a function of the agent’s spatial position and the evolving global state of the system (e.g., number of agents evacuated). This allows for richer and more realistic behavioral dynamics that evolve over time and space.
+\end{enumerate}
+
+In this way, the model bridges the gap between simple heterogeneity and context-aware adaptation, offering a flexible and behaviorally valid tool for studying evacuation and movement phenomena.
+
+\section{Results: Expectancy-Value-Payoff (EVP) Model}
+\label{sec:results}
+The EVP model defines an agent's motivation as a weighted combination of
+three normalized components:
+
+\begin{equation}
+m_i = \frac{w_E E_i + w_V V_i + w_P P_i}{w_E + w_V + w_P},
+\label{eq:motivation}
+\end{equation}
+where \( E_i \) represents expectancy, \( V_i \) the value, and \( P_i \) the payoff, while \(w_E\), \(w_V\), and \(w_P\) denote their relative weights. Expectancy quantifies how likely an action is to succeed, value represents the agent's intrinsic interest in succeeding, and payoff captures how advantageous the agent's current relative position is within the crowd. These three quantities depend on the setting and on the position of the pedestrian in that setting. In particular, they depend on the distance to the entrance, the relative rank within the crowd, and the subjective value attached to the outcome.
+
+\paragraph{Expectancy.}  
+The expectancy \( E(d) \) depends on the agent's distance \( d \) to the exit. It is modeled as a bell-shaped function:
+
+\begin{equation}
+E(d) =
+\begin{cases}
+e \cdot \exp\left(\dfrac{1}{\left(\frac{d}{w}\right)^2 - 1}\right), & d < w, \\
+0, & d \ge w,
+\end{cases}
+\label{eq:expectancy}
+\end{equation}
+where \( w \) is the influence radius. In the current implementation, \(E(d)\)
+is normalized to the interval \([0,1]\): it reaches its maximum value \(1\)
+at the goal and drops to \(0\) at and beyond \(w\). The parameter \(h\) appears
+in the intermediate computation in the code, but it cancels out in the final
+normalized expectancy value.
+
+\paragraph{Payoff.}
+The payoff term is based on the current rank of an agent within the crowd.
+Let \(r_i\) denote the absolute rank of agent \(i\), obtained by ordering all
+agents according to their current distance to the entrance, with \(r_i=1\)
+for the agent closest to the entrance. This absolute rank is then normalized to
+\(q_i\in[0,1]\):
+
+\begin{equation}
+q_i = \frac{r_i - 1}{\max(1, N_{\text{max}}-1)},
+\label{eq:competition}
+\end{equation}
+\begin{equation}
+P(q_i)= \frac{1}{1+\exp\left(k_P(q_i-q_0)\right)}.
+\end{equation}
+Here, \(r_i\) is the current absolute rank of agent \(i\), \(N_{\text{max}}\) is the scenario maximum reward, \(k_P\) controls the steepness of the payoff decay, and \(q_0\) is the payoff inflection point. Agents close to the front therefore receive a higher payoff than agents farther back.
+
+\paragraph{Value.}  
+Each agent \( i \) is first assigned a fixed intrinsic value \(v_i\), which
+may depend on heuristics such as distance to the exit. We distinguish two
+groups of agents: high-value agents with
+\(v_i \in [v_{\min}^{\text{high}},\ v_{\max}^{\text{high}}]\), and low-value
+agents with \(v_i \in [v_{\min}^{\text{low}},\ v_{\max}^{\text{low}}]\).
+In the implementation, these absolute values are then normalized to the
+interval \([0,1]\) before entering the motivation model:
+\begin{equation}
+V_i = \frac{v_i - v_{\min}}{v_{\max}-v_{\min}},
+\end{equation}
+with clipping to \([0,1]\). Thus, \(V_i\) denotes the normalized value term
+used in the EVP model. The resulting motivation is therefore a weighted
+average of the normalized expectancy, value, and payoff terms.
+
+
+
+\begin{figure}[htbp]
+  \centering
+  
+  % Expectancy
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/expectancy.pdf}
+    \caption{Expectancy $E(d)$ according to \cref{eq:expectancy}.}
+    \label{fig:expectancy}
+  \end{subfigure}
+  \hfill
+  % Value
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/value.pdf}
+    \caption{Value assignment $V$ for two categories of pedestrians.}
+    \label{fig:value}
+  \end{subfigure}
+  
+  \vspace{0.5cm}
+  
+  % Payoff
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/payoff.pdf}
+    \caption{Payoff $P(q)$ according to \cref{eq:competition}.}
+    \label{fig:competition}
+  \end{subfigure}
+  \hfill
+  % Motivation
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/motivation.pdf}
+    \caption{Resulting Motivation according to \cref{eq:motivation}.}
+    \label{fig:motivation}
+  \end{subfigure}
+  
+  \caption{Illustration of the EVP components and the resulting motivation. Each subplot shows how expectancy, value, and payoff contribute to the overall motivation profile.}
+  \label{fig:evc_components}
+\end{figure}
+
+
+\subsection{Motivation in the collision speed model}
+Pedestrian motion is simulated in JuPedSim using a collision speed model;
+the motivational state does not replace this operational model but
+modulates selected parameters of it. Since the focus of this paper is the
+motivation model, we keep the operational description brief here and refer
+to Appendix~\ref{app:operational-model} for the implementation details.
+
+\section{Motivation-to-parameter mapping}
+
+Motivation influences the collision speed model by modifying selected
+operational parameters. The effective motivation value used for parameter
+mapping is bounded in order to ensure physically plausible walking speeds.
+
+Operational parameters are then obtained through logistic response
+functions,
+\begin{equation}
+y(m) = y_{\min} + \frac{y_{\max}-y_{\min}}{1+\exp(-k(m-m_0))}.
+\label{eq:logistic}    
+\end{equation}
+
+Through this mapping, increasing motivation leads to higher desired
+speeds, reduced temporal gaps, smaller interpersonal buffers, and
+stronger neighbor repulsion. In the present implementation, the neighbor
+interaction range is also passed through the mapping layer but remains
+constant at its default value. The detailed anchor values and example
+logistic response are reported in Appendix~\ref{app:operational-model}.
+
+During each simulation update, the model first evaluates the motivation
+level of each pedestrian. The resulting value determines the behavioral
+parameters of the operational model, which subsequently governs the
+actual motion dynamics.
+
+
+% \subsection{Motivation-Based Parameter Adaptation}
+
+% With the definition of motivation $m_i$ via the $EVC$-model and the discussion of how movement parameters change qualitatively with motivation, it is now possible to formulate the parameters of the movement model as a set of mathematical functions of motivation.
+
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=0.7\linewidth]{figures/sketch_motiv.png}
+%     \caption{Velocity distance functions for different motivations}
+%     \label{fig:movementpar}
+% \end{figure}
+
+% Figure \ref{fig:movementpar} shows how the speed distance function could look for different motivations. For a high motivation (a) the desired speed is high, (b) the minimal distance to the person in front is small  and (c) speed adaption is very sensitive to distance. This reflects that at high motivation spatial gaps directly lead to increasing speed and thus gaps are quickly closed. In contrary at low motivation (a) the desired speed is low, (b) the distance to the person in front is large and (c) spatial gaps lead to small changes in speed and thus gaps are slowly closed.  We choose the following functional forms to model these connections:
+
+% \begin{equation}
+%     \tilde{v}_i^0(m_i) = m_i \cdot v_i^0
+% \end{equation}
+
+% \begin{equation}
+%     \tilde{T}_i (m_i) = \frac{a_T}{m_i} +b_T 
+% \end{equation}
+
+% \begin{equation}
+%     \tilde{l}_i (m_i) = \frac{a_l}{m_i} + b_l 
+% \end{equation}
+
+% To scale the motivation $m$ and the parameters of the functions, we use the following specification 
+
+% \begin{table}[]
+%     \centering
+%     \begin{tabular}{c | c | c | c | c}
+%          motivational degree &   $m_i$    & $\tilde{v}_i^0$ & $\tilde{l}_i$ & $\tilde{T}_i$ \\
+%          \hline
+%         upper limit & $\to \infty$ & $> 3,6 \, m/s$  &  $< 0,3 \, m$  &  $\ll 0,03 \, s$ \\
+%         high        & 3            & $3,6 \, m/s$    &  $0,3 \, m$   & $0,03 \, s$ \\
+%         normal      & 1            & $1,2 \, m/s$    &  $0,4 \, m$   & $1 \, s$ \\
+%         low         & 0,1          & $0,5 \, m/s$    &  $1 \, m$   &  $4 \, s$     \\
+%         non         & 0            & $0 \, m/s$         &  room size  &  $\to \infty$
+%     \end{tabular}
+%     \caption{Determination of the scales of motivation and the parameters from the movement models. The values for motivation were set so that a linear relationship between motivation and free walking speed can be assumed. The values of the other movement parameters are based on typical measurements from fundamental diagrams ADD REFERENCES LIKE Dis Paetzke/Rudhina/Mohcine/Culture and Motivation FD paper.}
+%     \label{tab:my_label}
+% \end{table}
+
+%or 
+
+%\begin{equation}
+ %   \tilde{T}_i (m_i) = a_T + b_T \, e^{c_T\cdot m_i} 
+%\end{equation}
+
+%and 
+
+%\begin{equation}
+%    \tilde{l}_i (m_i) =  a_l + b_l e \, e^{c_l\cdot m_i} 
+%\end{equation}
+
+%% Once these fundamental relationships have been established, scales must now be inserted to formulate functions for the movement parameters depending on motivation $\tilde{v}_i^0(m_i), \tilde{l}_i (m_i)$ and $\tilde{T}_i (m_i)$. For simplicity we choose a simple linear relationship of desired speed with the motivation. With $v_i^0=1,2 \, [m/s]$ we get $\tilde{v}_i^0(0,1)=0,12 \, [m/s]$ and $\tilde{v}_i^0(3)=3,6 \, [m/s]$. 
+
+%% To determine at
+
+%To link the parameter of the movement model with the motivation $m_i$ we assume for the scale that the lower limit of the motivation is $m_i=0$. For a normal motivation we set $m_i=1$, for a low $m_i=0,1$ and a high motivation $m_i=3$ while their is no upper limit for $m$. As we will see in the next paragraphs the values chosen for low, normal and high are reasonable related to the scale of the movement parameter but also arbitrary. 
+
+%With these values we have a very simple form of the function $\tilde{v}_i^0(m_i) = m_i \cdot v_i^0 $ and also reasonable values for the desired speed of a low, normal and high motivated pedestrian. Next we construct reasonable functions for $\tilde{T}_i (m_i)$ and $\tilde{l}_i (m_i)$. For speed adaption we use  
+
+
+
+
+
+To ensure that the computed motivation remains within realistic limits, each agent's motivation \( m_i \) is constrained to lie between a minimum threshold of $\epsilon=v_{\max}^{\text{low}}]$ and an upper bound defined by the ratio of the maximum physiological walking speed, \( v_0^{\text{max}} = 3.6\, \text{m/s} \), to the agent's baseline desired speed \( v_i^0 \):
+\[
+m_i \in \left[\epsilon,\ \frac{v_0^{\text{max}}}{v_i^0}\right].
+\]
+This motivation value directly influences several behavioral parameters in the model and determines how actively each agent moves within the crowd. 
+
+Agents with higher motivation adjust their behavior in multiple ways. First, their desired speed increases proportionally to their motivation, making them more likely to move quickly towards the exit. Formally, the adapted desired speed is given by \( \tilde{v}_i^0 = v_i^0 \cdot m_i \). 
+
+
+
+In addition, motivated agents close gaps more rapidly because their time gap parameter \( T_i \) shortens with increasing motivation, according to \( \tilde{T}_i = T_i / m_i \).
+
+Motivation also affects how agents interact with others. As motivation rises, the directional response becomes stronger and the range \( D_i \) in the direction model increases, which means that motivated agents are more sensitive to their neighbors and more inclined to change direction to overtake and advance through the crowd. 
+Finally, the buffer size \( b_i \) is reduced for highly motivated agents, allowing them to keep less distance from their neighbors. 
+In contrast, agents with lower motivation tend to maintain larger buffers, showing more passive behavior and being more strongly influenced by surrounding pedestrians.
+
+Together, these adaptations enable the model to reproduce a broad range of realistic behaviors, from passive waiting to more assertive and proactive movement. 
+Highly motivated agents tend to close gaps more quickly, maintain smaller distances to others, and adjust their direction more actively to advance towards the exit sooner. 
+In contrast, agents with lower motivation keep larger gaps, move at lower speeds, and are more likely to follow others without actively seeking better positions. 
+
+\section{Methods}
+\label{sec:methods}
+\subsection{Simulated data}
+%\subsection{Empirical data for selected settings}
+To validate the model's ability to reproduce realistic behavioral differences under varying motivation, we compare the simulation results to experimental data. 
+\cref{fig:crossing-comparison} shows the mean area per agent and mean density per agent plotted against crossing order for two scenarios: a highly motivated run (Croma/2c070) and a normal run (Croma/1c070). 
+
+In the Croma/2c070 experiment, participants were placed in a situation designed to induce high motivation to exit quickly. This run shows that the first agents to cross maintained smaller personal areas and higher local densities, indicating a competitive and assertive strategy to reach the exit sooner. In contrast, the Croma/1c070 experiment represents a normal motivation scenario, where participants moved more patiently and maintained larger personal spaces. Here, the mean area per agent was consistently higher and the differences across crossing order were less pronounced, reflecting a more relaxed and cooperative evacuation behavior.
+
+\cref{fig:crossing-comparison} compares the simulation results using the EVP strategy with the Croma/2c070 experiment. The simulation reproduces the same general trend: early crossers maintain smaller personal areas, consistent with higher motivation and competitive behavior near the bottleneck. As the crossing order increases, the mean area per agent rises, showing that less motivated agents maintain greater spacing. This pattern demonstrates that the model’s motivation-driven adaptation of speed, time gap, and buffer size can replicate the experimentally observed self-organization of agents under conditions of varying urgency.
+
+In contrast, the simulation using the original model without motivation does not reproduce the trend observed in the experiment. The mean area per agent remains relatively constant across the crossing order, showing little distinction between early and late crossers. This highlights that the baseline model, which only incorporates static heterogeneity, is not sufficient to capture the competitive self-organization seen in the high-motivation scenario. The introduction of the EVP mechanism is therefore essential to replicate the gradual increase in spacing and the clear behavioral stratification among agents.
+
+In the EVP run, 32 agents were assigned high values between 1.5 and 1.8, while the remaining 53 agents had values between 0.2 and 0.4.
+The number of agents in the simulation matches the number used in the experiments. Other parameters such as the expectancy width, payoff shape, and dynamic buffer were chosen as listed in \cref{tab:evc_parameters}.
+
+\subsection{Spatial motivation heatmaps}
+To assess how the different motivation formulations are distributed in space, we additionally computed spatial heatmaps of the local mean motivation from the exported motivation trajectories. For each model, all samples in a selected time window were projected onto the $(x,y)$ plane and accumulated on a regular grid. Within each grid cell, the local mean motivation was computed from the samples falling into that cell and then spatially smoothed to obtain a continuous field. This yields a spatial representation of where motivated and less motivated states occur during the simulation rather than only reporting a global time average.
+
+We applied this analysis to a small scenario sweep that varied the number of agents ($20$, $30$, $40$) and the door opening time ($0\,\mathrm{s}$ and $100\,\mathrm{s}$). The resulting heatmaps are shown in \cref{fig:motivation-heatmaps-scenarios}. Across all scenarios, the combined EVP model generates the strongest spatial heterogeneity, with elevated motivation concentrated near the bottleneck and along the advancing front. The isolated $P$ and $V$ variants also produce localized structure, but with weaker contrast. By comparison, the \texttt{NO\_MOTIVATION} baseline remains spatially uniform by construction, while the $E$ model is nearly constant in the present parameterization. Reducing the number of agents makes these spatial contrasts easier to distinguish, whereas larger crowds produce stronger spatial averaging. Delayed door opening further sharpens the accumulation region in front of the bottleneck and amplifies the contrast between low- and high-motivation zones.
+
+\subsection{Voronoi density analysis}
+To quantify local crowding in front of the bottleneck, we computed Voronoi density time series using PedPy. For each simulation run, individual Voronoi polygons were constructed from the trajectory data inside the walkable area. The Voronoi density was then evaluated in the rectangular measurement area directly in front of the entrance, defined in the configuration file by $x \in [-0.72, 0.67]\,\mathrm{m}$ and $y \in [18, 19]\,\mathrm{m}$. This yields a time-resolved estimate of the local density that is less sensitive to discreteness effects than simply dividing the number of agents by the area.
+
+The same scenario sweep as for the motivation heatmaps was analyzed, varying the number of agents ($20$, $30$, $40$) and the door opening time ($0\,\mathrm{s}$ and $100\,\mathrm{s}$). The corresponding Voronoi density time series for all models are shown in \cref{fig:voronoi-density-scenarios-all}, and the focused comparison between the combined EVP model and the \texttt{NO\_MOTIVATION} baseline is shown in \cref{fig:voronoi-density-scenarios-pve}. In general, the Voronoi density is more sensitive to scenario settings than the coordination number. Smaller populations lead to lower and more intermittent densities in the measurement area, while larger populations produce more sustained congestion. Delayed door opening tends to increase the accumulation phase before discharge and therefore sharpens the transient density peaks after release. Across several scenarios, the EVP model reaches slightly higher and more persistent density levels near the bottleneck than the baseline without motivation, which is consistent with the interpretation that motivated agents close gaps more quickly and accept smaller interpersonal distances. At the same time, the effect remains scenario dependent, indicating that geometry, door timing, and population size jointly determine whether the motivational mechanism is clearly visible in the density signal.
+
+
+\begin{table}[htbp]
+  \centering
+  \caption{Motivation model parameters used in the EVP simulation.}
+  \begin{tabular}{ll}
+    \toprule
+    Parameter & Value \\
+    \midrule
+    Baseline desired speed $v_0$ & 1.2 m/s \\
+    Time gap $T$ & 1.0 s \\
+    Expectancy width $w$ & 4 m\\
+    Expectancy height $h$ & 0.5 \\
+    High value range & [1.5, 1.8] \\
+    Low value range & [0.2, 0.4] \\
+    Number of high-value agents & 32 \\
+    Payoff steepness $k_P$ & 8.0 \\
+    Payoff inflection $q_0$ & 0.5 \\
+    Agent buffer & dynamic (based on motivation) \\
+    \bottomrule
+  \end{tabular}
+  \label{tab:evc_parameters}
+\end{table}
+
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{motivation_heatmap_results/agents_20_open_0/motivation_heatmap_models.png}
+    \caption{$20$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{motivation_heatmap_results/agents_20_open_100/motivation_heatmap_models.png}
+    \caption{$20$ agents, delayed door opening}
+  \end{subfigure}
+
+  \vspace{0.4cm}
+
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{motivation_heatmap_results/agents_30_open_0/motivation_heatmap_models.png}
+    \caption{$30$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{motivation_heatmap_results/agents_30_open_100/motivation_heatmap_models.png}
+    \caption{$30$ agents, delayed door opening}
+  \end{subfigure}
+
+  \vspace{0.4cm}
+
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{motivation_heatmap_results/agents_40_open_0/motivation_heatmap_models.png}
+    \caption{$40$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{motivation_heatmap_results/agents_40_open_100/motivation_heatmap_models.png}
+    \caption{$40$ agents, delayed door opening}
+  \end{subfigure}
+
+  \caption{Spatial heatmaps of the local mean motivation for models $P$, $V$, $E$, $PVE$, and \texttt{NO\_MOTIVATION}, computed over the interval $10\,\mathrm{s} \le t \le 300\,\mathrm{s}$. Each panel shows one scenario from the sweep over agent number and door opening time. The combined $PVE$ model exhibits the strongest spatial heterogeneity, whereas \texttt{NO\_MOTIVATION} remains spatially uniform and $E$ is nearly constant in the present setup.}
+  \label{fig:motivation-heatmaps-scenarios}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_20_open_0/voronoi_density_model_comparison.png}
+    \caption{$20$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_20_open_100/voronoi_density_model_comparison.png}
+    \caption{$20$ agents, delayed door opening}
+  \end{subfigure}
+
+  \vspace{0.4cm}
+
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_30_open_0/voronoi_density_model_comparison.png}
+    \caption{$30$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_30_open_100/voronoi_density_model_comparison.png}
+    \caption{$30$ agents, delayed door opening}
+  \end{subfigure}
+
+  \vspace{0.4cm}
+
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_40_open_0/voronoi_density_model_comparison.png}
+    \caption{$40$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_40_open_100/voronoi_density_model_comparison.png}
+    \caption{$40$ agents, delayed door opening}
+  \end{subfigure}
+
+  \caption{Voronoi density time series in the measurement area directly in front of the bottleneck for all models and all scenario settings. Increasing the number of agents raises the overall density level and leads to longer congested phases, while delayed door opening introduces a pronounced accumulation and release transient.}
+  \label{fig:voronoi-density-scenarios-all}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_20_open_0/voronoi_density_no_motivation_vs_pve.png}
+    \caption{$20$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_20_open_100/voronoi_density_no_motivation_vs_pve.png}
+    \caption{$20$ agents, delayed door opening}
+  \end{subfigure}
+
+  \vspace{0.4cm}
+
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_30_open_0/voronoi_density_no_motivation_vs_pve.png}
+    \caption{$30$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_30_open_100/voronoi_density_no_motivation_vs_pve.png}
+    \caption{$30$ agents, delayed door opening}
+  \end{subfigure}
+
+  \vspace{0.4cm}
+
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_40_open_0/voronoi_density_no_motivation_vs_pve.png}
+    \caption{$40$ agents, door open from the start}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\linewidth]{voronoi_density_results/agents_40_open_100/voronoi_density_no_motivation_vs_pve.png}
+    \caption{$40$ agents, delayed door opening}
+  \end{subfigure}
+
+  \caption{Focused comparison of Voronoi density time series for the combined $PVE$ model and the \texttt{NO\_MOTIVATION} baseline. In several scenarios, the $PVE$ dynamics produce slightly higher and more persistent local densities in front of the bottleneck, consistent with faster gap closing and more competitive occupation of the entrance region.}
+  \label{fig:voronoi-density-scenarios-pve}
+\end{figure}
+
+
+\begin{figure}[htbp]
+  \centering
+  \textbf{Experimental results}
+
+  \vspace{0.3cm}
+
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/area_order_Croma_2c070.pdf}
+    \caption{Experiment: Croma/2c070 (high motivation)}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/area_order_Croma_1c070.pdf}
+    \caption{Experiment: Croma/1c070 (normal motivation)}
+  \end{subfigure}
+
+  \vspace{0.7cm}
+
+  \textbf{Simulation results}
+
+  \vspace{0.3cm}
+
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{index_area_figs/base_E_E_2026-03-28_14-10-42.pdf}
+    \caption{Simulation: E}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{index_area_figs/base_V_V_2026-03-28_14-09-40.pdf}
+    \caption{Simulation: V}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{index_area_figs/base_P_P_2026-03-28_14-08-37.pdf}
+    \caption{Simulation: P}
+  \end{subfigure}
+
+  \vspace{0.5cm}
+
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{index_area_figs/base_PVE_PVE_2026-03-28_14-11-23.pdf}
+    \caption{Simulation: EVP}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{index_area_figs/base_NO_MOTIVATION_NO_MOTIVATION_2026-03-28_14-12-06.pdf}
+    \caption{Simulation: No motivation}
+  \end{subfigure}
+
+  \caption{Comparison of mean area and density per agent across crossing order for the experimental high- and normal-motivation runs and for simulation runs with isolated and combined motivation components.}
+  \label{fig:crossing-comparison}
+\end{figure}
+
+\section{Discussion}
+\label{sec:discussion}
+
+Discussions should be brief and focused. In some disciplines use of Discussion or `Conclusion' is interchangeable. It is not mandatory to use both. Some journals prefer a section `Results and Discussion' followed by a section `Conclusion'. Please refer to Journal-level guidance for any specific requirements. 
+
+\subsection{Limitations}
+Social norms can also play a role; for instance, allowing others to go ahead may be perceived as more appropriate than pushing through a crowd. Small social subgroups (such as friends or families) may prefer to stay together, coordinating their movements to maintain cohesion. Some individuals may be highly motivated to reach the goal quickly, leading them to bypass others or push forward in an attempt to be among the first to enter. 
+
+\section{Conclusion}\label{sec13}
+
+Conclusions may be used to restate your hypothesis or research question, restate your major findings, explain the relevance and the added value of your work, highlight any limitations of your study, describe future directions for research and recommendations. 
+
+In some disciplines use of Discussion or 'Conclusion' is interchangeable. It is not mandatory to use both. Please refer to Journal-level guidance for any specific requirements. 
+
+\backmatter
+
+\bmhead{Supplementary information}
+
+If your article has accompanying supplementary file/s please state so here. 
+
+Authors reporting data from electrophoretic gels and blots should supply the full unprocessed scans for key as part of their Supplementary information. This may be requested by the editorial team/s if it is missing.
+
+Please refer to Journal-level guidance for any specific requirements.
+
+\bmhead{Acknowledgements}
+
+Acknowledgements are not compulsory. Where included they should be brief. Grant or contribution numbers may be acknowledged.
+
+Please refer to Journal-level guidance for any specific requirements.
+
+\section*{Declarations}
+
+Some journals require declarations to be submitted in a standardized format. Please check the Instructions for Authors of the journal to which you are submitting to see if you need to complete this section. If yes, your manuscript must contain the following sections under the heading `Declarations':
+
+\begin{itemize}
+\item Funding
+\item Conflict of interest/Competing interests (check journal-specific guidelines for which heading to use)
+\item Ethics approval and consent to participate
+\item Consent for publication
+\item Data availability 
+\item Materials availability
+\item Code availability 
+\item Author contribution
+\end{itemize}
+
+\noindent
+If any of the sections are not relevant to your manuscript, please include the heading and write `Not applicable' for that section. 
+
+%%===================================================%%
+%% For presentation purpose, we have included        %%
+%% \bigskip command. Please ignore this.             %%
+%%===================================================%%
+\bigskip
+\begin{flushleft}%
+Editorial Policies for:
+
+\bigskip\noindent
+Springer journals and proceedings: \url{https://www.springer.com/gp/editorial-policies}
+
+\bigskip\noindent
+Nature Portfolio journals: \url{https://www.nature.com/nature-research/editorial-policies}
+
+\bigskip\noindent
+\textit{Scientific Reports}: \url{https://www.nature.com/srep/journal-policies/editorial-policies}
+
+\bigskip\noindent
+BMC journals: \url{https://www.biomedcentral.com/getpublished/editorial-policies}
+\end{flushleft}
+
+\begin{appendices}
+
+\section{Operational model details}\label{app:operational-model}
+
+Pedestrian motion is described by an operational model built upon the
+Collision Free Speed Model (CSM) \cite{Tordeux2016a}. While the
+spacing--speed relation of the original model is retained as the conceptual
+basis, both the steering dynamics and the effective spacing formulation are
+restructured. In particular, the present formulation introduces a rotational
+direction model together with an explicit decoupling of speed and direction.
+These modifications preserve the conceptual advantages of the CSM while
+avoiding common artifacts such as oscillatory zigzag motion or premature
+deadlocks at moderate densities.
+
+In addition to the modified steering dynamics, the spacing formulation used
+in the speed function is extended by introducing a motivationally dependent
+buffer term. The parameter $l$ defines the minimum interpersonal distance
+between two agents. Its smallest possible value is determined by physical
+body size, but social factors also influence this distance. To incorporate
+motivational effects into the operational dynamics, an additional buffer
+term $b$ is introduced. This term reflects the observation that highly
+motivated individuals tend to accept smaller interpersonal distances than
+less motivated ones. The effective spacing used in the speed function is
+therefore defined relative to the combined distance threshold $l + b$.
+
+\subsection{Decoupling of direction and speed}
+
+In the original CSM formulation, the walking direction results from the
+normalized sum of several influence vectors, including the desired
+direction and repulsive contributions from neighboring pedestrians and
+boundaries. The resulting direction vector is then used to evaluate the
+available spacing in front of the pedestrian, which determines the walking
+speed through the optimal velocity relation.
+
+This formulation implicitly couples steering and speed selection. The
+magnitude of the summed influence vector affects the normalization step and
+therefore the direction along which spacing is evaluated. Variations in the
+steering field may therefore indirectly influence the perceived available
+space and consequently alter the walking speed.
+
+In the present formulation, direction and speed are explicitly decoupled.
+The velocity of pedestrian $i$ is written as
+
+\begin{equation}
+\dot{\mathbf{x}}_i = V_i(s_i) \cdot \mathbf{e}_i,
+\end{equation}
+where $\mathbf{e}_i$ is the walking direction determined by the direction
+model and $V_i(s_i)$ is the speed obtained from the spacing--speed relation
+of the CSM.
+
+\subsection{Rotational direction model}
+
+Let $\mathbf{p}_i$ denote the position of pedestrian $i$ and
+$\mathbf{p}_j$ the position of neighbor $j$. The relative position vector
+is $\mathbf{r}_j = \mathbf{p}_j - \mathbf{p}_i$. Let
+$\mathbf{e}_{\mathrm{des}}$ denote the desired direction and
+$\mathbf{e}_{\mathrm{ref}}$ the reference direction after wall
+corrections. See \cref{fig:direction}. For each forward neighbor
+satisfying $x_j = \mathbf{e}_{\mathrm{ref}}\cdot\mathbf{r}_j > 0$, the
+signed lateral position is computed using the two-dimensional cross product
+$s_j = \mathbf{e}_{\mathrm{ref}} \times \mathbf{r}_j$.
+
+Neighbor relevance is determined through the anisotropic weighting
+\begin{equation}
+w_j =
+\exp\!\left(-\frac{x_j}{D\cdot r_x}\right)\cdot
+\exp\!\left(-\left(\frac{y_j}{D\cdot r_y}\right)^2\right),
+\label{eq:weighting}
+\end{equation}
+where $y_j = |s_j|$ denotes the lateral distance from the center line. The
+constants in \cref{eq:weighting} are such that $r_x>r_y$.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \input{figures/cfs_v2_direction_figure.tikz}
+        \caption{Direction update via dominant neighbor $j^*$.}
+        \label{fig:direction}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \input{figures/cfs_v2_agent.tikz}
+        \caption{Position decomposition ($x_j, y_j$).}
+        \label{fig:decomposition}
+    \end{subfigure}
+    
+    \caption{Neighbor interaction geometry: (a) signed turning response based on the highest-weighted forward neighbor, and (b) projection of relative position $\mathbf{r}_j$ onto the local movement frame.}
+    \label{fig:neighbor_geometry}
+\end{figure}
+
+To maintain a minimal interaction structure, only the most relevant
+forward neighbor is considered, $j^* = \arg\max_{x_j>0} w_j$. The
+resulting turning angle is
+\begin{equation}
+\theta = \theta_{\max}\tanh(a_{j^*}),
+\label{eq:theta}
+\end{equation}
+with $a_j = -\, w_j \, \frac{s_j}{|s_j|+\varepsilon_s}$.
+In the implementation, the effective turning bound $\theta_{\max}$ is set
+by the motivation-dependent neighbor-repulsion strength and clipped by the
+global upper bound of the operational model.
+
+The walking direction is then obtained by rotating the reference
+direction,
+\begin{equation}
+\mathbf{e}_{\mathrm{move}} = R(\theta)\,\mathbf{e}_{\mathrm{ref}}.
+\label{eq:rotation}
+\end{equation}
+Because the update is purely rotational, the direction vector remains unit
+length by construction.
+
+\subsection{Spacing and speed}
+
+We introduce a blended desired direction
+\begin{equation}
+\mathbf{s}=(1-w_b)\,\mathbf{s}_{\mathrm{move}}+w_b\,\mathbf{s}_{\mathrm{goal}},
+\end{equation}
+with a small blending weight $w_b=0.15$, to explicitly balance local
+collision-free motion and global progress toward the exit. Here,
+\(\mathbf{s}_{\mathrm{move}}\) captures short-horizon, interaction-aware
+navigation, while \(\mathbf{s}_{\mathrm{goal}}\) stabilizes long-range
+intent and keeps agents aligned with evacuation objectives. This blending
+is motivated by the observation that purely local steering can overreact
+in dense bottlenecks, amplifying lateral conflicts and stop-and-go
+patterns.
+
+In the original CSM, only a single direction \(\mathbf{s}\) is used. In
+practice, this can favor clogging, because directional updates are
+dominated by immediate local constraints without a compensating
+goal-oriented term to restore coherent outflow.
+
+The walking speed follows the optimal velocity relation
+\begin{equation}
+v = \min\!\left(\max\!\left(\frac{s-b_f}{T},0\right),v_0\right).
+\end{equation}
+Thus, the speed becomes zero at spacing $s=b_f$.
+
+\subsection{Motivation-to-parameter mapping details}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Motivation-dependent parameter sets and transitions.}
+    \label{tab:motivation_parameters}
+    \small
+    \begin{tabular}{@{}lccc@{}}
+        \toprule
+        \textbf{Parameter} & \textbf{Low} & \textbf{Normal} & \textbf{High}  \\
+        \midrule
+        Motivation ($m$) & 0.1 & 1.0 & 3.0 \\
+        \\ \addlinespace
+        Desired speed ($v_0$) [m/s] & 0.5 & 1.2 & 3.6 \\
+        \addlinespace
+        Time gap ($T$) [s] & 2.0 & 1.0 & 0.01 \\ \addlinespace
+        Buffer ($b$) [m] & 1.0 & 0.1 & 0.0\\ \addlinespace
+        Effective turning bound ($\theta_{\max}$) [rad] & 0.0 & 0.1 & 0.9 \\ \addlinespace
+        Neighbor interaction range ($D$) [m] & $d_{\text{ped}}$ & $d_{\text{ped}}$ & $d_{\text{ped}}$ \\ \addlinespace
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{figures/logistic_motivation_v0.png}
+    \caption{Desired speed as a function of motivation using anchors from \cref{tab:motivation_parameters}.}
+    \label{fig:enter-label}
+\end{figure}
+
+\section{Overtaking locations}\label{secA1}
+
+Overtaking events were identified using a time-resolved distance-to-exit approach. For each agent and time step, the distance to a reference measurement line (here the exit) was computed and agents were ranked accordingly. An overtaking event was defined as a change in the relative ordering of two agents between consecutive frames, such that one agent moves ahead of another in the direction of the exit. To ensure that overtakes represent meaningful interactions, only pairs of agents within a specified spatial proximity were considered. The resulting overtaking events were aggregated to quantify the frequency and distribution of overtaking behavior in the observed trajectories.
+
+\paragraph{Stability Filtering of Overtaking Events.}
+To ensure that overtaking events represent persistent and meaningful behavior, candidate overtakes were post-filtered using a stability criterion. An overtake was retained only if the overtaking agent maintained its relative lead for at least $W$ consecutive frames (here, $W=5$), ensuring temporal consistency. Additionally, a minimum relative speed difference threshold ($0.01$~m/s) was applied to confirm that the overtaking agent was moving sufficiently faster than the overtaken agent. This dual filter reduces spurious detections caused by transient fluctuations or measurement noise.
+
+\begin{figure}[htbp]
+  \centering
+   \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/Croma_1c060_heatmap.pdf}
+    \caption{Experiment: 1c060}
+  \end{subfigure}
+  \hfill
+   \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/Croma_1c070_heatmap.pdf}
+    \caption{Experiment: 1c070}
+  \end{subfigure}
+  \hfill
+   \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/Croma_2c070_heatmap.pdf}
+    \caption{Experiment: 2c070}
+  \end{subfigure}
+  \hfill
+   \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/Croma_2c120_heatmap.pdf}
+    \caption{Experiment: 2c120}
+  \end{subfigure}
+  \hfill
+ \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/Croma_2c130_heatmap.pdf}
+    \caption{Experiment: 2c130}
+  \end{subfigure}
+  \hfill
+  % Top right: Experimental normal motivation
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/Croma_2c150_heatmap.pdf}
+    \caption{Experiment: 2c150}
+  \end{subfigure}
+
+  % SIMULATIONS
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/m1C070_32highvalue_withbuffer_Motiv_base_2025-07-03_15-43-31_heatmap.pdf}
+    \caption{Simulation (high motivation)}
+  \end{subfigure}
+  \hfill
+  % Top right: Experimental normal motivation
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{figures/m1C070_32highvalue_withbuffer_base_2025-07-07_15-23-24_heatmap.pdf}
+    \caption{Simulation(normal motivation)}
+  \end{subfigure}
+
+  \caption{Comparison of mean area and density per agent across crossing order for experimental and simulated runs under high and normal motivation conditions.}
+  \label{fig:overtaking}
+\end{figure}
+
+\section{Coordination number distributions}\label{secA2}
+You could describe it like this:
+
+For the coordination analysis, we consider six scenarios defined by the combinations \((20,0)\), \((20,100)\), \((30,0)\), \((30,100)\), \((40,0)\), and \((40,100)\), where the first entry denotes the number of agents and the second the door opening time. Delaunay triangulation is used to determine the nearest-neighbor relations between pedestrians. Based on this triangulation, we compute the coordination number \(N_n\), that is, the number of nearest neighbors of each agent.
+
+The distributions show how local crowd structure changes across scenario conditions and motivation models. As the number of agents increases, the distributions shift toward larger values of \(N_n\), indicating denser local packing and more simultaneous neighbor interactions. Delaying the door opening also tends to broaden the distribution, which is consistent with stronger crowd accumulation before outflow starts.
+
+Comparing motivation variants, the combined EVP model generally differs from the no-motivation case by producing distributions that reflect a more structured and more strongly interacting local arrangement. The all-model comparison further shows that the isolated components \(E\), \(V\), and \(P\) do not reproduce the same coordination patterns equally well; instead, the combined EVP formulation yields the clearest deviation from the baseline and the most consistent response across scenarios. Overall, the coordination-number distributions support the interpretation that motivation affects not only individual motion parameters but also the emergent local organization of the crowd.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_20_open_0/coordination_number_results/coordination_number_distribution_kde_all.png}
+    \caption{20 agents, opening 0}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_20_open_100/coordination_number_results/coordination_number_distribution_kde_all.png}
+    \caption{20 agents, opening 100}
+  \end{subfigure}
+
+  \vspace{0.5cm}
+
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_30_open_0/coordination_number_results/coordination_number_distribution_kde_all.png}
+    \caption{30 agents, opening 0}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_30_open_100/coordination_number_results/coordination_number_distribution_kde_all.png}
+    \caption{30 agents, opening 100}
+  \end{subfigure}
+
+  \vspace{0.5cm}
+
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_40_open_0/coordination_number_results/coordination_number_distribution_kde_all.png}
+    \caption{40 agents, opening 0}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_40_open_100/coordination_number_results/coordination_number_distribution_kde_all.png}
+    \caption{40 agents, opening 100}
+  \end{subfigure}
+
+  \caption{Kernel density estimates of coordination number distributions for all motivation-model variants across the coordination scenarios.}
+  \label{fig:coordination-kde-all}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_20_open_0/coordination_number_results/coordination_number_distribution_kde_no_motivation_vs_pve.png}
+    \caption{20 agents, opening 0}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_20_open_100/coordination_number_results/coordination_number_distribution_kde_no_motivation_vs_pve.png}
+    \caption{20 agents, opening 100}
+  \end{subfigure}
+
+  \vspace{0.5cm}
+
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_30_open_0/coordination_number_results/coordination_number_distribution_kde_no_motivation_vs_pve.png}
+    \caption{30 agents, opening 0}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_30_open_100/coordination_number_results/coordination_number_distribution_kde_no_motivation_vs_pve.png}
+    \caption{30 agents, opening 100}
+  \end{subfigure}
+
+  \vspace{0.5cm}
+
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_40_open_0/coordination_number_results/coordination_number_distribution_kde_no_motivation_vs_pve.png}
+    \caption{40 agents, opening 0}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{files/coordination_scenarios/agents_40_open_100/coordination_number_results/coordination_number_distribution_kde_no_motivation_vs_pve.png}
+    \caption{40 agents, opening 100}
+  \end{subfigure}
+
+  \caption{Kernel density estimates of coordination number distributions comparing the no-motivation baseline with the combined EVP model across the coordination scenarios.}
+  \label{fig:coordination-kde-no-motivation-vs-pve}
+\end{figure}
+
+
+%%=============================================%%
+%% For submissions to Nature Portfolio Journals %%
+%% please use the heading ``Extended Data''.   %%
+%%=============================================%%
+
+%%=============================================================%%
+%% Sample for another appendix section			       %%
+%%=============================================================%%
+
+%% \section{Example of another appendix section}\label{secA2}%
+%% Appendices may be used for helpful, supporting or essential material that would otherwise 
+%% clutter, break up or be distracting to the text. Appendices can consist of sections, figures, 
+%% tables and equations etc.
+
+\end{appendices}
+
+%%===========================================================================================%%
+%% If you are submitting to one of the Nature Portfolio journals, using the eJP submission   %%
+%% system, please include the references within the manuscript file itself. You may do this  %%
+%% by copying the reference list from your .bbl file, paste it into the main manuscript .tex %%
+%% file, and delete the associated \verb+\bibliography+ commands.                            %%
+%%===========================================================================================%%
+
+\bibliography{sn-bibliography}% common bib file
+%% if required, the content of .bbl file can be included here once bbl is generated
+%%\input sn-article.bbl
+
+
+
+
+\end{document}
