@@ -467,6 +467,24 @@ def build_summary_rows(detail_rows: Sequence[Dict[str, float]]) -> List[Dict[str
     return summary_rows
 
 
+def build_time_summary(detail_rows: Sequence[Dict[str, float]]) -> List[Dict[str, float]]:
+    buckets: Dict[Tuple[str, float], int] = {}
+    for row in detail_rows:
+        key = (str(row["model"]), float(row["time"]))
+        buckets[key] = buckets.get(key, 0) + 1
+
+    summary_rows: List[Dict[str, float]] = []
+    for (model, time_value), count in sorted(buckets.items()):
+        summary_rows.append(
+            {
+                "model": model,
+                "time": time_value,
+                "num_stable_overtake_events": count,
+            }
+        )
+    return summary_rows
+
+
 def plot_heatmaps(
     rows_by_model: Dict[str, List[Dict[str, float]]],
     geometries: Dict[str, object],
@@ -476,6 +494,8 @@ def plot_heatmaps(
     tag: str,
 ) -> bool:
     try:
+        import matplotlib
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ModuleNotFoundError as exc:
         print(f"Skipping plots: {exc}")
@@ -487,9 +507,10 @@ def plot_heatmaps(
     figure, axes = plt.subplots(
         len(rows_by_model),
         1,
-        figsize=(10, 3.6 * len(rows_by_model)),
+        figsize=(10, 3.8 * len(rows_by_model)),
         sharex=False,
         sharey=False,
+        constrained_layout=True,
     )
     if len(rows_by_model) == 1:
         axes = [axes]
@@ -510,6 +531,7 @@ def plot_heatmaps(
             maxima.append(float(heatmap.max()) if heatmap.size else 0.0)
         computed_vmax = max(maxima) if maxima else 1.0
 
+    image = None
     for axis, (model, rows) in zip(axes, rows_by_model.items()):
         geometry = geometries[model]
         minx, miny, maxx, maxy = geometry.bounds
@@ -526,25 +548,178 @@ def plot_heatmaps(
             heatmap.T,
             extent=[minx - dx, maxx + dx, miny - dy, maxy + dy],
             origin="lower",
-            cmap="inferno",
+            cmap="YlOrRd",
             aspect="auto",
             interpolation="nearest",
             vmin=0.0,
             vmax=computed_vmax,
         )
         x_ext, y_ext = geometry.exterior.xy
-        axis.plot(x_ext, y_ext, color="white", linewidth=1.5)
+        axis.plot(x_ext, y_ext, color="dimgray", linewidth=1.5)
         for interior in geometry.interiors:
             x_int, y_int = interior.xy
-            axis.plot(x_int, y_int, color="white", linewidth=1.0)
+            axis.plot(x_int, y_int, color="dimgray", linewidth=1.0)
         axis.set_title(model)
         axis.set_xlabel("x [m]")
         axis.set_ylabel("y [m]")
 
-    figure.colorbar(image, ax=axes, label="Number of overtakes")
-    figure.tight_layout()
+    if image is not None:
+        figure.colorbar(
+            image,
+            ax=axes,
+            label="Number of overtakes",
+            fraction=0.03,
+            pad=0.02,
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     figure.savefig(output_dir / tagged_filename("overtaking_heatmaps", ".png", tag), dpi=200)
+    plt.close(figure)
+
+    if "PVE" in rows_by_model and "NO_MOTIVATION" in rows_by_model:
+        focused_rows = {
+            model: rows_by_model[model] for model in ["PVE", "NO_MOTIVATION"]
+        }
+        figure, axes = plt.subplots(
+            len(focused_rows),
+            1,
+            figsize=(10, 3.8 * len(focused_rows)),
+            sharex=False,
+            sharey=False,
+            constrained_layout=True,
+        )
+        if len(focused_rows) == 1:
+            axes = [axes]
+        image = None
+        for axis, (model, rows) in zip(axes, focused_rows.items()):
+            geometry = geometries[model]
+            minx, miny, maxx, maxy = geometry.bounds
+            dx = (maxx - minx) * 0.02
+            dy = (maxy - miny) * 0.02
+            x_bins = np.linspace(minx - dx, maxx + dx, bins)
+            y_bins = np.linspace(miny - dy, maxy + dy, bins)
+            heatmap, _, _ = np.histogram2d(
+                [float(row["x"]) for row in rows],
+                [float(row["y"]) for row in rows],
+                bins=(x_bins, y_bins),
+            )
+            image = axis.imshow(
+                heatmap.T,
+                extent=[minx - dx, maxx + dx, miny - dy, maxy + dy],
+                origin="lower",
+                cmap="YlOrRd",
+                aspect="auto",
+                interpolation="nearest",
+                vmin=0.0,
+                vmax=computed_vmax,
+            )
+            x_ext, y_ext = geometry.exterior.xy
+            axis.plot(x_ext, y_ext, color="dimgray", linewidth=1.5)
+            for interior in geometry.interiors:
+                x_int, y_int = interior.xy
+                axis.plot(x_int, y_int, color="dimgray", linewidth=1.0)
+            axis.set_title(model)
+            axis.set_xlabel("x [m]")
+            axis.set_ylabel("y [m]")
+        if image is not None:
+            figure.colorbar(
+                image,
+                ax=axes,
+                label="Number of overtakes",
+                fraction=0.03,
+                pad=0.02,
+            )
+        figure.savefig(
+            output_dir
+            / tagged_filename("overtaking_heatmaps_no_motivation_vs_pve", ".png", tag),
+            dpi=200,
+        )
+        plt.close(figure)
+    return True
+
+
+def plot_model_comparison(
+    summary_rows: Sequence[Dict[str, float]], output_dir: Path, tag: str
+) -> bool:
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ModuleNotFoundError as exc:
+        print(f"Skipping plots: {exc}")
+        return False
+
+    if not summary_rows:
+        return False
+
+    models = [str(row["model"]) for row in summary_rows]
+    event_counts = [float(row["num_stable_overtake_events"]) for row in summary_rows]
+    pair_counts = [float(row["num_overtaking_pairs"]) for row in summary_rows]
+    relative_speeds = [float(row["mean_relative_speed_mps"]) for row in summary_rows]
+
+    figure, axes = plt.subplots(1, 2, figsize=(11, 4.5), constrained_layout=True)
+    left_axis, right_axis = axes
+
+    left_axis.bar(models, event_counts, label="events", alpha=0.8)
+    left_axis.bar(models, pair_counts, label="pairs", alpha=0.6)
+    left_axis.set_ylabel("count")
+    left_axis.set_title("Stable overtakes")
+    left_axis.tick_params(axis="x", rotation=20)
+    left_axis.legend()
+    left_axis.grid(axis="y", alpha=0.2)
+
+    right_axis.bar(models, relative_speeds, color="tab:orange")
+    right_axis.set_ylabel("mean relative speed [m/s]")
+    right_axis.set_title("Relative speed after overtake")
+    right_axis.tick_params(axis="x", rotation=20)
+    right_axis.grid(axis="y", alpha=0.2)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    figure.savefig(
+        output_dir / tagged_filename("overtaking_model_comparison", ".png", tag),
+        dpi=200,
+    )
+    plt.close(figure)
+    return True
+
+
+def plot_time_comparison(
+    time_summary_rows: Sequence[Dict[str, float]], output_dir: Path, tag: str
+) -> bool:
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ModuleNotFoundError as exc:
+        print(f"Skipping plots: {exc}")
+        return False
+
+    if not time_summary_rows:
+        return False
+
+    models: List[str] = []
+    for row in time_summary_rows:
+        model = str(row["model"])
+        if model not in models:
+            models.append(model)
+
+    figure, axis = plt.subplots(figsize=(10, 4.5), constrained_layout=True)
+    for model in models:
+        series = [row for row in time_summary_rows if row["model"] == model]
+        axis.plot(
+            [float(row["time"]) for row in series],
+            [float(row["num_stable_overtake_events"]) for row in series],
+            label=model,
+        )
+    axis.set_xlabel("time [s]")
+    axis.set_ylabel("stable overtakes per frame")
+    axis.set_title("Overtaking activity over time")
+    axis.grid(alpha=0.2)
+    axis.legend()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    figure.savefig(
+        output_dir / tagged_filename("overtaking_time_comparison", ".png", tag),
+        dpi=200,
+    )
     plt.close(figure)
     return True
 
@@ -581,6 +756,7 @@ def main() -> None:
 
     detail_rows = [row for rows in detail_rows_by_model.values() for row in rows]
     summary_rows = build_summary_rows(detail_rows)
+    time_summary_rows = build_time_summary(detail_rows)
     output_dir = Path(args.output_dir)
     write_csv(
         output_dir / tagged_filename("overtaking_details", ".csv", args.tag),
@@ -612,7 +788,16 @@ def main() -> None:
             "mean_relative_speed_mps",
         ],
     )
-    created_plots = plot_heatmaps(
+    write_csv(
+        output_dir / tagged_filename("overtaking_time_summary", ".csv", args.tag),
+        time_summary_rows,
+        [
+            "model",
+            "time",
+            "num_stable_overtake_events",
+        ],
+    )
+    created_heatmaps = plot_heatmaps(
         {model: rows for model, rows in detail_rows_by_model.items() if rows},
         geometries,
         output_dir,
@@ -620,10 +805,12 @@ def main() -> None:
         vmax=args.vmax,
         tag=args.tag,
     )
+    created_comparison = plot_model_comparison(summary_rows, output_dir, args.tag)
+    created_time = plot_time_comparison(time_summary_rows, output_dir, args.tag)
 
     if missing_models:
         print("Skipped models without input files:", ", ".join(sorted(missing_models)))
-    if not created_plots:
+    if not created_heatmaps and not created_comparison and not created_time:
         print("CSV outputs were written, but no figures were created.")
     print(f"Wrote results to {output_dir}")
 

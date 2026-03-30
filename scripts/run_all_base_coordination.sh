@@ -30,6 +30,6 @@ for base_file in "${BASE_FILES[@]}"; do
 done
 
 python scripts/coordination_number_analysis.py \
-    --models P V E PVE NO_MOTIVATION \
+    --models PVE NO_MOTIVATION \
     --search-dir "${OUTPUT_DIR}" \
     --output-dir "${ANALYSIS_DIR}"

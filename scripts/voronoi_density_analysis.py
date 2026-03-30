@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["P", "V", "E", "PVE", "NO_MOTIVATION"],
+        default=["PVE", "NO_MOTIVATION"],
         help="Models to analyze.",
     )
     parser.add_argument(
@@ -192,28 +192,6 @@ def plot_density(
         print(f"Skipping plots: {exc}")
         return False
 
-    models = list(rows_by_model)
-
-    figure, axis = plt.subplots(figsize=(10, 4.5))
-    for model in models:
-        rows = rows_by_model[model]
-        axis.plot(
-            [row["time"] for row in rows],
-            [row["voronoi_density"] for row in rows],
-            label=model,
-        )
-    axis.set_xlabel("time [s]")
-    axis.set_ylabel(r"Voronoi density [1/m$^2$]")
-    axis.grid(alpha=0.2)
-    axis.legend()
-    figure.tight_layout()
-    output_dir.mkdir(parents=True, exist_ok=True)
-    figure.savefig(
-        output_dir / tagged_filename("voronoi_density_model_comparison", ".png", tag),
-        dpi=200,
-    )
-    plt.close(figure)
-
     if "PVE" in rows_by_model and "NO_MOTIVATION" in rows_by_model:
         figure, axis = plt.subplots(figsize=(8, 4.5))
         for model in ["PVE", "NO_MOTIVATION"]:
@@ -234,8 +212,9 @@ def plot_density(
             dpi=200,
         )
         plt.close(figure)
+        return True
 
-    return True
+    return False
 
 
 def main() -> None:

@@ -28,13 +28,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Compute coordination numbers Nn from Delaunay neighbors and compare "
-            "their dynamics across motivation models."
+            "their discrete distributions across motivation models."
         )
     )
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["P", "V", "E", "PVE"],
+        default=["PVE", "NO_MOTIVATION"],
         help="Models to analyze. Use PVE for the combined model.",
     )
     parser.add_argument(
@@ -225,27 +225,6 @@ def build_distribution_summary(
     return summary
 
 
-def _kde_curve(
-    values: Sequence[float], xmin: float, xmax: float
-) -> Tuple[np.ndarray, np.ndarray]:
-    array = np.asarray(values, dtype=float)
-    if array.size == 0:
-        return np.array([]), np.array([])
-
-    grid = np.linspace(xmin, xmax, 400)
-    if array.size == 1 or float(np.std(array)) < 1e-12:
-        bandwidth = 0.25
-    else:
-        bandwidth = max(
-            1.06 * float(np.std(array)) * (array.size ** (-1.0 / 5.0)), 0.25
-        )
-
-    scaled = (grid[:, None] - array[None, :]) / bandwidth
-    density = np.exp(-0.5 * scaled**2).sum(axis=1)
-    density /= array.size * bandwidth * np.sqrt(2.0 * np.pi)
-    return grid, density
-
-
 def plot_results(
     rows_by_model: Dict[str, List[Dict[str, float]]],
     summary_rows: Sequence[Dict[str, float]],
@@ -259,126 +238,54 @@ def plot_results(
         print(f"Skipping plots: {exc}")
         return False
 
-    if rows_by_model:
-        figure, axes = plt.subplots(
-            len(rows_by_model), 1, figsize=(10, 3.6 * len(rows_by_model)), sharex=True
-        )
-        if len(rows_by_model) == 1:
-            axes = [axes]
+    if distribution_rows:
+        selected_models = [
+            model for model in ["NO_MOTIVATION", "PVE"] if model in rows_by_model
+        ]
+        if not selected_models:
+            return False
 
-        for axis, (model, rows) in zip(axes, rows_by_model.items()):
-            times = [row["time"] for row in rows]
-            agent_ids = [row["id"] for row in rows]
-            coordination = [row["coordination_number"] for row in rows]
-            scatter = axis.scatter(
-                times,
-                agent_ids,
-                c=coordination,
-                cmap="PiYG",
-                s=10,
-                vmin=min(coordination),
-                vmax=max(coordination),
+        probabilities_by_model: Dict[str, Dict[int, float]] = defaultdict(dict)
+        coordination_values = set()
+        for row in distribution_rows:
+            model = str(row["model"])
+            if model not in selected_models:
+                continue
+            coordination_number = int(row["coordination_number"])
+            coordination_values.add(coordination_number)
+            probabilities_by_model[model][coordination_number] = float(row["probability"])
+
+        x_values = sorted(coordination_values)
+        offsets = np.linspace(-0.18, 0.18, num=len(selected_models))
+        width = 0.32
+
+        figure, axis = plt.subplots(figsize=(8, 4.5))
+        for offset, model in zip(offsets, selected_models):
+            axis.bar(
+                np.asarray(x_values, dtype=float) + float(offset),
+                [probabilities_by_model[model].get(x_value, 0.0) for x_value in x_values],
+                width=width,
+                label=model,
+                alpha=0.85,
             )
-            axis.set_title(model)
-            axis.set_ylabel("#id")
-            axis.grid(alpha=0.2)
-            figure.colorbar(scatter, ax=axis, label=r"$N_n$")
 
-        axes[-1].set_xlabel("time [s]")
-        figure.tight_layout()
-        output_dir.mkdir(parents=True, exist_ok=True)
-        figure.savefig(
-            output_dir / tagged_filename("coordination_number_timeseries", ".png", tag),
-            dpi=200,
-        )
-        plt.close(figure)
-
-    if summary_rows:
-        figure, axis = plt.subplots(figsize=(10, 4.5))
-        models = []
-        for row in summary_rows:
-            if row["model"] not in models:
-                models.append(row["model"])
-
-        for model in models:
-            series = [row for row in summary_rows if row["model"] == model]
-            times = [row["time"] for row in series]
-            means = [row["mean_coordination_number"] for row in series]
-            stds = [row["std_coordination_number"] for row in series]
-            lower = [mean - std for mean, std in zip(means, stds)]
-            upper = [mean + std for mean, std in zip(means, stds)]
-            axis.plot(times, means, label=model)
-            axis.fill_between(times, lower, upper, alpha=0.15)
-
-        axis.set_xlabel("time [s]")
-        axis.set_ylabel(r"mean $N_n$")
-        axis.grid(alpha=0.2)
+        axis.set_xlabel(r"coordination number $N_n$")
+        axis.set_ylabel("probability")
+        axis.set_xticks(x_values)
+        axis.grid(alpha=0.2, axis="y")
         axis.legend()
         figure.tight_layout()
         output_dir.mkdir(parents=True, exist_ok=True)
         figure.savefig(
-            output_dir / tagged_filename("coordination_number_model_comparison", ".png", tag),
-            dpi=200,
-        )
-        plt.close(figure)
-
-    if distribution_rows:
-        models = []
-        for row in distribution_rows:
-            if row["model"] not in models:
-                models.append(row["model"])
-
-        all_coordination_values = [
-            int(row["coordination_number"])
-            for rows in rows_by_model.values()
-            for row in rows
-        ]
-        xmin = min(all_coordination_values) - 0.5
-        xmax = max(all_coordination_values) + 0.5
-
-        def _plot_kde(
-            selected_models: Sequence[str], filename: str, title: str
-        ) -> None:
-            figure, axis = plt.subplots(figsize=(8, 4.5))
-            plotted = False
-            for model in selected_models:
-                if model not in rows_by_model:
-                    continue
-                values = [
-                    int(row["coordination_number"]) for row in rows_by_model[model]
-                ]
-                grid, density = _kde_curve(values, xmin=xmin, xmax=xmax)
-                axis.plot(grid, density, label=model)
-                plotted = True
-
-            if not plotted:
-                plt.close(figure)
-                return
-
-            axis.set_xlabel(r"$N_n$")
-            axis.set_ylabel("density")
-            # axis.set_title(title)
-            axis.grid(alpha=0.2)
-            axis.legend()
-            figure.tight_layout()
-            output_dir.mkdir(parents=True, exist_ok=True)
-            figure.savefig(output_dir / filename, dpi=200)
-            plt.close(figure)
-
-        _plot_kde(
-            models,
-            tagged_filename("coordination_number_distribution_kde_all", ".png", tag),
-            "Coordination Number KDE (All Models)",
-        )
-        _plot_kde(
-            ["NO_MOTIVATION", "PVE"],
-            tagged_filename(
-                "coordination_number_distribution_kde_no_motivation_vs_pve",
+            output_dir
+            / tagged_filename(
+                "coordination_number_distribution_no_motivation_vs_pve",
                 ".png",
                 tag,
             ),
-            "Coordination Number KDE (NO_MOTIVATION vs PVE)",
+            dpi=200,
         )
+        plt.close(figure)
 
     return True
 

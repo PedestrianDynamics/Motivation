@@ -1015,8 +1015,17 @@ def main(
 
         if status == "completed":
             trajectory_data, walkable_area = read_sqlite_file(output_path)
-            output_file = "jpsvis_files" + pathlib.Path(output_path).stem + ".txt"
-            geometry_file = pathlib.Path(output_path).stem + "_geometry.xml"
+            scenario_name = (
+                output_path.parent.parent.name
+                if output_path.parent.name == "base_runs"
+                else output_path.parent.name
+            )
+            output_file = output_path.with_name(
+                f"{scenario_name}_{output_path.stem}.txt"
+            )
+            geometry_file = output_path.with_name(
+                f"{scenario_name}_{output_path.stem}_geometry.xml"
+            )
             motivation_csv = output_path.with_name(output_path.stem + "_motivation.csv")
             logging.info(f"Using:  {geometry_file} ")
             v0_mean = 1.2
@@ -1036,7 +1045,10 @@ def main(
             print(">>> ", geometry_file)
             if vis:
                 logging.info("Launching JPSVIS")
-                command = ["/Applications/jpsvis.app/Contents/MacOS/jpsvis", output_file]
+                command = [
+                    "/Applications/jpsvis.app/Contents/MacOS/jpsvis",
+                    str(output_file),
+                ]
                 subprocess.run(command, capture_output=True, text=True)
 
             (
