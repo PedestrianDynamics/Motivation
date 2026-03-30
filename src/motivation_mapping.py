@@ -11,10 +11,11 @@ MOTIVATION_LOW = 0.0
 MOTIVATION_NORMAL = 0.5
 MOTIVATION_HIGH = 1.0
 FIT_EPSILON = 1e-6
+DEFAULT_MOTIVATION_MIN = 0.1
 
 DEFAULT_MAPPING_BLOCK: Dict[str, Any] = {
     "mapping_function": "logistic",
-    "motivation_min": MOTIVATION_LOW,
+    "motivation_min": DEFAULT_MOTIVATION_MIN,
     "inflection_target": MOTIVATION_NORMAL,
     "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
     "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
@@ -36,7 +37,9 @@ def clamp(value: float, min_value: float, max_value: float) -> float:
 
 
 def clamp_motivation(
-    motivation: float, normal_v_0: float, motivation_min: float = MOTIVATION_LOW
+    motivation: float,
+    normal_v_0: float,
+    motivation_min: float = DEFAULT_MOTIVATION_MIN,
 ) -> float:
     """Clamp normalized motivation to [motivation_min, 1]."""
     _ = normal_v_0

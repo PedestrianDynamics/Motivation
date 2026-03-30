@@ -152,10 +152,10 @@ class EVCStrategy(MotivationStrategy):
     competition_max: float = 1
     competition_decay_reward: float = 5
     seed: int = 1
-    min_value_high: float = 0.5
-    max_value_high: float = 1
-    min_value_low: float = 0
-    max_value_low: float = 0.5
+    min_value_high: float = 5.0
+    max_value_high: float = 7.0
+    min_value_low: float = 1.0
+    max_value_low: float = 3.0
     number_high_value: int = 10
     nagents: int = 10
     evc: bool = True
@@ -165,16 +165,13 @@ class EVCStrategy(MotivationStrategy):
     distance_decay: float = -width / math.log(0.01)
     seed_manager: Optional[SeedManager] = None
     value_probability: bool = True
-    motivation_min: float = 0.0
+    motivation_min: float = 0.1
     motivation_mode: str = "PVE"
     payoff_k: float = 8.0
     payoff_q0: float = 0.5
     rank_tie_tolerance_m: float = 1e-3
     payoff_update_interval_s: float = 1.0
     payoff_update_interval_steps: int = 1
-    weight_v: float = 1.0
-    weight_e: float = 2.0
-    weight_p: float = 1.0
     payoff_cache: Dict[int, float] = field(default_factory=dict)
     rank_abs_cache: Dict[int, int] = field(default_factory=dict)
     rank_q_cache: Dict[int, float] = field(default_factory=dict)
@@ -466,12 +463,13 @@ class EVCStrategy(MotivationStrategy):
             )
         else:
             V_unit = 1.0
-        E_unit = EVCStrategy.expectancy(
+        SE_unit = EVCStrategy.expectancy(
             distance,
             self.width,
             self.height,
         )
         P_unit = float(self.payoff_cache.get(agent_id, 1.0))
+        E_unit = SE_unit + P_unit
 
         if self.motivation_mode == "NO_MOTIVATION":
             M = 1.0
@@ -482,15 +480,7 @@ class EVCStrategy(MotivationStrategy):
         elif self.motivation_mode == "P":
             M = P_unit
         else:
-            total_weight = self.weight_v + self.weight_e + self.weight_p
-            if total_weight <= 0:
-                M = 0.0
-            else:
-                M = (
-                    self.weight_v * V_unit
-                    + self.weight_e * E_unit
-                    + self.weight_p * P_unit
-                ) / total_weight
+            M = V_unit * E_unit
 
         return clamp(M, self.motivation_min, 1.0)
 

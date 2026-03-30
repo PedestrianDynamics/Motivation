@@ -28,16 +28,16 @@ def test_fit_logistic_tracks_anchor_points() -> None:
 
 
 def test_clamp_motivation_normalized_bounds() -> None:
-    assert math.isclose(clamp_motivation(10.0, normal_v_0=1.2, motivation_min=0.0), 1.0)
-    assert math.isclose(clamp_motivation(-1.0, normal_v_0=0.9, motivation_min=0.0), 0.0)
-    assert math.isclose(clamp_motivation(0.2, normal_v_0=1.2, motivation_min=0.0), 0.2)
+    assert math.isclose(clamp_motivation(10.0, normal_v_0=1.2), 1.0)
+    assert math.isclose(clamp_motivation(-1.0, normal_v_0=0.9), 0.1)
+    assert math.isclose(clamp_motivation(0.2, normal_v_0=1.2), 0.2)
 
 
 def test_mapper_anchor_hits_and_constant_range() -> None:
     mapper = MotivationParameterMapper(
         mapping_block={
             "mapping_function": "logistic",
-            "motivation_min": 0.0,
+            "motivation_min": 0.1,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -85,7 +85,7 @@ def test_mapper_monotonicity_for_default_anchors() -> None:
     mapper = MotivationParameterMapper(
         mapping_block={
             "mapping_function": "logistic",
-            "motivation_min": 0.0,
+            "motivation_min": 0.1,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -116,7 +116,7 @@ def test_non_monotonic_strength_anchors_raise_explicit_error() -> None:
         MotivationParameterMapper(
             mapping_block={
                 "mapping_function": "logistic",
-                "motivation_min": 0.0,
+                "motivation_min": 0.1,
                 "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
                 "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
                 "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -136,7 +136,7 @@ def test_logistic_mapping_keeps_monotonicity() -> None:
         mapping_block={
             "mapping_function": "logistic",
             "inflection_target": 0.5,
-            "motivation_min": 0.0,
+            "motivation_min": 0.1,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},
@@ -158,7 +158,7 @@ def test_manual_logistic_k_is_applied_per_parameter() -> None:
         mapping_block={
             "mapping_function": "logistic",
             "inflection_target": 0.5,
-            "motivation_min": 0.0,
+            "motivation_min": 0.1,
             "desired_speed_anchors": {"low": 0.5, "normal": 1.2, "high": 3.6},
             "time_gap_anchors": {"low": 2.0, "normal": 1.0, "high": 0.01},
             "buffer_anchors": {"low": 1.0, "normal": 0.1, "high": 0.0},

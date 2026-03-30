@@ -243,8 +243,8 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
     """Set Value function."""
     with st.sidebar.expander("Value Parameters", expanded=True):
         c1, c2 = st.columns(2)
-        high_options = [round(float(v), 2) for v in np.arange(0.7, 2.6, 0.1)]
-        low_options = [round(float(v), 2) for v in np.arange(0.1, 1.1, 0.1)]
+        high_options = [round(float(v), 2) for v in np.arange(5.0, 7.1, 0.1)]
+        low_options = [round(float(v), 2) for v in np.arange(1.0, 3.1, 0.1)]
 
         def _closest_option(options: list[float], value: float) -> float:
             return min(options, key=lambda opt: abs(opt - value))
@@ -532,14 +532,11 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
 def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     """Motivation Parameters Section."""
     params = data["motivation_parameters"]
-    params.setdefault("weight_v", 1.0)
-    params.setdefault("weight_e", 2.0)
-    params.setdefault("weight_p", 1.0)
     c1, c2 = st.sidebar.columns(2)
     motivation_mode = st.sidebar.selectbox(
         "Select mode",
         ["PVE", "E", "V", "P", "NO_MOTIVATION"],
-        help="PVE: M=P*V*E, E: expectancy only, V: value only, P: payoff only, NO_MOTIVATION: keep base CFSM parameters.",
+        help="PVE: V * (SE + P); E: SE + P; V: value only, P: payoff only, NO_MOTIVATION: keep base CFSM parameters.",
     )
     data["motivation_parameters"]["normal_v_0"] = c1.number_input(
         "Normal V0:",
@@ -563,29 +560,6 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     )
 
     data["motivation_parameters"]["motivation_mode"] = motivation_mode
-    with st.sidebar.expander("Combination Weights", expanded=True):
-        c1, c2, c3 = st.columns(3)
-        params["weight_v"] = c1.number_input(
-            "V",
-            min_value=0.0,
-            step=0.1,
-            value=float(params["weight_v"]),
-            help="Weight of normalized value in combined motivation.",
-        )
-        params["weight_e"] = c2.number_input(
-            "E",
-            min_value=0.0,
-            step=0.1,
-            value=float(params["weight_e"]),
-            help="Weight of normalized expectancy in combined motivation.",
-        )
-        params["weight_p"] = c3.number_input(
-            "P",
-            min_value=0.0,
-            step=0.1,
-            value=float(params["weight_p"]),
-            help="Weight of normalized payoff in combined motivation.",
-        )
     title = "Expectancy Parameters"
     with st.sidebar.expander(title, expanded=True):
         c1, c2 = st.columns(2)
