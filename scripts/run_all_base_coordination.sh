@@ -11,7 +11,7 @@ BASE_FILES=(
     "${BASE_DIR}/base_V.json"
     "${BASE_DIR}/base_E.json"
     "${BASE_DIR}/base_PVE.json"
-    "${BASE_DIR}/base_NO_MOTIVATION.json"
+    "${BASE_DIR}/base_BASE_MODEL.json"
 )
 
 for base_file in "${BASE_FILES[@]}"; do
@@ -30,6 +30,6 @@ for base_file in "${BASE_FILES[@]}"; do
 done
 
 python scripts/coordination_number_analysis.py \
-    --models PVE NO_MOTIVATION \
+    --models PVE BASE_MODEL \
     --search-dir "${OUTPUT_DIR}" \
     --output-dir "${ANALYSIS_DIR}"

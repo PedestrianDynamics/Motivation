@@ -19,6 +19,8 @@ if str(PROJECT_ROOT) not in sys.path:
 MODEL_ALIASES = {
     "TOGETHER": "PVE",
     "ALL": "PVE",
+    "E": "SE",
+    "NO_MOTIVATION": "BASE_MODEL",
 }
 
 
@@ -29,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["P", "V", "E", "PVE", "NO_MOTIVATION"],
+        default=["P", "V", "SE", "PVE", "BASE_MODEL"],
         help="Models to analyze.",
     )
     parser.add_argument(
@@ -575,9 +577,9 @@ def plot_heatmaps(
     figure.savefig(output_dir / tagged_filename("overtaking_heatmaps", ".png", tag), dpi=200)
     plt.close(figure)
 
-    if "PVE" in rows_by_model and "NO_MOTIVATION" in rows_by_model:
+    if "PVE" in rows_by_model and "BASE_MODEL" in rows_by_model:
         focused_rows = {
-            model: rows_by_model[model] for model in ["PVE", "NO_MOTIVATION"]
+            model: rows_by_model[model] for model in ["PVE", "BASE_MODEL"]
         }
         figure, axes = plt.subplots(
             len(focused_rows),

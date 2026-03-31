@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 MODEL_ALIASES = {
     "TOGETHER": "PVE",
     "ALL": "PVE",
+    "NO_MOTIVATION": "BASE_MODEL",
 }
 
 
@@ -27,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["PVE", "NO_MOTIVATION"],
+        default=["PVE", "BASE_MODEL"],
         help="Models to analyze.",
     )
     parser.add_argument(
@@ -192,9 +193,9 @@ def plot_density(
         print(f"Skipping plots: {exc}")
         return False
 
-    if "PVE" in rows_by_model and "NO_MOTIVATION" in rows_by_model:
+    if "PVE" in rows_by_model and "BASE_MODEL" in rows_by_model:
         figure, axis = plt.subplots(figsize=(8, 4.5))
-        for model in ["PVE", "NO_MOTIVATION"]:
+        for model in ["PVE", "BASE_MODEL"]:
             rows = rows_by_model[model]
             axis.plot(
                 [row["time"] for row in rows],
@@ -208,7 +209,7 @@ def plot_density(
         figure.tight_layout()
         output_dir.mkdir(parents=True, exist_ok=True)
         figure.savefig(
-            output_dir / tagged_filename("voronoi_density_no_motivation_vs_pve", ".png", tag),
+            output_dir / tagged_filename("voronoi_density_base_model_vs_pve", ".png", tag),
             dpi=200,
         )
         plt.close(figure)

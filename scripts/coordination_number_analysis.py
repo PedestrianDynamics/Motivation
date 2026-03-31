@@ -21,6 +21,7 @@ from src.coordination_number import coordination_numbers
 MODEL_ALIASES = {
     "TOGETHER": "PVE",
     "ALL": "PVE",
+    "NO_MOTIVATION": "BASE_MODEL",
 }
 
 
@@ -34,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["PVE", "NO_MOTIVATION"],
+        default=["PVE", "BASE_MODEL"],
         help="Models to analyze. Use PVE for the combined model.",
     )
     parser.add_argument(
@@ -240,7 +241,7 @@ def plot_results(
 
     if distribution_rows:
         selected_models = [
-            model for model in ["NO_MOTIVATION", "PVE"] if model in rows_by_model
+            model for model in ["BASE_MODEL", "PVE"] if model in rows_by_model
         ]
         if not selected_models:
             return False

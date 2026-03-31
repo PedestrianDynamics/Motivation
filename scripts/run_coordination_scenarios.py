@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES_DIR = ROOT / "files"
 SCENARIOS_DIR = FILES_DIR / "coordination_scenarios"
 RUNNER = ROOT / "scripts" / "run_all_base_coordination.sh"
-BASE_MODELS = ["P", "V", "E", "PVE", "NO_MOTIVATION"]
+BASE_MODELS = ["P", "V", "SE", "PVE", "BASE_MODEL"]
 NUMBER_AGENTS_VALUES = [40, 80]
 OPEN_DOOR_TIMES = [0, 100]
 

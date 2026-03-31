@@ -18,6 +18,8 @@ if str(PROJECT_ROOT) not in sys.path:
 MODEL_ALIASES = {
     "TOGETHER": "PVE",
     "ALL": "PVE",
+    "E": "SE",
+    "NO_MOTIVATION": "BASE_MODEL",
 }
 
 
@@ -28,7 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["P", "V", "E", "PVE", "NO_MOTIVATION"],
+        default=["P", "V", "SE", "PVE", "BASE_MODEL"],
         help="Models to analyze.",
     )
     parser.add_argument(

@@ -1,18 +1,19 @@
-"""Compute crossing density summaries and plots for simulation runs."""
+"""Compute final rank summaries and plots for simulation runs."""
 
 from __future__ import annotations
 
 import argparse
 import csv
+import json
 from pathlib import Path
 import sys
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.utilities import calculate_crossing_density, plot_crossing_order_vs_area
+from src.utilities import calculate_final_rank_density, plot_final_rank_vs_area
 
 
 MODEL_ALIASES = {
@@ -25,7 +26,7 @@ MODEL_ALIASES = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Compute crossing order vs Voronoi area from simulation sqlite outputs."
+        description="Compute final rank vs Voronoi area from simulation sqlite outputs."
     )
     parser.add_argument(
         "--models",
@@ -48,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
-        default="crossing_density_results",
+        default="final_rank_results",
         help="Directory for CSV summaries and figures.",
     )
     parser.add_argument(
@@ -86,6 +87,22 @@ def discover_latest_sqlite(model: str, search_dirs: Sequence[str]) -> Optional[P
     return max(candidates, key=lambda path: path.stat().st_mtime)
 
 
+def find_matching_config(sqlite_path: Path) -> Path:
+    json_path = sqlite_path.with_suffix(".json")
+    if not json_path.exists():
+        raise FileNotFoundError(f"Missing matching config json for {sqlite_path}")
+    return json_path
+
+
+def load_door_center(config_path: Path) -> Tuple[float, float]:
+    with config_path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    door_vertices = data["motivation_parameters"]["motivation_doors"][0]["vertices"]
+    x1, y1 = door_vertices[0]
+    x2, y2 = door_vertices[1]
+    return (0.5 * float(x1 + x2), 0.5 * float(y1 + y2))
+
+
 def write_csv(
     path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequence[str]
 ) -> None:
@@ -109,7 +126,6 @@ def main() -> None:
 
     detail_rows: List[Dict[str, object]] = []
     missing_models: List[str] = []
-    skipped_models: List[str] = []
 
     for model in requested_models:
         sqlite_path = overrides.get(model) or discover_latest_sqlite(model, args.search_dir)
@@ -117,16 +133,21 @@ def main() -> None:
             missing_models.append(model)
             continue
 
-        df_merged, _, _, _, _ = calculate_crossing_density(
-            sqlite_path, walkable_area=None, file_type="simulation", title=model
+        config_path = find_matching_config(sqlite_path)
+        door_center = load_door_center(config_path)
+        df_merged, _, _, _, _ = calculate_final_rank_density(
+            sqlite_path,
+            walkable_area=None,
+            door_center=door_center,
+            file_type="simulation",
+            title=model,
         )
         if df_merged.empty:
-            skipped_models.append(model)
             continue
 
-        plot_crossing_order_vs_area(
+        plot_final_rank_vs_area(
             df_merged,
-            tagged_filename(f"crossing_order_vs_area_{model.lower()}", "", args.tag),
+            tagged_filename(f"final_rank_vs_area_{model.lower()}", "", args.tag),
             title=model,
             output_dir=str(output_dir),
         )
@@ -137,8 +158,9 @@ def main() -> None:
                 {
                     "model": model,
                     "source_file": str(sqlite_path),
+                    "config_file": str(config_path),
                     "id": int(row["id"]),
-                    "order": int(row["order"]),
+                    "final_rank": int(row["final_rank"]),
                     "density": float(row["density"]),
                     "area": float(row["area"]),
                 }
@@ -146,17 +168,15 @@ def main() -> None:
 
     if detail_rows:
         write_csv(
-            output_dir / tagged_filename("crossing_density_details", ".csv", args.tag),
+            output_dir / tagged_filename("final_rank_details", ".csv", args.tag),
             detail_rows,
-            ["model", "source_file", "id", "order", "density", "area"],
+            ["model", "source_file", "config_file", "id", "final_rank", "density", "area"],
         )
     else:
-        raise SystemExit("No crossings found in the requested simulation sqlite files.")
+        raise SystemExit("No simulation sqlite files found for final rank analysis.")
 
     if missing_models:
         print("Skipped models without input files:", ", ".join(sorted(missing_models)))
-    if skipped_models:
-        print("Skipped models without crossings:", ", ".join(sorted(skipped_models)))
     print(f"Wrote results to {output_dir}")
 
 

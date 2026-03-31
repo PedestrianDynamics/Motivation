@@ -278,6 +278,74 @@ def calculate_crossing_density(
     return df_merged, density_over_time, crossing_info, individual, title
 
 
+def calculate_final_rank_density(
+    filename,
+    walkable_area,
+    door_center,
+    fps=50,
+    polygon_cutoff_radius=1,
+    polygon_quad_segments=3,
+    title=None,
+    file_type="experiment",
+):
+    if file_type == "experiment":
+        if not title:
+            title = filename.split("_")[1].capitalize()
+        df = pd.read_csv(
+            filename, sep="\t", names=["id", "frame", "x", "y", "z", "m"], comment="#"
+        )
+        traj = pedpy.TrajectoryData(df, frame_rate=fps)
+        print(filename, traj.frame_rate)
+    elif file_type == "simulation":
+        traj = pedpy.load_trajectory_from_jupedsim_sqlite(filename)
+        walkable_area = pedpy.load_walkable_area_from_jupedsim_sqlite(filename)
+        df = traj.data
+        print(
+            f"Calculate final rank density for simulation file: {filename = }, {traj.frame_rate = }"
+        )
+
+    print(f"Processing file: {title}")
+
+    if door_center is None:
+        raise ValueError("door_center is required for final rank analysis.")
+
+    last_frame = int(df["frame"].max())
+    df_last = df[df["frame"] == last_frame].copy()
+    dx = df_last["x"] - float(door_center[0])
+    dy = df_last["y"] - float(door_center[1])
+    df_last["distance_to_door"] = np.sqrt(dx * dx + dy * dy)
+    df_last = df_last.sort_values(["distance_to_door", "id"])
+    final_rank = pd.Series(
+        range(1, len(df_last) + 1),
+        index=df_last["id"].to_numpy(),
+        name="final_rank",
+    )
+    final_rank_info = (
+        df_last.set_index("id")[["frame", "distance_to_door"]]
+        .rename(columns={"frame": "final_frame"})
+        .join(final_rank)
+    )
+
+    individual = compute_individual_voronoi_polygons(
+        traj_data=traj,
+        walkable_area=walkable_area,
+        cut_off=Cutoff(
+            radius=polygon_cutoff_radius, quad_segments=polygon_quad_segments
+        ),
+    )
+    density_over_time = individual.groupby("frame")["density"].mean()
+    density_per_agent = individual.groupby("id")["density"].mean()
+    individual["area"] = individual["polygon"].apply(lambda poly: poly.area)
+    area_per_agent = individual.groupby("id")["area"].mean()
+
+    df_rank = final_rank.to_frame(name="final_rank")
+    df_density = density_per_agent.to_frame(name="density")
+    df_area = area_per_agent.to_frame()
+    df_merged = df_rank.join(df_density, how="inner").join(df_area, how="inner")
+
+    return df_merged, density_over_time, final_rank_info, individual, title
+
+
 def plot_crossing_order_vs_area(
     df_merged,
     filename_stem,
@@ -324,3 +392,39 @@ def plot_crossing_order_vs_area(
     print(f"Plot: {output_path}")
     return True
     # plt.show()
+
+
+def plot_final_rank_vs_area(
+    df_merged,
+    filename_stem,
+    title=None,
+    color="green",
+    output_dir="final_rank_figs",
+    figsize=(6, 4),
+    marker="o",
+):
+    """Plot mean Voronoi polygon area per agent vs final rank."""
+    if df_merged.empty:
+        print(f"Skipping final rank plot for {filename_stem}: no agents found.")
+        return False
+
+    plt.figure(figsize=figsize)
+    plt.scatter(df_merged["final_rank"], df_merged["area"], color=color, marker=marker)
+
+    plt.xlabel("Final Rank (1 = closest to door at last frame)", size=14)
+    plt.ylabel(r"Mean Area per Agent / $m^2$", size=14)
+    if title:
+        plt.title(title)
+
+    max_rank = int(df_merged["final_rank"].max())
+    print(f"Max final rank: {max_rank}")
+    plt.xticks(range(1, max_rank + 1, 20))
+    plt.ylim([0, 3])
+    plt.grid(True, alpha=0.3)
+
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    output_path = f"{output_dir}/{filename_stem}.pdf"
+    plt.savefig(output_path, bbox_inches="tight")
+
+    print(f"Plot: {output_path}")
+    return True
