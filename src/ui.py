@@ -296,13 +296,13 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         data["motivation_parameters"]["max_value_low"] = max_value_low
 
         data["motivation_parameters"]["number_high_value"] = st.slider(
-            "Number of high **Value** people",
+            "Fraction of high **Value** people",
             key="num_high_value",
-            step=1,
-            min_value=0,
-            max_value=int(data["simulation_parameters"]["number_agents"]),
-            value=int(data["motivation_parameters"]["number_high_value"]),
-            help="Number of high Value people.",
+            step=0.01,
+            min_value=0.0,
+            max_value=1.0,
+            value=float(data["motivation_parameters"]["number_high_value"]),
+            help="Fraction of agents assigned to the high-value group.",
         )
 
 

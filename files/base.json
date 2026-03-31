@@ -3,9 +3,9 @@
         "This file includes all important information",
         "to start a jupedsim simulation with the motivation model",
         "motivation_mode options: SE, V, P, PVE, BASE_MODEL",
-        "N = 40, 80"
-        "Close"
-        "Voronoi density, index number,  "
+        "N = 40, 80",
+        "Close",
+        "Voronoi density, index number,  ",
         "BASE_MODEL keeps base CFSM parameters and ignores motivation-to-parameter mapping"
     ],
     "version": 0.1,
@@ -59,7 +59,7 @@
         ]
     },
     "motivation_parameters": {
-        "motivation_mode": "SE",
+        "motivation_mode": "BASE_MODEL",
         "normal_v_0": 1.2,
         "normal_time_gap": 1.0,
         "width": 10.0,
@@ -69,7 +69,7 @@
         "min_value_high": 4,
         "max_value_low": 3,
         "min_value_low": 1,
-        "number_high_value": 50%,
+        "number_high_value": 0.5,
         "agent_buffer": 0,
         "do_adjust_buffer": true,
         "value_probability_sorting": false,

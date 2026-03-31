@@ -14,6 +14,7 @@ from src.inifile_parser import (
     parse_normal_time_gap,
     parse_normal_v_0,
     parse_number_agents,
+    parse_number_high_value,
     parse_simulation_time,
     parse_time_step,
     parse_velocity_init_parameters,
@@ -95,7 +96,7 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
         "min_value_high": float(params["min_value_high"]),
         "max_value_low": float(params["max_value_low"]),
         "min_value_low": float(params["min_value_low"]),
-        "number_high_value": int(params["number_high_value"]),
+        "number_high_value": float(params["number_high_value"]),
         "seed": params["seed"],
         "payoff_k": float(payoff["k"]),
         "payoff_q0": float(payoff["q0"]),
@@ -106,6 +107,7 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
     extracted_params["mapping_block"] = mapping_block
     extracted_params["normal_v_0"] = parse_normal_v_0(data)
     extracted_params["normal_time_gap"] = parse_normal_time_gap(data)
+    extracted_params["number_high_value_agents"] = parse_number_high_value(data)
     extracted_params["time_step"] = parse_time_step(data)
     extracted_params["motivation_doors"] = parse_motivation_doors(data)
     a_ped, d_ped, _a_wall, _d_wall = parse_velocity_init_parameters(data)
@@ -149,7 +151,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
             min_value_high=params["min_value_high"],
             max_value_low=params["max_value_low"],
             min_value_low=params["min_value_low"],
-            number_high_value=params["number_high_value"],
+            number_high_value=params["number_high_value_agents"],
             agent_ids=list(range(params["number_agents"])),
             nagents=params["number_agents"],
             agent_positions=params["positions"],
