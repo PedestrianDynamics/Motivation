@@ -91,6 +91,25 @@ def main() -> None:
             run_command(
                 [
                     "python3",
+                    "scripts/crossing_density_analysis.py",
+                    "--models",
+                    "P",
+                    "V",
+                    "E",
+                    "PVE",
+                    "NO_MOTIVATION",
+                    "--search-dir",
+                    str(base_runs_dir),
+                    "--output-dir",
+                    str(scenario_dir / "crossing_density_results"),
+                    "--tag",
+                    scenario_name,
+                ]
+            )
+
+            run_command(
+                [
+                    "python3",
                     "scripts/voronoi_density_analysis.py",
                     "--models",
                     "PVE",

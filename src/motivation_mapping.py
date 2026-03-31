@@ -7,11 +7,11 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
-MOTIVATION_LOW = 0.0
-MOTIVATION_NORMAL = 0.5
-MOTIVATION_HIGH = 1.0
+MOTIVATION_LOW = 0.1
+MOTIVATION_NORMAL = 1.0
+MOTIVATION_HIGH = 3.0
 FIT_EPSILON = 1e-6
-DEFAULT_MOTIVATION_MIN = 0.1
+DEFAULT_MOTIVATION_MIN = MOTIVATION_LOW
 
 DEFAULT_MAPPING_BLOCK: Dict[str, Any] = {
     "mapping_function": "logistic",
@@ -41,7 +41,7 @@ def clamp_motivation(
     normal_v_0: float,
     motivation_min: float = DEFAULT_MOTIVATION_MIN,
 ) -> float:
-    """Clamp normalized motivation to [motivation_min, 1]."""
+    """Clamp motivation to the supported mapping domain."""
     _ = normal_v_0
     return clamp(motivation, motivation_min, MOTIVATION_HIGH)
 
@@ -106,7 +106,7 @@ def _predict_y2_from_k(k: float, anchors: AnchorValues, m0: float) -> float:
 def fit_logistic_from_anchors(
     anchors: AnchorValues, inflection_target: float
 ) -> LogisticParams:
-    """Fit logistic parameters from three anchors with fixed inflection target."""
+    """Fit logistic parameters from three anchors on the active motivation scale."""
     if not anchors.is_monotonic():
         raise ValueError(
             "Anchor values must be monotonic for logistic mapping. "
@@ -120,26 +120,36 @@ def fit_logistic_from_anchors(
         )
 
     increasing = anchors.high >= anchors.low
-    k_candidates = [i * 0.05 for i in range(1, 2001)]
+    k_candidates = [i * 0.05 for i in range(1, 4001)]
     if not increasing:
         k_candidates = [-k for k in k_candidates]
+    m0_candidates = [
+        MOTIVATION_LOW + i * 0.01
+        for i in range(
+            int(round((MOTIVATION_HIGH - MOTIVATION_LOW) / 0.01)) + 1
+        )
+    ]
 
     best_k = k_candidates[0]
+    best_m0 = inflection_target
     best_err = float("inf")
-    for k in k_candidates:
-        y2 = _predict_y2_from_k(k, anchors, inflection_target)
-        err = abs(y2 - anchors.normal)
-        if err < best_err:
-            best_err = err
-            best_k = k
+    for m0 in m0_candidates:
+        for k in k_candidates:
+            y2 = _predict_y2_from_k(k, anchors, m0)
+            err = abs(y2 - anchors.normal)
+            err += 1e-4 * abs(m0 - inflection_target)
+            if err < best_err:
+                best_err = err
+                best_k = k
+                best_m0 = m0
 
-    s1 = _logistic_fraction(MOTIVATION_LOW, best_k, inflection_target)
-    s3 = _logistic_fraction(MOTIVATION_HIGH, best_k, inflection_target)
+    s1 = _logistic_fraction(MOTIVATION_LOW, best_k, best_m0)
+    s3 = _logistic_fraction(MOTIVATION_HIGH, best_k, best_m0)
     denom = s3 - s1
     delta = (anchors.high - anchors.low) / denom
     y_min = anchors.low - delta * s1
     y_max = y_min + delta
-    return LogisticParams(y_min=y_min, y_max=y_max, k=best_k, m0=inflection_target)
+    return LogisticParams(y_min=y_min, y_max=y_max, k=best_k, m0=best_m0)
 
 
 def logistic_from_endpoints_and_k(

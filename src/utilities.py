@@ -299,6 +299,10 @@ def plot_crossing_order_vs_area(
     - figsize: figure size
     - marker: marker style for scatter plot
     """
+    if df_merged.empty:
+        print(f"Skipping crossing order plot for {filename_stem}: no crossings found.")
+        return False
+
     plt.figure(figsize=figsize)
     plt.scatter(df_merged["order"], df_merged["area"], color=color, marker=marker)
 
@@ -307,14 +311,16 @@ def plot_crossing_order_vs_area(
     if title:
         plt.title(title)
 
-    max_order = df_merged["order"].max()
+    max_order = int(df_merged["order"].max())
     print(f"Max crossing order: {max_order}")
     plt.xticks(range(1, max_order + 1, 20))
     plt.ylim([0, 3])
     plt.grid(True, alpha=0.3)
 
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_path = f"{output_dir}/{filename_stem}.pdf"
     plt.savefig(output_path, bbox_inches="tight")
 
     print(f"Plot: {output_path}")
+    return True
     # plt.show()

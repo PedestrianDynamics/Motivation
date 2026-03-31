@@ -290,17 +290,17 @@ def parse_simulation_time(json_data: Dict[str, Any]) -> float:
 
 
 def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
-    """Get motivation mode (E, V, P, PVE, NO_MOTIVATION)."""
+    """Get motivation mode (SE, V, P, PVE, NO_MOTIVATION)."""
     if "motivation_parameters" not in json_data:
         raise ValueError("Missing motivation_parameters in config.")
     params = json_data["motivation_parameters"]
     if "motivation_mode" not in params:
         raise ValueError("Missing motivation_parameters.motivation_mode in config.")
     mode = str(params["motivation_mode"]).upper()
-    if mode not in {"E", "V", "P", "PVE", "NO_MOTIVATION"}:
+    if mode not in {"E", "SE", "V", "P", "PVE", "NO_MOTIVATION"}:
         raise ValueError(
             "Invalid motivation_mode "
-            f"'{mode}'. Use E, V, P, PVE, or NO_MOTIVATION."
+            f"'{mode}'. Use SE, V, P, PVE, or NO_MOTIVATION."
         )
     return mode
 

@@ -128,7 +128,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
         An instance of a motivation strategy.
     """
     strategy = params["strategy"]
-    if strategy in ["E", "V", "P", "PVE", "NO_MOTIVATION"]:
+    if strategy in ["E", "SE", "V", "P", "PVE", "NO_MOTIVATION"]:
         door_point1 = (
             params["motivation_doors"][0][0][0],
             params["motivation_doors"][0][0][1],

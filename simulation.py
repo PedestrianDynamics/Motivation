@@ -50,8 +50,6 @@ from src.utilities import (
     calculate_distance,
     distribute_and_add_agents,
     init_journey,
-    calculate_crossing_density,
-    plot_crossing_order_vs_area,
 )
 
 # import cProfile
@@ -227,22 +225,46 @@ def export_trajectory_to_txt(
             value_series = pd.Series(values, index=frame_indices)
             df_data.loc[frame_indices, "motivation"] = value_series
 
-        
-        df_data["color"] = ((1-df_data["motivation"]) * 255).clip(0, 255).astype(int)
+        motivation_mode = str(
+            motivation_model.motivation_strategy.motivation_mode
+        ).upper()
+        if motivation_mode == "NO_MOTIVATION":
+            df_data["color"] = 128
+        else:
+            if motivation_mode == "V":
+                motivation_min = float(df_data["motivation"].min())
+                motivation_max = float(df_data["motivation"].max())
+            elif motivation_mode == "P":
+                motivation_min = 0.0
+                motivation_max = 1.0
+            else:
+                motivation_min = float(
+                    motivation_model.motivation_strategy.motivation_min
+                )
+                motivation_max = float(mmap.MOTIVATION_HIGH)
+            motivation_range = max(motivation_max - motivation_min, 1e-9)
+            normalized_motivation = (
+                (df_data["motivation"] - motivation_min) / motivation_range
+            ).clip(0, 1)
+            df_data["color"] = ((1 - normalized_motivation) * 255).astype(int)
+        df_data["id"] = df_data["id"].astype(int)
+        df_data["frame"] = df_data["frame"].astype(int)
+        df_data["color"] = df_data["color"].astype(int)
 
     # Write the formatted data to the output file
+    geometry_reference = pathlib.Path(geometry_file).name
     with open(output_file, "w") as f:
         # Write the header
         f.write(f"#framerate: {fps}\n")
         f.write("#unit: m\n")
-        f.write(f"#geometry: {geometry_file}\n")
+        f.write(f"#geometry: {geometry_reference}\n")
         f.write("#ID\tFR\tX\tY\tZ\tA\tB\tANGLE\tCOLOR\n")
 
         # Write each row of trajectory data
-        for _, row in df_data.iterrows():
+        for row in df_data.itertuples(index=False):
             f.write(
-                f"{row['id']}\t{row['frame']}\t{row['x']:.4f}\t{row['y']:.4f}\t0\t"
-                f"{radius:.4f}\t{radius:.4f}\t{row['angle']:.4f}\t{row['color']}\n"
+                f"{row.id}\t{row.frame}\t{row.x:.4f}\t{row.y:.4f}\t0\t"
+                f"{radius:.4f}\t{radius:.4f}\t{row.angle:.4f}\t{row.color}\n"
             )
 
 
@@ -589,6 +611,7 @@ def run_simulation_loop(
                 frame_to_write += 1
             simulation.iterate()
 
+        logging.info(f">>> Agents still in simulation: {simulation.agent_count()}")
         with profile_function("Writing motivation data to csv file"):
             for items in buffer:
                 write_value_to_file(file_handle, items)
@@ -1023,9 +1046,7 @@ def main(
             output_file = output_path.with_name(
                 f"{scenario_name}_{output_path.stem}.txt"
             )
-            geometry_file = output_path.with_name(
-                f"{scenario_name}_{output_path.stem}_geometry.xml"
-            )
+            geometry_file = "geometry.xml"
             motivation_csv = output_path.with_name(output_path.stem + "_motivation.csv")
             logging.info(f"Using:  {geometry_file} ")
             v0_mean = 1.2
@@ -1050,20 +1071,6 @@ def main(
                     str(output_file),
                 ]
                 subprocess.run(command, capture_output=True, text=True)
-
-            (
-                df_merged_simulation,
-                density_over_time_simulation,
-                crossing_info_simulation,
-                individual_simulation,
-                title_simulation,
-            ) = calculate_crossing_density(
-                output_path, walkable_area, file_type="simulation", title="Simulation"
-            )
-
-            plot_crossing_order_vs_area(
-                df_merged_simulation, output_path.stem, title=None, color="blue"
-            )
 
         else:
             logging.warning(f"Status: {status}")
