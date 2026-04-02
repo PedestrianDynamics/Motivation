@@ -289,10 +289,10 @@ class EVCStrategy(MotivationStrategy):
                     self.get_derived_seed(self.seed, n),
                 )
         self.motivation_mode = str(self.motivation_mode).upper()
-        if self.motivation_mode not in {"E", "SE", "V", "P", "PVE", "NO_MOTIVATION"}:
+        if self.motivation_mode not in {"E", "SE", "V", "P", "PVE", "BASE_MODEL"}:
             raise ValueError(
                 f"Unknown motivation_mode '{self.motivation_mode}'. "
-                "Use one of: SE, V, P, PVE, NO_MOTIVATION."
+                "Use one of: SE, V, P, PVE, BASE_MODEL."
             )
         self.value_min = min(self.min_value_low, self.min_value_high)
         self.value_max = max(self.max_value_low, self.max_value_high)
@@ -465,7 +465,7 @@ class EVCStrategy(MotivationStrategy):
         P_unit = float(self.payoff_cache.get(agent_id, 1.0))
         E_unit = SE_unit + P_unit
 
-        if self.motivation_mode == "NO_MOTIVATION":
+        if self.motivation_mode == "BASE_MODEL":
             M = 1.0
         elif self.motivation_mode in {"E", "SE"}:
             M = SE_unit
@@ -540,7 +540,9 @@ class EVCStrategy(MotivationStrategy):
         fig1.savefig("value.pdf")
         # P
         q_vals = np.linspace(0.0, 1.0, 200)
-        p_vals = [1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0))) for q in q_vals]
+        p_vals = [
+            1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0))) for q in q_vals
+        ]
         ax2.plot(q_vals, p_vals, "-")
         p0 = 1.0 / (1.0 + math.exp(self.payoff_k * (self.payoff_q0 - self.payoff_q0)))
         ax2.axvline(self.payoff_q0, color="red", ls="--", lw=1.2)

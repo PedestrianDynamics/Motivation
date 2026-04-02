@@ -297,9 +297,9 @@ def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
     if "motivation_mode" not in params:
         raise ValueError("Missing motivation_parameters.motivation_mode in config.")
     mode = str(params["motivation_mode"]).upper()
-    if mode == "BASE_MODEL":
-        return "NO_MOTIVATION"
-    if mode not in {"E", "SE", "V", "P", "PVE", "NO_MOTIVATION"}:
+    if mode == "NO_MOTIVATION":
+        return "BASE_MODEL"
+    if mode not in {"E", "SE", "V", "P", "PVE", "BASE_MODEL"}:
         raise ValueError(
             "Invalid motivation_mode "
             f"'{mode}'. Use SE, V, P, PVE, or BASE_MODEL."

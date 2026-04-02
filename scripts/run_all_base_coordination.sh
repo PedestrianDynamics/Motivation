@@ -9,7 +9,7 @@ BASE_DIR="${3:-files}"
 BASE_FILES=(
     "${BASE_DIR}/base_P.json"
     "${BASE_DIR}/base_V.json"
-    "${BASE_DIR}/base_E.json"
+    "${BASE_DIR}/base_SE.json"
     "${BASE_DIR}/base_PVE.json"
     "${BASE_DIR}/base_BASE_MODEL.json"
 )

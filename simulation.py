@@ -229,7 +229,7 @@ def export_trajectory_to_txt(
         motivation_mode = str(
             motivation_model.motivation_strategy.motivation_mode
         ).upper()
-        if motivation_mode == "NO_MOTIVATION":
+        if motivation_mode == "BASE_MODEL":
             df_data["color"] = 128
         else:
             if motivation_mode == "V":
@@ -340,7 +340,7 @@ def init_motivation_model(
     motivation_strategy.configure_payoff_update_interval(time_step=time_step)
 
     parameter_mapper = None
-    if motivation_mode != "NO_MOTIVATION":
+    if motivation_mode != "BASE_MODEL":
         _, d_ped, _, _ = parse_velocity_init_parameters(_data)
         parameter_mapper = mmap.MotivationParameterMapper(
             mapping_block=mapping_block,

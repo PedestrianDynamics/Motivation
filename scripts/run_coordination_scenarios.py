@@ -14,7 +14,7 @@ SCENARIOS_DIR = FILES_DIR / "coordination_scenarios"
 RUNNER = ROOT / "scripts" / "run_all_base_coordination.sh"
 BASE_MODELS = ["P", "V", "SE", "PVE", "BASE_MODEL"]
 NUMBER_AGENTS_VALUES = [40, 80]
-OPEN_DOOR_TIMES = [0, 100]
+OPEN_DOOR_TIMES = [100]
 
 
 def load_json(path: Path) -> dict:

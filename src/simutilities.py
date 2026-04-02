@@ -130,7 +130,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
         An instance of a motivation strategy.
     """
     strategy = params["strategy"]
-    if strategy in ["E", "SE", "V", "P", "PVE", "NO_MOTIVATION"]:
+    if strategy in ["E", "SE", "V", "P", "PVE", "BASE_MODEL"]:
         door_point1 = (
             params["motivation_doors"][0][0][0],
             params["motivation_doors"][0][0][1],
@@ -226,7 +226,7 @@ def plot_motivation_model(params: Dict[str, Any]) -> None:
     """
     strategy = create_motivation_strategy(params)
     mapper = None
-    if params["strategy"] != "NO_MOTIVATION":
+    if params["strategy"] != "BASE_MODEL":
         try:
             mapper = mmap.MotivationParameterMapper(
                 mapping_block=params["mapping_block"],

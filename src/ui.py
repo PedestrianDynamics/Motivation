@@ -534,8 +534,8 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     c1, c2 = st.sidebar.columns(2)
     motivation_mode = st.sidebar.selectbox(
         "Select mode",
-        ["PVE", "SE", "V", "P", "NO_MOTIVATION"],
-        help="PVE: (V/alpha) * (ES + P); SE: spatial expectancy only; V: value only, P: payoff only, NO_MOTIVATION: keep base CFSM parameters.",
+        ["PVE", "SE", "V", "P", "BASE_MODEL"],
+        help="PVE: (V/alpha) * (ES + P); SE: spatial expectancy only; V: value only, P: payoff only, BASE_MODEL: keep base CFSM parameters.",
     )
     data["motivation_parameters"]["normal_v_0"] = c1.number_input(
         "Normal V0:",
