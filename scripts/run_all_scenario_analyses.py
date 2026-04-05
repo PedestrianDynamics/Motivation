@@ -88,24 +88,24 @@ def main() -> None:
                 ]
             )
 
-            run_command(
-                [
-                    "python3",
-                    "scripts/crossing_density_analysis.py",
-                    "--models",
-                    "P",
-                    "V",
-                    "SE",
-                    "PVE",
-                    "BASE_MODEL",
-                    "--search-dir",
-                    str(base_runs_dir),
-                    "--output-dir",
-                    str(scenario_dir / "crossing_density_results"),
-                    "--tag",
-                    scenario_name,
-                ]
-            )
+            # run_command(
+            #     [
+            #         "python3",
+            #         "scripts/crossing_density_analysis.py",
+            #         "--models",
+            #         "P",
+            #         "V",
+            #         "SE",
+            #         "PVE",
+            #         "BASE_MODEL",
+            #         "--search-dir",
+            #         str(base_runs_dir),
+            #         "--output-dir",
+            #         str(scenario_dir / "crossing_density_results"),
+            #         "--tag",
+            #         scenario_name,
+            #     ]
+            # )
 
             run_command(
                 [
@@ -136,9 +136,9 @@ def main() -> None:
                     "--search-dir",
                     str(base_runs_dir),
                     "--t-min",
-                    "10",
+                    "0",
                     "--t-max",
-                    "300",
+                    "100",
                     "--output-dir",
                     str(scenario_dir / "voronoi_density_results"),
                     "--tag",

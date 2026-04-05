@@ -14,7 +14,7 @@ import streamlit as st
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
 import matplotlib.pyplot as plt
-
+import numpy as np
 import pedpy
 from pedpy import compute_individual_voronoi_polygons, Cutoff
 import pandas as pd
@@ -398,7 +398,7 @@ def plot_final_rank_vs_area(
     df_merged,
     filename_stem,
     title=None,
-    color="green",
+    color="blue",
     output_dir="final_rank_figs",
     figsize=(6, 4),
     marker="o",
