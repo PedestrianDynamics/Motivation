@@ -1,9 +1,12 @@
 """Module for motivational model."""
 
+import hashlib
 import logging
+import math
 import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, TypeAlias
 
 import matplotlib.pyplot as plt
@@ -12,9 +15,6 @@ from matplotlib.figure import Figure
 
 from .logger_config import log_debug
 from .motivation_mapping import MotivationParameterMapper
-import math
-import hashlib
-from enum import Enum, auto
 
 Point: TypeAlias = Tuple[float, float]
 

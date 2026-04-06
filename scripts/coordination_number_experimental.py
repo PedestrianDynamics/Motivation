@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import sys
 from collections import defaultdict
 from pathlib import Path
-import sys
 from typing import Dict, Iterable, List, Sequence, Tuple
 
 import numpy as np
@@ -16,7 +16,6 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.coordination_number import coordination_numbers
-
 
 DEFAULT_EXPERIMENT_DIR = Path("/Users/chraibi/workspace/Writing/Motivation/CroMa videos")
 

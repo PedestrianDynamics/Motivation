@@ -3,9 +3,10 @@
 import json
 import logging
 import pathlib
-from typing import Any, Dict, List, Union
-import typer
 from datetime import datetime
+from typing import Any, Dict, List, Union
+
+import typer
 
 
 def get_nested_value(config: Dict[str, Any], param_path: str) -> Any:

@@ -30,7 +30,7 @@ jobs:
           python-version: '3.11'
       - run: pip install ruff
       - name: Ruff lint
-        run: ruff check --select I .
+        run: ruff check --select I --exclude "*.ipynb" .
 
   mypy:
     runs-on: ubuntu-latest

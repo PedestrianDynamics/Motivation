@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import streamlit as st
-from src import motivation_model as mm
+
 from src import motivation_mapping as mmap
+from src import motivation_model as mm
 from src.inifile_parser import (
     parse_fps,
     parse_motivation_doors,

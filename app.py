@@ -5,16 +5,17 @@ Author: Mohcine Chraibi
 Date: August 11, 2023
 """
 
+import glob
 from pathlib import Path
 
 import jupedsim as jps
 import pandas as pd
 import pedpy
 import streamlit as st
-from anim import plot_frame_fast
 from jupedsim.internal.notebook_utils import read_sqlite_file
+
+from anim import plot_frame_fast
 from src import docs
-import glob
 from src.logger_config import init_logger
 from src.simutilities import (
     call_simulation,

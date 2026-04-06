@@ -4,21 +4,21 @@ import glob
 import json
 import logging
 import os
+import random
 from math import sqrt
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple, TypeAlias, Union
-import random
+
 import jupedsim as jps
-import streamlit as st
-from shapely import GeometryCollection, Polygon
-from shapely.ops import unary_union
 import matplotlib.pyplot as plt
 import numpy as np
-import pedpy
-from pedpy import compute_individual_voronoi_polygons, Cutoff
 import pandas as pd
-
+import pedpy
+import streamlit as st
+from pedpy import Cutoff, compute_individual_voronoi_polygons
+from shapely import GeometryCollection, Polygon
+from shapely.ops import unary_union
 
 Point: TypeAlias = Tuple[float, float]
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import csv
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
 
 import pandas as pd
@@ -26,7 +26,6 @@ from overtaking_analysis import (
     tagged_filename,
     write_csv,
 )
-
 
 DEFAULT_EXPERIMENT_DIR = PROJECT_ROOT.parent / "trajectories_croma"
 DEFAULT_MEASUREMENT_CONFIG = PROJECT_ROOT / "files" / "base_P.json"
@@ -143,6 +142,7 @@ def parse_frame_rate(path: Path) -> float:
 
 def load_measurement_line(config_path: Path):
     import json
+
     import pedpy
 
     with config_path.open("r", encoding="utf-8") as handle:

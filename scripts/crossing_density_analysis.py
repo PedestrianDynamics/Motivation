@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import csv
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -13,7 +13,6 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.utilities import calculate_crossing_density, plot_crossing_order_vs_area
-
 
 MODEL_ALIASES = {
     "TOGETHER": "PVE",

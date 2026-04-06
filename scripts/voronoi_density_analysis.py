@@ -5,8 +5,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

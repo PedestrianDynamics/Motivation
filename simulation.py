@@ -3,29 +3,29 @@
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import subprocess
-from datetime import datetime
-import numpy as np
-import pandas as pd
 import _io
 import contextlib
 import csv
 import json
 import logging
 import pathlib
-import time
-from typing import Any, Dict, Iterator, List, Tuple, TypeAlias, cast
 import random
+import subprocess
+import time
+from datetime import datetime
+from typing import Any, Dict, Iterator, List, Optional, Tuple, TypeAlias, cast
+from xml.etree.ElementTree import Element, ElementTree, SubElement
+
 import jupedsim as jps
+import numpy as np
+import pandas as pd
 import typer
 from jupedsim.distributions import distribute_by_number
-from shapely import from_wkt, Polygon
-from typing import Optional
-from xml.etree.ElementTree import Element, ElementTree, SubElement
 from jupedsim.internal.notebook_utils import read_sqlite_file
+from shapely import Polygon, from_wkt
 
-from src import motivation_model as mm
 from src import motivation_mapping as mmap
+from src import motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
@@ -33,11 +33,11 @@ from src.inifile_parser import (
     parse_fps,
     parse_motivation_doors,
     parse_motivation_strategy,
-    parse_payoff_update_interval,
     parse_normal_time_gap,
     parse_normal_v_0,
     parse_number_agents,
     parse_number_high_value,
+    parse_payoff_update_interval,
     parse_radius,
     parse_simulation_time,
     parse_theta_max_upper_bound,

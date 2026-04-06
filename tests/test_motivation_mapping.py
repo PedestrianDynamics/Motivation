@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 import math
+
 import pytest
 
 from src.motivation_mapping import (
     MOTIVATION_HIGH,
     MOTIVATION_LOW,
     MOTIVATION_NORMAL,
-    MotivationParameterMapper,
-    fit_logistic_from_anchors,
-    evaluate_logistic,
     AnchorValues,
+    MotivationParameterMapper,
     clamp_motivation,
+    evaluate_logistic,
+    fit_logistic_from_anchors,
 )
 
 

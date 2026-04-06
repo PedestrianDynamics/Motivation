@@ -9,7 +9,6 @@ from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
 import numpy as np
 
-
 Point = Tuple[float, float]
 Edge = Tuple[int, int]
 AgentPositions = Dict[int, Point]

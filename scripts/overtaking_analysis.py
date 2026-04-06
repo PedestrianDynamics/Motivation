@@ -5,8 +5,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -353,8 +353,8 @@ def compute_model_rows(
     speed_window: int,
     rel_speed_threshold: float,
 ):
-    import pedpy
     import pandas as pd
+    import pedpy
 
     config_path = find_matching_config(sqlite_path)
     measurement_line = load_measurement_line(config_path)

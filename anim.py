@@ -15,8 +15,8 @@ import numpy as np
 import pandas as pd
 import pedpy
 import plotly.graph_objects as go
-from matplotlib.patches import Circle
 from matplotlib.figure import Figure as MatplotlibFigure
+from matplotlib.patches import Circle
 from plotly.graph_objs import Figure, Scatter
 from plotly.graph_objs.layout import Shape
 from shapely import Polygon
