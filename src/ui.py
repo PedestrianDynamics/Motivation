@@ -243,17 +243,16 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
     """Set Value function."""
     with st.sidebar.expander("Value Parameters", expanded=True):
         c1, c2 = st.columns(2)
-        high_options = [round(float(v), 2) for v in np.arange(5.0, 7.1, 0.1)]
-        low_options = [round(float(v), 2) for v in np.arange(1.0, 3.1, 0.1)]
+        value_options = [round(float(v), 2) for v in np.arange(1.0, 7.1, 0.1)]
 
         def _closest_option(options: list[float], value: float) -> float:
             return min(options, key=lambda opt: abs(opt - value))
 
         high_max = _closest_option(
-            high_options, float(data["motivation_parameters"]["max_value_high"])
+            value_options, float(data["motivation_parameters"]["max_value_high"])
         )
         high_min = _closest_option(
-            high_options, float(data["motivation_parameters"]["min_value_high"])
+            value_options, float(data["motivation_parameters"]["min_value_high"])
         )
         if high_max > high_min:
             high_max, high_min = high_min, high_max
@@ -261,7 +260,7 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         min_value_high, max_value_high = st.select_slider(
             "**Value high**",
             key="value_high",
-            options=high_options,
+            options=value_options,
             value=[
                 high_max,
                 high_min,
@@ -273,10 +272,10 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         data["motivation_parameters"]["max_value_high"] = max_value_high
 
         low_min = _closest_option(
-            low_options, float(data["motivation_parameters"]["min_value_low"])
+            value_options, float(data["motivation_parameters"]["min_value_low"])
         )
         low_max = _closest_option(
-            low_options, float(data["motivation_parameters"]["max_value_low"])
+            value_options, float(data["motivation_parameters"]["max_value_low"])
         )
         if low_min > low_max:
             low_min, low_max = low_max, low_min
@@ -284,7 +283,7 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         min_value_low, max_value_low = st.select_slider(
             "**Value low**",
             key="value_low",
-            options=low_options,
+            options=value_options,
             value=[
                 low_min,
                 low_max,
@@ -297,13 +296,13 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         data["motivation_parameters"]["max_value_low"] = max_value_low
 
         data["motivation_parameters"]["number_high_value"] = st.slider(
-            "Number of high **Value** people",
+            "Fraction of high **Value** people",
             key="num_high_value",
-            step=1,
-            min_value=0,
-            max_value=int(data["simulation_parameters"]["number_agents"]),
-            value=int(data["motivation_parameters"]["number_high_value"]),
-            help="Number of high Value people.",
+            step=0.01,
+            min_value=0.0,
+            max_value=1.0,
+            value=float(data["motivation_parameters"]["number_high_value"]),
+            help="Fraction of agents assigned to the high-value group.",
         )
 
 
@@ -535,8 +534,8 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     c1, c2 = st.sidebar.columns(2)
     motivation_mode = st.sidebar.selectbox(
         "Select mode",
-        ["PVE", "E", "V", "P", "NO_MOTIVATION"],
-        help="PVE: V * (SE + P); E: SE + P; V: value only, P: payoff only, NO_MOTIVATION: keep base CFSM parameters.",
+        ["PVE", "SE", "V", "P", "BASE_MODEL"],
+        help="PVE: (V/alpha) * (ES + P); SE: spatial expectancy only; V: value only, P: payoff only, BASE_MODEL: keep base CFSM parameters.",
     )
     data["motivation_parameters"]["normal_v_0"] = c1.number_input(
         "Normal V0:",
@@ -560,7 +559,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
     )
 
     data["motivation_parameters"]["motivation_mode"] = motivation_mode
-    title = "Expectancy Parameters"
+    title = "Spatial Expectancy Parameters"
     with st.sidebar.expander(title, expanded=True):
         c1, c2 = st.columns(2)
         data["motivation_parameters"]["width"] = c1.number_input(
@@ -575,7 +574,7 @@ def ui_motivation_parameters(data: Dict[str, Any]) -> None:
             key="hight",
             step=0.5,
             value=float(params["height"]),
-            help="Height of function defining distance dependency",
+            help="Height of the ES function; ES is floored at 0.1 to avoid zero motivation.",
         )
     ui_value_parameters(data)
     ui_payoff_parameters(data)

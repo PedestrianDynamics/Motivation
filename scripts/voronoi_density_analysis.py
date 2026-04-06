@@ -5,9 +5,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from pathlib import Path
 import sys
-from typing import Dict, Iterable, List, Optional, Sequence
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 MODEL_ALIASES = {
     "TOGETHER": "PVE",
     "ALL": "PVE",
+    "NO_MOTIVATION": "BASE_MODEL",
 }
 
 
@@ -27,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["PVE", "NO_MOTIVATION"],
+        default=["PVE", "BASE_MODEL"],
         help="Models to analyze.",
     )
     parser.add_argument(
@@ -102,7 +103,7 @@ def find_matching_config(sqlite_path: Path) -> Path:
     return json_path
 
 
-def load_measurement_area(config_path: Path):
+def load_measurement_area(config_path: Path) -> Any:
     import pedpy
 
     with config_path.open("r", encoding="utf-8") as handle:
@@ -115,7 +116,7 @@ def compute_density_rows(
     sqlite_path: Path,
     t_min: float,
     t_max: float,
-) -> List[Dict[str, float]]:
+) -> List[Dict[str, Any]]:
     import pedpy
     from pedpy.column_identifier import DENSITY_COL, TIME_COL
 
@@ -138,7 +139,7 @@ def compute_density_rows(
     density_column = DENSITY_COL if DENSITY_COL in columns else "density"
     frame_column = "frame" if "frame" in columns else None
 
-    rows: List[Dict[str, float]] = []
+    rows: List[Dict[str, Any]] = []
     for _, row in density_voronoi.iterrows():
         if time_column is not None:
             time_value = float(row[time_column])
@@ -184,7 +185,7 @@ def tagged_filename(stem: str, suffix: str, tag: str) -> str:
 
 
 def plot_density(
-    rows_by_model: Dict[str, List[Dict[str, float]]], output_dir: Path, tag: str
+    rows_by_model: Dict[str, List[Dict[str, Any]]], output_dir: Path, tag: str
 ) -> bool:
     try:
         import matplotlib.pyplot as plt
@@ -192,9 +193,9 @@ def plot_density(
         print(f"Skipping plots: {exc}")
         return False
 
-    if "PVE" in rows_by_model and "NO_MOTIVATION" in rows_by_model:
+    if "PVE" in rows_by_model and "BASE_MODEL" in rows_by_model:
         figure, axis = plt.subplots(figsize=(8, 4.5))
-        for model in ["PVE", "NO_MOTIVATION"]:
+        for model in ["PVE", "BASE_MODEL"]:
             rows = rows_by_model[model]
             axis.plot(
                 [row["time"] for row in rows],
@@ -208,7 +209,7 @@ def plot_density(
         figure.tight_layout()
         output_dir.mkdir(parents=True, exist_ok=True)
         figure.savefig(
-            output_dir / tagged_filename("voronoi_density_no_motivation_vs_pve", ".png", tag),
+            output_dir / tagged_filename("voronoi_density_base_model_vs_pve", ".png", tag),
             dpi=200,
         )
         plt.close(figure)
@@ -222,7 +223,7 @@ def main() -> None:
     overrides = parse_input_overrides(args.input)
     requested_models = [normalize_model_name(model) for model in args.models]
 
-    rows_by_model: Dict[str, List[Dict[str, float]]] = {}
+    rows_by_model: Dict[str, List[Dict[str, Any]]] = {}
     missing_models: List[str] = []
 
     for model in requested_models:

@@ -290,17 +290,19 @@ def parse_simulation_time(json_data: Dict[str, Any]) -> float:
 
 
 def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
-    """Get motivation mode (E, V, P, PVE, NO_MOTIVATION)."""
+    """Get motivation mode (SE, V, P, PVE, BASE_MODEL)."""
     if "motivation_parameters" not in json_data:
         raise ValueError("Missing motivation_parameters in config.")
     params = json_data["motivation_parameters"]
     if "motivation_mode" not in params:
         raise ValueError("Missing motivation_parameters.motivation_mode in config.")
     mode = str(params["motivation_mode"]).upper()
-    if mode not in {"E", "V", "P", "PVE", "NO_MOTIVATION"}:
+    if mode == "NO_MOTIVATION":
+        return "BASE_MODEL"
+    if mode not in {"E", "SE", "V", "P", "PVE", "BASE_MODEL"}:
         raise ValueError(
             "Invalid motivation_mode "
-            f"'{mode}'. Use E, V, P, PVE, or NO_MOTIVATION."
+            f"'{mode}'. Use SE, V, P, PVE, or BASE_MODEL."
         )
     return mode
 
@@ -330,6 +332,19 @@ def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> int
         return int(json_data["motivation_parameters"][parameter])
 
     return 1
+
+
+def parse_number_high_value(json_data: Dict[str, Any]) -> int:
+    """Return high-value agent count from a configured fraction or count."""
+    number_agents = parse_number_agents(json_data)
+    try:
+        raw_value = float(json_data["motivation_parameters"]["number_high_value"])
+    except KeyError:
+        return 1
+
+    if raw_value < 1.0:
+        return max(0, min(number_agents, int(round(number_agents * raw_value))))
+    return max(0, min(number_agents, int(round(raw_value))))
 
 
 def is_motivation_active(json_data: Dict[str, Any]) -> int:

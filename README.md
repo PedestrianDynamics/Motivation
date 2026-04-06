@@ -1,6 +1,9 @@
-[![motivation-app](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
-  
-# Motivation  
+[![Streamlit](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
+[![Ruff](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg?event=push&job=ruff)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
+[![Mypy](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg?event=push&job=mypy)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
+[![Tests](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg?event=push&job=tests)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
+
+# Motivation
 
 ## Usage
 

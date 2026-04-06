@@ -320,31 +320,45 @@ In this way, the model bridges the gap between simple heterogeneity and context-
 
 \section{Results: Expectancy-Value-Payoff (EVP) Model}
 \label{sec:results}
-The EVP model defines an agent's motivation as a weighted combination of
-three normalized components:
+The EVP model defines an agent's motivation from three components: a
+spatial expectancy term, an intrinsic value term, and a payoff term. In
+the present version, value acts as a multiplicative amplification of the
+combined opportunity term formed by spatial expectancy and payoff:
 
 \begin{equation}
-m_i = \frac{w_E E_i + w_V V_i + w_P P_i}{w_E + w_V + w_P},
+m_i = \frac{V_i}{\alpha}\left(ES_i + P_i\right),
 \label{eq:motivation}
 \end{equation}
-where \( E_i \) represents expectancy, \( V_i \) the value, and \( P_i \) the payoff, while \(w_E\), \(w_V\), and \(w_P\) denote their relative weights. Expectancy quantifies how likely an action is to succeed, value represents the agent's intrinsic interest in succeeding, and payoff captures how advantageous the agent's current relative position is within the crowd. These three quantities depend on the setting and on the position of the pedestrian in that setting. In particular, they depend on the distance to the entrance, the relative rank within the crowd, and the subjective value attached to the outcome.
+where \(ES_i\) denotes the spatial expectancy, \(V_i\) the value, and
+\(P_i\) the payoff. The scaling factor \(\alpha=14/3\) is chosen such
+that the theoretical maximum of the expression coincides with the target
+high-motivation anchor \(m=3\) used in the motivation-to-parameter
+mapping. Spatial expectancy quantifies how favorable the current distance
+to the entrance is, value represents the agent's intrinsic importance
+attached to success, and payoff captures how advantageous the current
+relative position in the crowd is. These quantities depend on the setting
+and on the position of the pedestrian in that setting.
 
-\paragraph{Expectancy.}  
-The expectancy \( E(d) \) depends on the agent's distance \( d \) to the exit. It is modeled as a bell-shaped function:
+\paragraph{Spatial expectancy.}
+The spatial expectancy \(ES(d)\) depends on the agent's distance \(d\) to
+the exit. It is modeled from a bell-shaped distance function with width
+\(w\), then scaled to the interval \([0.1,1]\) so that the motivational
+state never collapses to zero solely because of distance:
 
 \begin{equation}
-E(d) =
+ES(d) =
 \begin{cases}
-e \cdot \exp\left(\dfrac{1}{\left(\frac{d}{w}\right)^2 - 1}\right), & d < w, \\
-0, & d \ge w,
+0.1 + 0.9\,\hat{E}(d), & d < w, \\
+0.1, & d \ge w,
 \end{cases}
 \label{eq:expectancy}
 \end{equation}
-where \( w \) is the influence radius. In the current implementation, \(E(d)\)
-is normalized to the interval \([0,1]\): it reaches its maximum value \(1\)
-at the goal and drops to \(0\) at and beyond \(w\). The parameter \(h\) appears
-in the intermediate computation in the code, but it cancels out in the final
-normalized expectancy value.
+where \(w\) is the influence radius and \(\hat{E}(d)\in[0,1]\) denotes
+the normalized distance-dependent term derived from the bell-shaped base
+function. Thus \(ES(d)\) reaches the value \(1\) at the goal and approaches
+the minimum value \(0.1\) at and beyond \(w\). The parameter \(h\) appears
+in the intermediate computation of the distance profile in the code, but it
+cancels out in the normalized term \(\hat{E}(d)\).
 
 \paragraph{Payoff.}
 The payoff term is based on the current rank of an agent within the crowd.
@@ -368,14 +382,14 @@ may depend on heuristics such as distance to the exit. We distinguish two
 groups of agents: high-value agents with
 \(v_i \in [v_{\min}^{\text{high}},\ v_{\max}^{\text{high}}]\), and low-value
 agents with \(v_i \in [v_{\min}^{\text{low}},\ v_{\max}^{\text{low}}]\).
-In the implementation, these absolute values are then normalized to the
-interval \([0,1]\) before entering the motivation model:
-\begin{equation}
-V_i = \frac{v_i - v_{\min}}{v_{\max}-v_{\min}},
-\end{equation}
-with clipping to \([0,1]\). Thus, \(V_i\) denotes the normalized value term
-used in the EVP model. The resulting motivation is therefore a weighted
-average of the normalized expectancy, value, and payoff terms.
+In the present implementation, these values are used directly rather than
+being normalized. For the simulations reported here, the low-value group is
+sampled from the interval \([1,3]\), whereas the high-value group is sampled
+from \([5,7]\). The factor \(V_i/\alpha\) therefore modulates how strongly a
+pedestrian reacts to the currently available opportunity term
+\((ES_i + P_i)\), while the scaling constant \(\alpha=14/3\) keeps the
+resulting motivation on the target range associated with the parameter
+mapping.
 
 
 
@@ -574,11 +588,12 @@ The same scenario sweep as for the motivation heatmaps was analyzed, varying the
     Time gap $T$ & 1.0 s \\
     Expectancy width $w$ & 4 m\\
     Expectancy height $h$ & 0.5 \\
-    High value range & [1.5, 1.8] \\
-    Low value range & [0.2, 0.4] \\
+    High value range & [5, 7] \\
+    Low value range & [1, 3] \\
     Number of high-value agents & 32 \\
     Payoff steepness $k_P$ & 8.0 \\
     Payoff inflection $q_0$ & 0.5 \\
+    Value scaling $\alpha$ & $14/3$ \\
     Agent buffer & dynamic (based on motivation) \\
     \bottomrule
   \end{tabular}

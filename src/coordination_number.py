@@ -9,7 +9,6 @@ from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
 import numpy as np
 
-
 Point = Tuple[float, float]
 Edge = Tuple[int, int]
 AgentPositions = Dict[int, Point]
@@ -92,7 +91,7 @@ def delaunay_edges(points: Sequence[Point]) -> Set[Edge]:
     if _is_collinear(points):
         return _fallback_edges(points)
 
-    base_points = [tuple(map(float, point)) for point in points]
+    base_points: List[Point] = [(float(point[0]), float(point[1])) for point in points]
     xs = [point[0] for point in base_points]
     ys = [point[1] for point in base_points]
     min_x, max_x = min(xs), max(xs)
@@ -107,13 +106,11 @@ def delaunay_edges(points: Sequence[Point]) -> Set[Edge]:
         (mid_x + 20.0 * delta, mid_y - delta),
     ]
     all_points = base_points + supertriangle
-    super_indices = (
-        len(base_points),
-        len(base_points) + 1,
-        len(base_points) + 2,
-    )
+    si_a = len(base_points)
+    si_b = len(base_points) + 1
+    si_c = len(base_points) + 2
 
-    triangles: List[Triangle] = [Triangle(*super_indices)]
+    triangles: List[Triangle] = [Triangle(si_a, si_b, si_c)]
 
     for point_index in range(len(base_points)):
         bad_triangles = [

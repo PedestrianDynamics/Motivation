@@ -23,7 +23,7 @@ for scenario_dir in "${SCENARIO_ROOT}"/agents_*_open_*; do
 
     echo "Running Voronoi density analysis for ${scenario_name}"
     python3 scripts/voronoi_density_analysis.py \
-        --models PVE NO_MOTIVATION \
+        --models PVE BASE_MODEL \
         --search-dir "${base_runs_dir}" \
         --t-min "${TMIN}" \
         --t-max "${TMAX}" \

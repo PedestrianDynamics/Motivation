@@ -3,29 +3,29 @@
 # Copyright © 2012-2022 Forschungszentrum Jülich GmbH
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import subprocess
-from datetime import datetime
-import numpy as np
-import pandas as pd
 import _io
 import contextlib
 import csv
 import json
 import logging
 import pathlib
-import time
-from typing import Any, Dict, Iterator, List, Tuple, TypeAlias, cast
 import random
+import subprocess
+import time
+from datetime import datetime
+from typing import Any, Dict, Iterator, List, Optional, Tuple, TypeAlias, cast
+from xml.etree.ElementTree import Element, ElementTree, SubElement
+
 import jupedsim as jps
+import numpy as np
+import pandas as pd
 import typer
 from jupedsim.distributions import distribute_by_number
-from shapely import from_wkt, Polygon
-from typing import Optional
-from xml.etree.ElementTree import Element, ElementTree, SubElement
 from jupedsim.internal.notebook_utils import read_sqlite_file
+from shapely import Polygon, from_wkt
 
-from src import motivation_model as mm
 from src import motivation_mapping as mmap
+from src import motivation_model as mm
 from src.inifile_parser import (
     parse_accessible_areas,
     parse_destinations,
@@ -33,10 +33,11 @@ from src.inifile_parser import (
     parse_fps,
     parse_motivation_doors,
     parse_motivation_strategy,
-    parse_payoff_update_interval,
     parse_normal_time_gap,
     parse_normal_v_0,
     parse_number_agents,
+    parse_number_high_value,
+    parse_payoff_update_interval,
     parse_radius,
     parse_simulation_time,
     parse_theta_max_upper_bound,
@@ -50,8 +51,6 @@ from src.utilities import (
     calculate_distance,
     distribute_and_add_agents,
     init_journey,
-    calculate_crossing_density,
-    plot_crossing_order_vs_area,
 )
 
 # import cProfile
@@ -147,16 +146,16 @@ def compute_speed(traj, df, fps):
 
 
 def export_trajectory_to_txt(
-    trajectory_data,
+    trajectory_data: Any,
     motivation_model: mm.MotivationModel,
-    output_file="output.txt",
-    geometry_file="geometry.xml",
+    output_file: str = "output.txt",
+    geometry_file: str = "geometry.xml",
     motivation_csv: pathlib.Path | None = None,
-    df=10,
-    v0=1.2,
-    radius=0.18,
-    by_speed=True,
-):
+    df: int = 10,
+    v0: float = 1.2,
+    radius: float = 0.18,
+    by_speed: bool = True,
+) -> None:
     """
     Exports trajectory data from a SQLite file to a formatted .txt file, including speed and color.
     """
@@ -227,22 +226,46 @@ def export_trajectory_to_txt(
             value_series = pd.Series(values, index=frame_indices)
             df_data.loc[frame_indices, "motivation"] = value_series
 
-        
-        df_data["color"] = ((1-df_data["motivation"]) * 255).clip(0, 255).astype(int)
+        motivation_mode = str(
+            motivation_model.motivation_strategy.motivation_mode
+        ).upper()
+        if motivation_mode == "BASE_MODEL":
+            df_data["color"] = 128
+        else:
+            if motivation_mode == "V":
+                motivation_min = float(df_data["motivation"].min())
+                motivation_max = float(df_data["motivation"].max())
+            elif motivation_mode == "P":
+                motivation_min = 0.0
+                motivation_max = 1.0
+            else:
+                motivation_min = float(
+                    motivation_model.motivation_strategy.motivation_min
+                )
+                motivation_max = float(mmap.MOTIVATION_HIGH)
+            motivation_range = max(motivation_max - motivation_min, 1e-9)
+            normalized_motivation = (
+                (df_data["motivation"] - motivation_min) / motivation_range
+            ).clip(0, 1)
+            df_data["color"] = ((1 - normalized_motivation) * 255).astype(int)
+        df_data["id"] = df_data["id"].astype(int)
+        df_data["frame"] = df_data["frame"].astype(int)
+        df_data["color"] = df_data["color"].astype(int)
 
     # Write the formatted data to the output file
+    geometry_reference = pathlib.Path(geometry_file).name
     with open(output_file, "w") as f:
         # Write the header
         f.write(f"#framerate: {fps}\n")
         f.write("#unit: m\n")
-        f.write(f"#geometry: {geometry_file}\n")
+        f.write(f"#geometry: {geometry_reference}\n")
         f.write("#ID\tFR\tX\tY\tZ\tA\tB\tANGLE\tCOLOR\n")
 
         # Write each row of trajectory data
-        for _, row in df_data.iterrows():
+        for row in df_data.itertuples(index=False):
             f.write(
-                f"{row['id']}\t{row['frame']}\t{row['x']:.4f}\t{row['y']:.4f}\t0\t"
-                f"{radius:.4f}\t{radius:.4f}\t{row['angle']:.4f}\t{row['color']}\n"
+                f"{row.id}\t{row.frame}\t{row.x:.4f}\t{row.y:.4f}\t0\t"
+                f"{radius:.4f}\t{radius:.4f}\t{row.angle:.4f}\t{row.color}\n"
             )
 
 
@@ -290,7 +313,7 @@ def init_motivation_model(
     payoff_update_interval_s = parse_payoff_update_interval(_data)
     logging.info(f"{motivation_mode = }")
     # =================
-    motivation_strategy: mm.MotivationStrategy = mm.EVCStrategy(
+    motivation_strategy: mm.EVCStrategy = mm.EVCStrategy(
         width=width,
         height=height,
         max_reward=number_agents,
@@ -299,7 +322,7 @@ def init_motivation_model(
         min_value_high=float(_data["motivation_parameters"]["min_value_high"]),
         max_value_low=float(_data["motivation_parameters"]["max_value_low"]),
         min_value_low=float(_data["motivation_parameters"]["min_value_low"]),
-        number_high_value=int(_data["motivation_parameters"]["number_high_value"]),
+        number_high_value=parse_number_high_value(_data),
         nagents=number_agents,
         agent_ids=ped_ids,
         agent_positions=ped_positions,
@@ -317,7 +340,7 @@ def init_motivation_model(
     motivation_strategy.configure_payoff_update_interval(time_step=time_step)
 
     parameter_mapper = None
-    if motivation_mode != "NO_MOTIVATION":
+    if motivation_mode != "BASE_MODEL":
         _, d_ped, _, _ = parse_velocity_init_parameters(_data)
         parameter_mapper = mmap.MotivationParameterMapper(
             mapping_block=mapping_block,
@@ -526,7 +549,7 @@ def process_agent(
 
 def run_simulation_loop(
     simulation: jps.Simulation,
-    geometry_open,
+    geometry_open: Any,
     door: Point,
     motivation_model: mm.MotivationModel,
     simulation_time: float,
@@ -589,6 +612,7 @@ def run_simulation_loop(
                 frame_to_write += 1
             simulation.iterate()
 
+        logging.info(f">>> Agents still in simulation: {simulation.agent_count()}")
         with profile_function("Writing motivation data to csv file"):
             for items in buffer:
                 write_value_to_file(file_handle, items)
@@ -720,7 +744,7 @@ def init_and_run_simulation(
     _data: Dict[str, Any],
     _trajectory_path: pathlib.Path,
     msg: Any,
-) -> float:
+) -> Tuple[float, mm.MotivationModel]:
     """Implement simulation loop.
 
     :param fps:
@@ -774,7 +798,7 @@ def init_and_run_simulation(
     return float(simulation.iteration_count() * _time_step), motivation_model
 
 
-def start_simulation(config_path: str, output_path: str) -> float:
+def start_simulation(config_path: str, output_path: str) -> Tuple[float, mm.MotivationModel]:
     """Call main function."""
     logging.info(f"Start simulation with config file: {config_path}")
     with open(config_path, "r", encoding="utf8") as f:
@@ -928,12 +952,12 @@ def main(
             )
 
             # Run simulation for this variation
+            var_evac_time: float | None = None
             try:
-                evac_time = start_simulation(str(new_config_path), str(output_path))
+                var_evac_time, _ = start_simulation(str(new_config_path), str(output_path))
                 status = "completed"
             except Exception as e:
                 logging.error(f"Error in simulation: {e}.")
-                evac_time = None
                 status = "failed"
 
             # Store the result
@@ -941,7 +965,7 @@ def main(
                 "variation_name": var_name,
                 "description": var_desc,
                 "parameters": variation["parameters"],
-                "evac_time": evac_time,
+                "evac_time": var_evac_time,
                 "status": status,
                 "config_file": str(new_config_path),
                 "output_file": str(output_path),
@@ -949,8 +973,8 @@ def main(
             results.append(result)
 
             logging.info(f"Status: {status}.")
-            if evac_time is not None:
-                logging.info(f"Evacuation time: {evac_time:.2f} [s].")
+            if var_evac_time is not None:
+                logging.info(f"Evacuation time: {var_evac_time:.2f} [s].")
 
         # Save all simulation results
         results_file = output_dir / f"results_{timestamp}.json"
@@ -982,18 +1006,19 @@ def main(
             output_dir / f"{inifile.stem}_{motivation_mode}_{timestamp}.sqlite"
         )
 
+        evac_time: float | None = None
+        motivation_model_result: mm.MotivationModel | None = None
         try:
-            evac_time, motivation_model = start_simulation(
+            evac_time, motivation_model_result = start_simulation(
                 str(config_file), str(output_path)
             )
             status = "completed"
         except Exception as e:
             logging.error(f"Error in simulation: {e}.")
-            evac_time = None
             status = "failed"
 
         # Save run info for the base configuration simulation
-        run_info = {
+        base_run_info: Dict[str, Any] = {
             "timestamp": timestamp,
             "base_config": str(inifile),
             "config_file": str(config_file),
@@ -1003,7 +1028,7 @@ def main(
         }
         run_info_file = output_dir / f"run_info_{timestamp}.json"
         with open(run_info_file, "w") as f:
-            json.dump(run_info, f, indent=4)
+            json.dump(base_run_info, f, indent=4)
 
         logging.info(f"Status: {status}.")
         if evac_time is not None:
@@ -1023,16 +1048,15 @@ def main(
             output_file = output_path.with_name(
                 f"{scenario_name}_{output_path.stem}.txt"
             )
-            geometry_file = output_path.with_name(
-                f"{scenario_name}_{output_path.stem}_geometry.xml"
-            )
+            geometry_file = "geometry.xml"
             motivation_csv = output_path.with_name(output_path.stem + "_motivation.csv")
             logging.info(f"Using:  {geometry_file} ")
             v0_mean = 1.2
+            assert motivation_model_result is not None
             export_trajectory_to_txt(
                 trajectory_data,
-                motivation_model,
-                output_file=output_file,
+                motivation_model_result,
+                output_file=str(output_file),
                 geometry_file=geometry_file,
                 motivation_csv=motivation_csv,
                 df=10,
@@ -1050,20 +1074,6 @@ def main(
                     str(output_file),
                 ]
                 subprocess.run(command, capture_output=True, text=True)
-
-            (
-                df_merged_simulation,
-                density_over_time_simulation,
-                crossing_info_simulation,
-                individual_simulation,
-                title_simulation,
-            ) = calculate_crossing_density(
-                output_path, walkable_area, file_type="simulation", title="Simulation"
-            )
-
-            plot_crossing_order_vs_area(
-                df_merged_simulation, output_path.stem, title=None, color="blue"
-            )
 
         else:
             logging.warning(f"Status: {status}")

@@ -1,10 +1,13 @@
 """Module for motivational model."""
 
+import hashlib
 import logging
+import math
 import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, TypeAlias
+from enum import Enum, auto
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,9 +15,6 @@ from matplotlib.figure import Figure
 
 from .logger_config import log_debug
 from .motivation_mapping import MotivationParameterMapper
-import math
-import hashlib
-from enum import Enum, auto
 
 Point: TypeAlias = Tuple[float, float]
 
@@ -140,6 +140,8 @@ class DefaultMotivationStrategy(MotivationStrategy):
 @dataclass
 class EVCStrategy(MotivationStrategy):
     """Motivation theory based on E.V.C (model4)."""
+
+    VALUE_SCALE_ALPHA: ClassVar[float] = 14.0 / 3.0
 
     motivation_door_center: Point
     agent_ids: List[int] = field(default_factory=list)
@@ -287,10 +289,10 @@ class EVCStrategy(MotivationStrategy):
                     self.get_derived_seed(self.seed, n),
                 )
         self.motivation_mode = str(self.motivation_mode).upper()
-        if self.motivation_mode not in {"E", "V", "P", "PVE", "NO_MOTIVATION"}:
+        if self.motivation_mode not in {"E", "SE", "V", "P", "PVE", "BASE_MODEL"}:
             raise ValueError(
                 f"Unknown motivation_mode '{self.motivation_mode}'. "
-                "Use one of: E, V, P, PVE, NO_MOTIVATION."
+                "Use one of: E, SE, V, P, PVE, BASE_MODEL."
             )
         self.value_min = min(self.min_value_low, self.min_value_high)
         self.value_max = max(self.max_value_low, self.max_value_high)
@@ -346,8 +348,8 @@ class EVCStrategy(MotivationStrategy):
 
         for idx, (agent_id, d2) in enumerate(items):
             if abs(d2 - prev_d2) > eps_sq:
-                current_rank_in_room = group_start_idx + 1
                 group_start_idx = idx
+                current_rank_in_room = group_start_idx + 1
             rank_abs = n_left + current_rank_in_room
             q = (rank_abs - 1) / max(1, self.max_reward - 1)
             payoff = 1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0)))
@@ -387,11 +389,11 @@ class EVCStrategy(MotivationStrategy):
 
     @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
-        """Calculate normalized expectancy in [0, 1]."""
+        """Calculate scaled spatial expectancy ES in [0.1, 1.0]."""
         if _height <= 0:
             return 1.0
         if _distance >= _width:
-            return 0.0
+            return 0.1
 
         expr = 1 / ((_distance / _width) ** 2 - 1)
         if np.isinf(expr):
@@ -400,7 +402,8 @@ class EVCStrategy(MotivationStrategy):
         raw = float(1 + np.exp(expr) * np.e * _height)
         # At d=0: expr=-1 => raw_max = 1 + height.
         max_raw = float(1 + _height)
-        return float(clamp((raw - 1.0) / (max_raw - 1.0), 0.0, 1.0))
+        normalized = float(clamp((raw - 1.0) / (max_raw - 1.0), 0.0, 1.0))
+        return float(clamp(0.1 + 0.9 * normalized, 0.1, 1.0))
 
     @staticmethod
     def competition(N: int, c0: float, N0: float, percent: float, Nmax: float) -> float:
@@ -452,17 +455,8 @@ class EVCStrategy(MotivationStrategy):
         if "seed" not in params:
             params["seed"] = None
 
-        value = self.pedestrian_value[agent_id]
-        if self.value_max > self.value_min:
-            V_unit = float(
-                clamp(
-                    (value - self.value_min) / (self.value_max - self.value_min),
-                    0.0,
-                    1.0,
-                )
-            )
-        else:
-            V_unit = 1.0
+        value = float(self.pedestrian_value[agent_id])
+        V_unit = value / self.VALUE_SCALE_ALPHA
         SE_unit = EVCStrategy.expectancy(
             distance,
             self.width,
@@ -471,10 +465,10 @@ class EVCStrategy(MotivationStrategy):
         P_unit = float(self.payoff_cache.get(agent_id, 1.0))
         E_unit = SE_unit + P_unit
 
-        if self.motivation_mode == "NO_MOTIVATION":
+        if self.motivation_mode == "BASE_MODEL":
             M = 1.0
-        elif self.motivation_mode == "E":
-            M = E_unit
+        elif self.motivation_mode in {"E", "SE"}:
+            M = SE_unit
         elif self.motivation_mode == "V":
             M = V_unit
         elif self.motivation_mode == "P":
@@ -482,7 +476,7 @@ class EVCStrategy(MotivationStrategy):
         else:
             M = V_unit * E_unit
 
-        return clamp(M, self.motivation_min, 1.0)
+        return clamp(M, self.motivation_min, 3.0)
 
     def plot(self) -> List[Figure]:
         """Plot functions for inspection."""
@@ -492,27 +486,21 @@ class EVCStrategy(MotivationStrategy):
         fig3, ax3 = plt.subplots(ncols=1, nrows=1)
         fig4, ax4 = plt.subplots(ncols=1, nrows=1)
         distances = np.linspace(0, 10, 100)
-        # E
+        # ES
         E = []
         for dist in distances:
             E.append(self.expectancy(dist, self.width, self.height))
 
         ax0.plot(distances, E)
         ax0.grid(alpha=0.3)
-        ax0.set_ylim((-0.1, 2))
-        ax0.set_xlim((-0.1, 4))
-        # ax0.set_title(f"{self.name()} - E (width, height)")
+        ax0.set_ylim((-0.1, 1.2))
+        ax0.set_xlim((-0.1, self.width + 1))
+        # ax0.set_title(f"{self.name()} - ES (width, height)")
         ax0.set_xlabel("$d$ / m", size=14)
-        ax0.set_ylabel(r"$E(d)$", size=14)
+        ax0.set_ylabel(r"$ES(d)$", size=14)
         fig0.savefig("expectancy.pdf")
         # V
         V_abs = [self.get_value(agent_id=s) for s in self.agent_ids]
-        v_min = min(V_abs) if V_abs else 0.0
-        v_max = max(V_abs) if V_abs else 1.0
-        if v_max > v_min:
-            V_norm = [(v - v_min) / (v_max - v_min) for v in V_abs]
-        else:
-            V_norm = [1.0 for _ in V_abs]
 
         # Color by value group: highest N values are shown as "high-value people".
         sorted_ids = sorted(
@@ -533,7 +521,7 @@ class EVCStrategy(MotivationStrategy):
             facecolors="tab:blue",
             edgecolors="tab:blue",
             s=45,
-            label="low group (abs)",
+            label="low group",
         )
         ax1.scatter(
             x_vals[high_idxs] - dx,
@@ -541,34 +529,20 @@ class EVCStrategy(MotivationStrategy):
             facecolors="tab:red",
             edgecolors="tab:red",
             s=45,
-            label="high group (abs)",
-        )
-        ax1.scatter(
-            x_vals[low_idxs] + dx,
-            np.array(V_norm)[low_idxs],
-            facecolors="none",
-            edgecolors="tab:blue",
-            s=35,
-            label="low group (norm)",
-        )
-        ax1.scatter(
-            x_vals[high_idxs] + dx,
-            np.array(V_norm)[high_idxs],
-            facecolors="none",
-            edgecolors="tab:red",
-            s=35,
-            label="high group (norm)",
+            label="high group",
         )
         ax1.grid(alpha=0.3)
-        ax1.set_ylim((-0.1, max(max(V_abs, default=1.0), 1.1) + 0.1))
+        ax1.set_ylim((-0.1, max(V_abs, default=1.0) + 1.0))
         ax1.set_xlim((-0.1, self.max_reward + 1))
         ax1.set_xlabel("# Agents", size=14)
-        ax1.set_ylabel("Value (abs + normalized)", size=14)
+        ax1.set_ylabel("Value V", size=14)
         ax1.legend(loc="best", fontsize=8)
         fig1.savefig("value.pdf")
         # P
         q_vals = np.linspace(0.0, 1.0, 200)
-        p_vals = [1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0))) for q in q_vals]
+        p_vals = [
+            1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0))) for q in q_vals
+        ]
         ax2.plot(q_vals, p_vals, "-")
         p0 = 1.0 / (1.0 + math.exp(self.payoff_k * (self.payoff_q0 - self.payoff_q0)))
         ax2.axvline(self.payoff_q0, color="red", ls="--", lw=1.2)
@@ -614,7 +588,7 @@ class EVCStrategy(MotivationStrategy):
                         linestyle=symbols[i % len(symbols)],
                         color="blue",
                         lw=2,
-                        label=f"max value, Nmax={n}",
+                        label="max value",
                     )
                 else:
                     ax3.plot(distances, m_max, linestyle="-", color="gray", lw=0.08)
@@ -635,12 +609,12 @@ class EVCStrategy(MotivationStrategy):
                 linestyle=symbols[i % len(symbols)],
                 color="red",
                 lw=2,
-                label=f"min value, Nmax={n}",
+                label="min value",
             )
 
         ax3.grid(alpha=0.3)
         # ax3.set_ylim([-0.1, 3])
-        ax3.set_xlim((-0.1, 4))
+        ax3.set_xlim((-0.1, self.width + 1))
         ax3.legend()
         title = (
             f"{self.name()} - {self.motivation_mode} "

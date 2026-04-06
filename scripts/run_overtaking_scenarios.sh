@@ -29,7 +29,7 @@ for scenario_dir in "${SCENARIO_ROOT}"/agents_*_open_*; do
 
     echo "Running overtaking analysis for ${scenario_name}"
     python3 scripts/overtaking_analysis.py \
-        --models P V E PVE NO_MOTIVATION \
+        --models P V SE PVE BASE_MODEL \
         --search-dir "${base_runs_dir}" \
         --t-min "${TMIN}" \
         --t-max "${TMAX}" \
