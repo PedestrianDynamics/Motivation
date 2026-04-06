@@ -1,7 +1,7 @@
 [![Streamlit](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
-[![Ruff](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg?event=push&job=ruff)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
-[![Mypy](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg?event=push&job=mypy)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
-[![Tests](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml/badge.svg?event=push&job=tests)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/streamlit-actions.yml)
+[![Ruff](https://github.com/PedestrianDynamics/Motivation/actions/workflows/ruff.yml/badge.svg)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/ruff.yml)
+[![Mypy](https://github.com/PedestrianDynamics/Motivation/actions/workflows/mypy.yml/badge.svg)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/mypy.yml)
+[![Tests](https://github.com/PedestrianDynamics/Motivation/actions/workflows/tests.yml/badge.svg)](https://github.com/PedestrianDynamics/Motivation/actions/workflows/tests.yml)
 
 # Motivation
 
