@@ -71,5 +71,6 @@ def test_parse_payoff_update_interval() -> None:
 
 
 def test_parse_motivation_mode_no_motivation() -> None:
+    """NO_MOTIVATION is mapped to BASE_MODEL for backward compatibility."""
     cfg = {"motivation_parameters": {"motivation_mode": "NO_MOTIVATION"}}
-    assert parse_motivation_strategy(cfg) == "NO_MOTIVATION"
+    assert parse_motivation_strategy(cfg) == "BASE_MODEL"

@@ -292,7 +292,7 @@ class EVCStrategy(MotivationStrategy):
         if self.motivation_mode not in {"E", "SE", "V", "P", "PVE", "BASE_MODEL"}:
             raise ValueError(
                 f"Unknown motivation_mode '{self.motivation_mode}'. "
-                "Use one of: SE, V, P, PVE, BASE_MODEL."
+                "Use one of: E, SE, V, P, PVE, BASE_MODEL."
             )
         self.value_min = min(self.min_value_low, self.min_value_high)
         self.value_max = max(self.max_value_low, self.max_value_high)
@@ -348,8 +348,8 @@ class EVCStrategy(MotivationStrategy):
 
         for idx, (agent_id, d2) in enumerate(items):
             if abs(d2 - prev_d2) > eps_sq:
-                current_rank_in_room = group_start_idx + 1
                 group_start_idx = idx
+                current_rank_in_room = group_start_idx + 1
             rank_abs = n_left + current_rank_in_room
             q = (rank_abs - 1) / max(1, self.max_reward - 1)
             payoff = 1.0 / (1.0 + math.exp(self.payoff_k * (q - self.payoff_q0)))

@@ -342,7 +342,7 @@ def parse_number_high_value(json_data: Dict[str, Any]) -> int:
     except KeyError:
         return 1
 
-    if raw_value <= 1.0:
+    if raw_value < 1.0:
         return max(0, min(number_agents, int(round(number_agents * raw_value))))
     return max(0, min(number_agents, int(round(raw_value))))
 

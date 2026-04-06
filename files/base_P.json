@@ -81,7 +81,7 @@
         },
         "mapping_function": "logistic",
         "motivation_min": 0.0,
-        "inflection_target": 0.5,
+        "inflection_target": 1.0,
         "desired_speed_anchors": {
             "low": 0.5,
             "normal": 1.2,

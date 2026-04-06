@@ -265,12 +265,12 @@ def collect_summary(
     scenarios_dir: Path,
 ) -> Tuple[
     List[Dict[str, object]],
-    Dict[str, Dict[str, Dict[int, Dict[str, List[float]]]]],
+    Dict[str, Dict[str, Dict[str, Dict[str, List[float]]]]],
 ]:
     """Walk scenario dirs, compute per-seed scalars, return rows + raw curves."""
     summary_rows: List[Dict[str, object]] = []
     # Raw curves for band plots: observable -> scenario -> model -> {axis_key -> list of lists}
-    curves: Dict[str, Dict[str, Dict[int, Dict[str, List[float]]]]] = defaultdict(
+    curves: Dict[str, Dict[str, Dict[str, Dict[str, List[float]]]]] = defaultdict(
         lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     )
 

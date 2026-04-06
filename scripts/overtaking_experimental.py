@@ -28,7 +28,7 @@ from overtaking_analysis import (
 )
 
 
-DEFAULT_EXPERIMENT_DIR = Path("/Users/chraibi/workspace/Writing/Motivation/CroMa videos")
+DEFAULT_EXPERIMENT_DIR = PROJECT_ROOT.parent / "trajectories_croma"
 DEFAULT_MEASUREMENT_CONFIG = PROJECT_ROOT / "files" / "base_P.json"
 
 

@@ -28,15 +28,9 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.utilities import calculate_crossing_density  # type: ignore
 
 
-DEFAULT_INPUT_DIR = Path(
-    "/Users/chraibi/workspace/Writing/Motivation/motivation_code/"
-    "trajectories_croma"
-)
+DEFAULT_INPUT_DIR = PROJECT_ROOT.parent / "trajectories_croma"
 
-DEFAULT_GEOMETRY_XML = Path(
-    "/Users/chraibi/workspace/Writing/Motivation/motivation_code/"
-    "trajectories_croma/delme/geometry.xml"
-)
+DEFAULT_GEOMETRY_XML = PROJECT_ROOT.parent / "trajectories_croma" / "delme" / "geometry.xml"
 
 
 def parse_args() -> argparse.Namespace:
