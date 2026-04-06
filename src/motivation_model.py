@@ -493,8 +493,8 @@ class EVCStrategy(MotivationStrategy):
 
         ax0.plot(distances, E)
         ax0.grid(alpha=0.3)
-        ax0.set_ylim((-0.1, 2))
-        ax0.set_xlim((-0.1, 4))
+        ax0.set_ylim((-0.1, 1.2))
+        ax0.set_xlim((-0.1, self.width + 1))
         # ax0.set_title(f"{self.name()} - ES (width, height)")
         ax0.set_xlabel("$d$ / m", size=14)
         ax0.set_ylabel(r"$ES(d)$", size=14)
@@ -532,7 +532,7 @@ class EVCStrategy(MotivationStrategy):
             label="high group",
         )
         ax1.grid(alpha=0.3)
-        ax1.set_ylim((-0.1, max(max(V_abs, default=1.0), 1.1) + 0.1))
+        ax1.set_ylim((-0.1, max(V_abs, default=1.0) + 1.0))
         ax1.set_xlim((-0.1, self.max_reward + 1))
         ax1.set_xlabel("# Agents", size=14)
         ax1.set_ylabel("Value V", size=14)
@@ -588,7 +588,7 @@ class EVCStrategy(MotivationStrategy):
                         linestyle=symbols[i % len(symbols)],
                         color="blue",
                         lw=2,
-                        label=f"max value, Nmax={n}",
+                        label="max value",
                     )
                 else:
                     ax3.plot(distances, m_max, linestyle="-", color="gray", lw=0.08)
@@ -609,12 +609,12 @@ class EVCStrategy(MotivationStrategy):
                 linestyle=symbols[i % len(symbols)],
                 color="red",
                 lw=2,
-                label=f"min value, Nmax={n}",
+                label="min value",
             )
 
         ax3.grid(alpha=0.3)
         # ax3.set_ylim([-0.1, 3])
-        ax3.set_xlim((-0.1, 4))
+        ax3.set_xlim((-0.1, self.width + 1))
         ax3.legend()
         title = (
             f"{self.name()} - {self.motivation_mode} "
