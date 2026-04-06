@@ -7,7 +7,7 @@ import csv
 from collections import defaultdict
 from pathlib import Path
 import sys
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -112,8 +112,8 @@ def discover_latest_file(model: str, search_dirs: Sequence[str]) -> Optional[Pat
 
 def read_motivation_rows(
     path: Path, t_min: float, t_max: float
-) -> Dict[int, List[Dict[str, float]]]:
-    frames: Dict[int, List[Dict[str, float]]] = defaultdict(list)
+) -> Dict[int, List[Dict[str, Any]]]:
+    frames: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
     with path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, skipinitialspace=True)
         for row in reader:
@@ -136,8 +136,8 @@ def read_motivation_rows(
 
 def build_coordination_rows(
     model: str, path: Path, t_min: float, t_max: float
-) -> List[Dict[str, float]]:
-    rows: List[Dict[str, float]] = []
+) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
     frames = read_motivation_rows(path, t_min=t_min, t_max=t_max)
     for frame, frame_rows in frames.items():
         positions = {
@@ -163,7 +163,7 @@ def build_coordination_rows(
 
 
 def write_csv(
-    path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequence[str]
+    path: Path, rows: Iterable[Dict[str, Any]], fieldnames: Sequence[str]
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -177,14 +177,14 @@ def tagged_filename(stem: str, suffix: str, tag: str) -> str:
     return f"{stem}_{tag}{suffix}" if tag else f"{stem}{suffix}"
 
 
-def build_time_summary(rows: Sequence[Dict[str, float]]) -> List[Dict[str, float]]:
+def build_time_summary(rows: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
     buckets: Dict[Tuple[str, float], List[float]] = defaultdict(list)
     for row in rows:
         buckets[(str(row["model"]), float(row["time"]))].append(
             float(row["coordination_number"])
         )
 
-    summary: List[Dict[str, float]] = []
+    summary: List[Dict[str, Any]] = []
     for (model, time_value), values in sorted(buckets.items()):
         mean_value = sum(values) / len(values)
         variance = sum((value - mean_value) ** 2 for value in values) / len(values)
@@ -201,8 +201,8 @@ def build_time_summary(rows: Sequence[Dict[str, float]]) -> List[Dict[str, float
 
 
 def build_distribution_summary(
-    rows: Sequence[Dict[str, float]],
-) -> List[Dict[str, float]]:
+    rows: Sequence[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     buckets: Dict[Tuple[str, int], int] = defaultdict(int)
     totals: Dict[str, int] = defaultdict(int)
 
@@ -212,7 +212,7 @@ def build_distribution_summary(
         buckets[(model, coordination_number)] += 1
         totals[model] += 1
 
-    summary: List[Dict[str, float]] = []
+    summary: List[Dict[str, Any]] = []
     for (model, coordination_number), count in sorted(buckets.items()):
         total = totals[model]
         summary.append(
@@ -227,9 +227,9 @@ def build_distribution_summary(
 
 
 def plot_results(
-    rows_by_model: Dict[str, List[Dict[str, float]]],
-    summary_rows: Sequence[Dict[str, float]],
-    distribution_rows: Sequence[Dict[str, float]],
+    rows_by_model: Dict[str, List[Dict[str, Any]]],
+    summary_rows: Sequence[Dict[str, Any]],
+    distribution_rows: Sequence[Dict[str, Any]],
     output_dir: Path,
     tag: str,
 ) -> bool:
@@ -297,7 +297,7 @@ def main() -> None:
     overrides = parse_input_overrides(args.input)
     requested_models = [normalize_model_name(model) for model in args.models]
 
-    rows_by_model: Dict[str, List[Dict[str, float]]] = {}
+    rows_by_model: Dict[str, List[Dict[str, Any]]] = {}
     missing_models: List[str] = []
 
     for model in requested_models:

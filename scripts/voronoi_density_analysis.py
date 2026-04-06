@@ -7,7 +7,7 @@ import csv
 import json
 from pathlib import Path
 import sys
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -103,7 +103,7 @@ def find_matching_config(sqlite_path: Path) -> Path:
     return json_path
 
 
-def load_measurement_area(config_path: Path):
+def load_measurement_area(config_path: Path) -> Any:
     import pedpy
 
     with config_path.open("r", encoding="utf-8") as handle:
@@ -116,7 +116,7 @@ def compute_density_rows(
     sqlite_path: Path,
     t_min: float,
     t_max: float,
-) -> List[Dict[str, float]]:
+) -> List[Dict[str, Any]]:
     import pedpy
     from pedpy.column_identifier import DENSITY_COL, TIME_COL
 
@@ -139,7 +139,7 @@ def compute_density_rows(
     density_column = DENSITY_COL if DENSITY_COL in columns else "density"
     frame_column = "frame" if "frame" in columns else None
 
-    rows: List[Dict[str, float]] = []
+    rows: List[Dict[str, Any]] = []
     for _, row in density_voronoi.iterrows():
         if time_column is not None:
             time_value = float(row[time_column])
@@ -185,7 +185,7 @@ def tagged_filename(stem: str, suffix: str, tag: str) -> str:
 
 
 def plot_density(
-    rows_by_model: Dict[str, List[Dict[str, float]]], output_dir: Path, tag: str
+    rows_by_model: Dict[str, List[Dict[str, Any]]], output_dir: Path, tag: str
 ) -> bool:
     try:
         import matplotlib.pyplot as plt
@@ -223,7 +223,7 @@ def main() -> None:
     overrides = parse_input_overrides(args.input)
     requested_models = [normalize_model_name(model) for model in args.models]
 
-    rows_by_model: Dict[str, List[Dict[str, float]]] = {}
+    rows_by_model: Dict[str, List[Dict[str, Any]]] = {}
     missing_models: List[str] = []
 
     for model in requested_models:

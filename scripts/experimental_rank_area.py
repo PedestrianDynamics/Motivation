@@ -18,14 +18,14 @@ from __future__ import annotations
 import argparse
 import csv
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.utilities import calculate_crossing_density  # type: ignore
+from src.utilities import calculate_crossing_density
 
 
 DEFAULT_INPUT_DIR = PROJECT_ROOT.parent / "trajectories_croma"
@@ -62,7 +62,7 @@ def scenario_from_filename(path: Path) -> str:
     return path.name.split("_")[0]
 
 
-def load_walkable_area(_geometry_xml: Path):
+def load_walkable_area(_geometry_xml: Path) -> Any:
     """Build the CROMA walkable area (outer box with corridor-wall cutouts).
 
     Uses the exact polygon construction from ``index_distance.ipynb``:
@@ -172,8 +172,8 @@ def tail_ratio(ranks: Sequence[int], areas: Sequence[float]) -> float:
 
 
 def compute_one_scenario(
-    txt_path: Path, walkable_area
-) -> Tuple[str, List[Dict[str, object]]]:
+    txt_path: Path, walkable_area: Any
+) -> Tuple[str, List[Dict[str, Any]]]:
     scenario = scenario_from_filename(txt_path)
     df_merged, _, _, _, _ = calculate_crossing_density(
         str(txt_path),
@@ -181,7 +181,7 @@ def compute_one_scenario(
         file_type="experiment",
         title=scenario,
     )
-    rows: List[Dict[str, object]] = []
+    rows: List[Dict[str, Any]] = []
     indexed = df_merged.rename_axis("id").reset_index().to_dict("records")
     for row in indexed:
         rows.append(
@@ -197,7 +197,7 @@ def compute_one_scenario(
 
 
 def write_csv(
-    path: Path, rows: List[Dict[str, object]], fieldnames: Sequence[str]
+    path: Path, rows: List[Dict[str, Any]], fieldnames: Sequence[str]
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -208,7 +208,7 @@ def write_csv(
 
 
 def plot_scenarios(
-    by_scenario: Dict[str, List[Dict[str, object]]], output_dir: Path
+    by_scenario: Dict[str, List[Dict[str, Any]]], output_dir: Path
 ) -> None:
     try:
         import matplotlib.pyplot as plt
@@ -298,9 +298,9 @@ def main() -> None:
     if not txts:
         raise SystemExit(f"No *_Combined.txt files found in {input_dir}")
 
-    all_rows: List[Dict[str, object]] = []
-    by_scenario: Dict[str, List[Dict[str, object]]] = {}
-    summary_rows: List[Dict[str, object]] = []
+    all_rows: List[Dict[str, Any]] = []
+    by_scenario: Dict[str, List[Dict[str, Any]]] = {}
+    summary_rows: List[Dict[str, Any]] = []
 
     skipped: List[Tuple[str, str]] = []
     for txt_path in txts:

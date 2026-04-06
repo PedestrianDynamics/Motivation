@@ -90,7 +90,7 @@ def init_journey(
     simulation: jps.Simulation,
     way_points: List[Tuple[Point, float]],
     exits: List[List[Point]],
-) -> Tuple[int, List[int]]:
+) -> Tuple[int, List[int], List[int]]:
     """Init goals of agents to follow.
 
     Add waypoints and exits to journey. Then register journey in simulation

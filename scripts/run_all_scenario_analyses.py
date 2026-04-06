@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 from run_coordination_scenarios import (
@@ -66,7 +67,7 @@ def find_seed_motivation_csv(base_runs_dir: Path, model: str, seed: int) -> Path
 
 
 def build_input_overrides(
-    locator, base_runs_dir: Path, models: list[str], seed: int
+    locator: Callable[[Path, str, int], Path], base_runs_dir: Path, models: list[str], seed: int
 ) -> list[str]:
     overrides: list[str] = []
     for model in models:

@@ -146,16 +146,16 @@ def compute_speed(traj, df, fps):
 
 
 def export_trajectory_to_txt(
-    trajectory_data,
+    trajectory_data: Any,
     motivation_model: mm.MotivationModel,
-    output_file="output.txt",
-    geometry_file="geometry.xml",
+    output_file: str = "output.txt",
+    geometry_file: str = "geometry.xml",
     motivation_csv: pathlib.Path | None = None,
-    df=10,
-    v0=1.2,
-    radius=0.18,
-    by_speed=True,
-):
+    df: int = 10,
+    v0: float = 1.2,
+    radius: float = 0.18,
+    by_speed: bool = True,
+) -> None:
     """
     Exports trajectory data from a SQLite file to a formatted .txt file, including speed and color.
     """
@@ -313,7 +313,7 @@ def init_motivation_model(
     payoff_update_interval_s = parse_payoff_update_interval(_data)
     logging.info(f"{motivation_mode = }")
     # =================
-    motivation_strategy: mm.MotivationStrategy = mm.EVCStrategy(
+    motivation_strategy: mm.EVCStrategy = mm.EVCStrategy(
         width=width,
         height=height,
         max_reward=number_agents,
@@ -549,7 +549,7 @@ def process_agent(
 
 def run_simulation_loop(
     simulation: jps.Simulation,
-    geometry_open,
+    geometry_open: Any,
     door: Point,
     motivation_model: mm.MotivationModel,
     simulation_time: float,
@@ -744,7 +744,7 @@ def init_and_run_simulation(
     _data: Dict[str, Any],
     _trajectory_path: pathlib.Path,
     msg: Any,
-) -> float:
+) -> Tuple[float, mm.MotivationModel]:
     """Implement simulation loop.
 
     :param fps:
@@ -798,7 +798,7 @@ def init_and_run_simulation(
     return float(simulation.iteration_count() * _time_step), motivation_model
 
 
-def start_simulation(config_path: str, output_path: str) -> float:
+def start_simulation(config_path: str, output_path: str) -> Tuple[float, mm.MotivationModel]:
     """Call main function."""
     logging.info(f"Start simulation with config file: {config_path}")
     with open(config_path, "r", encoding="utf8") as f:
@@ -952,12 +952,12 @@ def main(
             )
 
             # Run simulation for this variation
+            var_evac_time: float | None = None
             try:
-                evac_time = start_simulation(str(new_config_path), str(output_path))
+                var_evac_time, _ = start_simulation(str(new_config_path), str(output_path))
                 status = "completed"
             except Exception as e:
                 logging.error(f"Error in simulation: {e}.")
-                evac_time = None
                 status = "failed"
 
             # Store the result
@@ -965,7 +965,7 @@ def main(
                 "variation_name": var_name,
                 "description": var_desc,
                 "parameters": variation["parameters"],
-                "evac_time": evac_time,
+                "evac_time": var_evac_time,
                 "status": status,
                 "config_file": str(new_config_path),
                 "output_file": str(output_path),
@@ -973,8 +973,8 @@ def main(
             results.append(result)
 
             logging.info(f"Status: {status}.")
-            if evac_time is not None:
-                logging.info(f"Evacuation time: {evac_time:.2f} [s].")
+            if var_evac_time is not None:
+                logging.info(f"Evacuation time: {var_evac_time:.2f} [s].")
 
         # Save all simulation results
         results_file = output_dir / f"results_{timestamp}.json"
@@ -1006,18 +1006,19 @@ def main(
             output_dir / f"{inifile.stem}_{motivation_mode}_{timestamp}.sqlite"
         )
 
+        evac_time: float | None = None
+        motivation_model_result: mm.MotivationModel | None = None
         try:
-            evac_time, motivation_model = start_simulation(
+            evac_time, motivation_model_result = start_simulation(
                 str(config_file), str(output_path)
             )
             status = "completed"
         except Exception as e:
             logging.error(f"Error in simulation: {e}.")
-            evac_time = None
             status = "failed"
 
         # Save run info for the base configuration simulation
-        run_info = {
+        base_run_info: Dict[str, Any] = {
             "timestamp": timestamp,
             "base_config": str(inifile),
             "config_file": str(config_file),
@@ -1027,7 +1028,7 @@ def main(
         }
         run_info_file = output_dir / f"run_info_{timestamp}.json"
         with open(run_info_file, "w") as f:
-            json.dump(run_info, f, indent=4)
+            json.dump(base_run_info, f, indent=4)
 
         logging.info(f"Status: {status}.")
         if evac_time is not None:
@@ -1051,10 +1052,11 @@ def main(
             motivation_csv = output_path.with_name(output_path.stem + "_motivation.csv")
             logging.info(f"Using:  {geometry_file} ")
             v0_mean = 1.2
+            assert motivation_model_result is not None
             export_trajectory_to_txt(
                 trajectory_data,
-                motivation_model,
-                output_file=output_file,
+                motivation_model_result,
+                output_file=str(output_file),
                 geometry_file=geometry_file,
                 motivation_csv=motivation_csv,
                 df=10,

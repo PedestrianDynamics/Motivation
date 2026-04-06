@@ -483,5 +483,5 @@ def plot_parameter_mappings(
 
     axes_flat[-1].axis("off")
     fig.suptitle("Active Motivation Parameter Mapping")
-    fig.tight_layout(rect=[0, 0.03, 1, 0.97])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.97))
     return fig

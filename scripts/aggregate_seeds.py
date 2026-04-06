@@ -20,7 +20,7 @@ import re
 from collections import defaultdict
 from pathlib import Path
 from statistics import median
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -285,7 +285,7 @@ def collect_summary(
     return summary_rows, curves
 
 
-def _collect_rank_area(scenario_path, summary_rows, curves) -> None:
+def _collect_rank_area(scenario_path: Path, summary_rows: List[Dict[str, object]], curves: Any) -> None:
     results_dir = scenario_path / "final_rank_results"
     for scenario, seed, csv_path in glob_tagged(results_dir, "final_rank_details"):
         rows = read_csv(csv_path)
@@ -313,7 +313,7 @@ def _collect_rank_area(scenario_path, summary_rows, curves) -> None:
             curves["rank_area"][scenario][model]["value"].append(areas)
 
 
-def _collect_voronoi(scenario_path, summary_rows, curves) -> None:
+def _collect_voronoi(scenario_path: Path, summary_rows: List[Dict[str, object]], curves: Any) -> None:
     results_dir = scenario_path / "voronoi_density_results"
     for scenario, seed, csv_path in glob_tagged(results_dir, "voronoi_density_details"):
         rows = read_csv(csv_path)
@@ -341,7 +341,7 @@ def _collect_voronoi(scenario_path, summary_rows, curves) -> None:
             curves["voronoi_density"][scenario][model]["value"].append(dens)
 
 
-def _collect_coordination(scenario_path, summary_rows, curves) -> None:
+def _collect_coordination(scenario_path: Path, summary_rows: List[Dict[str, object]], curves: Any) -> None:
     results_dir = scenario_path / "coordination_number_results"
     for scenario, seed, csv_path in glob_tagged(
         results_dir, "coordination_number_details"
@@ -423,7 +423,7 @@ def compute_tests(
 # ---------------- Band plots ----------------
 
 def plot_bands(
-    curves,
+    curves: Any,
     output_dir: Path,
     models: Sequence[str],
 ) -> None:
