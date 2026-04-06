@@ -17,6 +17,7 @@ repos:
         files: \.py$
         exclude: >-
           (?x)^(
+            anim\.py|
             scripts/overtaking_analysis\.py|
             scripts/overtaking_experimental\.py|
             scripts/plot_rank_frame\.py|
