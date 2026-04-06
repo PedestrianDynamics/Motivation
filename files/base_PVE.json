@@ -64,7 +64,7 @@
         "normal_time_gap": 1.0,
         "width": 10.0,
         "height": 1.0,
-        "seed": 120.0,
+        "seed": 12.0,
         "max_value_high": 7,
         "min_value_high": 4,
         "max_value_low": 3,
@@ -74,7 +74,7 @@
         "do_adjust_buffer": true,
         "value_probability_sorting": false,
         "payoff": {
-            "k": 10.0,
+            "k": 14.0,
             "q0": 0.4,
             "rank_tie_tolerance_m": 0.001,
             "update_interval_s": 0.2
