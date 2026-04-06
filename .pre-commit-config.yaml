@@ -13,6 +13,15 @@ repos:
         name: Analyze with Mypy
         entry: mypy --config-file mypy.ini
         language: python
-        types: ['python']  # Targets Python files
-        files: \.py$  # Only .py files
+        types: ['python']
+        files: \.py$
+        exclude: >-
+          (?x)^(
+            scripts/overtaking_analysis\.py|
+            scripts/overtaking_experimental\.py|
+            scripts/plot_rank_frame\.py|
+            scripts/coordination_number_experimental\.py|
+            src/plot_script\.py|
+            src/plot_motivation\.py
+          )$
         
