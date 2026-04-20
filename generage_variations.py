@@ -1,7 +1,6 @@
 """Generate variation files necessary to start simulations."""
 
 import json
-import logging
 import pathlib
 from datetime import datetime
 from typing import Any, Dict, List, Union

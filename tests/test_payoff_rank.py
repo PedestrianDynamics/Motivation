@@ -5,11 +5,11 @@ from __future__ import annotations
 import math
 
 from src.inifile_parser import parse_motivation_strategy, parse_payoff_update_interval
-from src.motivation_model import EVCStrategy
+from src.motivation_model import EVPStrategy
 
 
-def _build_strategy() -> EVCStrategy:
-    strategy = EVCStrategy(
+def _build_strategy() -> EVPStrategy:
+    strategy = EVPStrategy(
         motivation_door_center=(0.0, 0.0),
         agent_ids=[0, 1, 2],
         agent_positions=[(1.0, 0.0), (2.0, 0.0), (3.0, 0.0)],

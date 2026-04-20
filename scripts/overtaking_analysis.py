@@ -353,7 +353,6 @@ def compute_model_rows(
     speed_window: int,
     rel_speed_threshold: float,
 ):
-    import pandas as pd
     import pedpy
 
     config_path = find_matching_config(sqlite_path)

@@ -143,7 +143,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
         x_door = 0.5 * (door_point1[0] + door_point2[0])
         y_door = 0.5 * (door_point1[1] + door_point2[1])
         motivation_door_center = (x_door, y_door)
-        strategy_obj = mm.EVCStrategy(
+        strategy_obj = mm.EVPStrategy(
             width=params["width"],
             height=params["height"],
             max_reward=params["number_agents"],

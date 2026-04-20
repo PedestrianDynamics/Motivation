@@ -22,7 +22,7 @@ import pandas as pd
 import typer
 from jupedsim.distributions import distribute_by_number
 from jupedsim.internal.notebook_utils import read_sqlite_file
-from shapely import Polygon, from_wkt
+from shapely import Polygon
 
 from src import motivation_mapping as mmap
 from src import motivation_model as mm
@@ -313,7 +313,7 @@ def init_motivation_model(
     payoff_update_interval_s = parse_payoff_update_interval(_data)
     logging.info(f"{motivation_mode = }")
     # =================
-    motivation_strategy: mm.EVCStrategy = mm.EVCStrategy(
+    motivation_strategy: mm.EVPStrategy = mm.EVPStrategy(
         width=width,
         height=height,
         max_reward=number_agents,
@@ -378,7 +378,7 @@ def init_simulation(
     accessible_areas = parse_accessible_areas(_data)  # TODO not used.
 
     if from_file:
-        logging.info(f"Init geometry from WKT")
+        logging.info("Init geometry from WKT")
 
         # Original exterior ring
         exterior = [
@@ -798,7 +798,9 @@ def init_and_run_simulation(
     return float(simulation.iteration_count() * _time_step), motivation_model
 
 
-def start_simulation(config_path: str, output_path: str) -> Tuple[float, mm.MotivationModel]:
+def start_simulation(
+    config_path: str, output_path: str
+) -> Tuple[float, mm.MotivationModel]:
     """Call main function."""
     logging.info(f"Start simulation with config file: {config_path}")
     with open(config_path, "r", encoding="utf8") as f:
@@ -954,7 +956,9 @@ def main(
             # Run simulation for this variation
             var_evac_time: float | None = None
             try:
-                var_evac_time, _ = start_simulation(str(new_config_path), str(output_path))
+                var_evac_time, _ = start_simulation(
+                    str(new_config_path), str(output_path)
+                )
                 status = "completed"
             except Exception as e:
                 logging.error(f"Error in simulation: {e}.")

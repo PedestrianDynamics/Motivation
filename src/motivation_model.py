@@ -138,7 +138,7 @@ class DefaultMotivationStrategy(MotivationStrategy):
 
 
 @dataclass
-class EVCStrategy(MotivationStrategy):
+class EVPStrategy(MotivationStrategy):
     """Motivation theory based on E.V.C (model4)."""
 
     VALUE_SCALE_ALPHA: ClassVar[float] = 14.0 / 3.0
@@ -220,7 +220,7 @@ class EVCStrategy(MotivationStrategy):
 
     def __post_init__(self) -> None:
         """Initialize array pedestrian_value with random values in min max interval."""
-        logging.info(f"EVCStrategy post_init: Seed = {self.seed}")
+        logging.info(f"EVPStrategy post_init: Seed = {self.seed}")
         if not self.agent_positions:
             logging.critical(
                 f"Agent positions are not correctly initialised {self.agent_positions = } "
@@ -385,7 +385,7 @@ class EVCStrategy(MotivationStrategy):
     @staticmethod
     def name() -> str:
         """Give back name of strategy."""
-        return "EVCStrategy"
+        return "EVPStrategy"
 
     @staticmethod
     def expectancy(_distance: float, _width: float, _height: float) -> float:
@@ -457,7 +457,7 @@ class EVCStrategy(MotivationStrategy):
 
         value = float(self.pedestrian_value[agent_id])
         V_unit = value / self.VALUE_SCALE_ALPHA
-        SE_unit = EVCStrategy.expectancy(
+        SE_unit = EVPStrategy.expectancy(
             distance,
             self.width,
             self.height,
