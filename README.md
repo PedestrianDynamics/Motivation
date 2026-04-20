@@ -102,7 +102,7 @@ python scripts/experimental_rank_area.py
 ### Generating the EVP component figures
 
 The expectancy, value, payoff, and motivation plots shown in the paper
-are produced by the `EVCStrategy.plot()` method in
+are produced by the `EVPStrategy.plot()` method in
 `src/motivation_model.py`. They can be regenerated via the Streamlit app
 or by calling the plot method directly from a script (see
 `src/simutilities.py:plot_motivation_model`).
@@ -110,6 +110,33 @@ or by calling the plot method directly from a script (see
 The parameter-mapping figure (logistic curves for desired speed, time
 gap, buffer, repulsion strength) is produced by
 `motivation_mapping.plot_parameter_mappings()`.
+
+### Paper figures → generating scripts
+
+| Figure (paper) | Output filename(s) | Produced by |
+|---|---|---|
+| Fig 1 `fig:evc_components` (expectancy, value, payoff, motivation) | `expectancy.pdf`, `value.pdf`, `payoff.pdf`, `motivation.pdf` | `EVPStrategy.plot()` in `src/motivation_model.py` (via Streamlit app or `src/simutilities.py:plot_motivation_model`) |
+| Fig 2 `fig:rank-area-bands` | `rank_area_band_agents_{N}_open_100.png` | `scripts/aggregate_seeds.py` |
+| Fig 3 `fig:coordination-bands` (commented out) | `coordination_number_band_agents_{N}_open_100.png` | `scripts/aggregate_seeds.py` |
+| Fig 4 `fig:motivation-heatmaps-scenarios` | `agents_{N}_open_100/motivation_heatmap_results/motivation_heatmap_models_*.png` | `scripts/motivation_heatmap_analysis.py` |
+| Fig 5 `fig:voronoi-density-bands` (commented out) | `voronoi_density_band_agents_{N}_open_100.png` | `scripts/aggregate_seeds.py` |
+| Fig 6a `fig:sim-trajectories-uniform` (sim trajectories, single color) | `simulation_trajectories_5panel_uniform.png` | `scripts/plot_simulation_trajectories.py` |
+| Fig 6b `fig:sim-trajectories` (sim trajectories, motivation-colored) | `simulation_trajectories_5panel_motivation.png` | `scripts/plot_simulation_trajectories.py` |
+| Fig 7 `fig:croma-trajectories` (CROMA experimental trajectories, 1×4) | `croma_trajectories_4panel.png` | `scripts/plot_experimental_trajectories.py` |
+| Fig 8 `fig:croma-rank-area` (CROMA rank-area nM/hM) | `croma_rank_area_{nM,hM}.png` | `scripts/experimental_rank_area.py` |
+| Fig A.1 `fig:parameter-mappings` | `parameter_mappings.pdf` | `motivation_mapping.plot_parameter_mappings()` |
+| Fig A.2 `fig:final-rank-scenarios` (N=80 only) | `agents_80_open_100/final_rank_results/final_rank_vs_area_{model}_agents_80_open_100.pdf` | `scripts/final_rank_analysis.py` |
+
+The two trajectory-panel scripts are standalone and read directly from
+existing simulation / CROMA outputs (no full pipeline rerun required):
+
+```bash
+# CROMA 4-panel (Fig 7), writes into ../motivation-for-springer/figures/
+python scripts/plot_experimental_trajectories.py
+
+# Simulation 5-panel × 2 variants (Fig 6a, 6b)
+python scripts/plot_simulation_trajectories.py --seed 101
+```
 
 ## Configuration
 
@@ -143,9 +170,11 @@ simulation/
 │   ├── final_rank_analysis.py          Rank–area per-seed analysis
 │   ├── coordination_number_analysis.py Coordination number per-seed analysis
 │   ├── motivation_heatmap_analysis.py  Spatial motivation heatmaps
-│   └── voronoi_density_analysis.py     Voronoi density time series
+│   ├── voronoi_density_analysis.py     Voronoi density time series
+│   ├── plot_experimental_trajectories.py  CROMA trajectories 1×4 panel (Fig 7)
+│   └── plot_simulation_trajectories.py    Simulation 5-panel × 2 variants (Fig 6)
 ├── src/
-│   ├── motivation_model.py        EVCStrategy: expectancy-value model
+│   ├── motivation_model.py        EVPStrategy: expectancy-value-payoff model
 │   ├── motivation_mapping.py      Logistic motivation-to-parameter mapping
 │   ├── coordination_number.py     Delaunay coordination numbers
 │   ├── utilities.py               Voronoi area, rank, crossing-order utilities
