@@ -101,41 +101,67 @@ python scripts/experimental_rank_area.py
 
 ### Generating the EVP component figures
 
-The expectancy, value, payoff, and motivation plots shown in the paper
-are produced by the `EVPStrategy.plot()` method in
-`src/motivation_model.py`. They can be regenerated via the Streamlit app
-or by calling the plot method directly from a script (see
-`src/simutilities.py:plot_motivation_model`).
+The expectancy, value, payoff, motivation, and parameter-mapping plots
+shown in the paper are produced headlessly by:
 
-The parameter-mapping figure (logistic curves for desired speed, time
-gap, buffer, repulsion strength) is produced by
-`motivation_mapping.plot_parameter_mappings()`.
+```bash
+python scripts/plot_evp_schematics.py            # default: N=80, seed=101, base_PVE.json
+```
+
+This writes `expectancy.pdf`, `value.pdf`, `payoff.pdf`,
+`motivation.pdf`, and `parameter_mappings.pdf` directly into
+`../motivation-for-springer/figures/`. Internally it instantiates an
+`EVPStrategy` from `src/motivation_model.py` and calls its `plot()`
+method plus `motivation_mapping.plot_parameter_mappings()`.
 
 ### Paper figures → generating scripts
 
+Only the figures that are actually rendered in the paper are listed
+below. Three blocks (coordination-number bands, Voronoi density bands,
+N=40 final-rank scatter) are wrapped in `\iffalse` in the manuscript
+and are therefore not regenerated; the underlying analysis scripts
+still produce the data, but the PDFs are not copied into the paper.
+
 | Figure (paper) | Output filename(s) | Produced by |
 |---|---|---|
-| Fig 1 `fig:evc_components` (expectancy, value, payoff, motivation) | `expectancy.pdf`, `value.pdf`, `payoff.pdf`, `motivation.pdf` | `EVPStrategy.plot()` in `src/motivation_model.py` (via Streamlit app or `src/simutilities.py:plot_motivation_model`) |
-| Fig 2 `fig:rank-area-bands` | `rank_area_band_agents_{N}_open_100.png` | `scripts/aggregate_seeds.py` |
-| Fig 3 `fig:coordination-bands` (commented out) | `coordination_number_band_agents_{N}_open_100.png` | `scripts/aggregate_seeds.py` |
-| Fig 4 `fig:motivation-heatmaps-scenarios` | `agents_{N}_open_100/motivation_heatmap_results/motivation_heatmap_models_*.png` | `scripts/motivation_heatmap_analysis.py` |
-| Fig 5 `fig:voronoi-density-bands` (commented out) | `voronoi_density_band_agents_{N}_open_100.png` | `scripts/aggregate_seeds.py` |
-| Fig 6a `fig:sim-trajectories-uniform` (sim trajectories, single color) | `simulation_trajectories_5panel_uniform.png` | `scripts/plot_simulation_trajectories.py` |
-| Fig 6b `fig:sim-trajectories` (sim trajectories, motivation-colored) | `simulation_trajectories_5panel_motivation.png` | `scripts/plot_simulation_trajectories.py` |
-| Fig 7 `fig:croma-trajectories` (CROMA experimental trajectories, 1×4) | `croma_trajectories_4panel.png` | `scripts/plot_experimental_trajectories.py` |
-| Fig 8 `fig:croma-rank-area` (CROMA rank-area nM/hM) | `croma_rank_area_{nM,hM}.png` | `scripts/experimental_rank_area.py` |
-| Fig A.1 `fig:parameter-mappings` | `parameter_mappings.pdf` | `motivation_mapping.plot_parameter_mappings()` |
-| Fig A.2 `fig:final-rank-scenarios` (N=80 only) | `agents_80_open_100/final_rank_results/final_rank_vs_area_{model}_agents_80_open_100.pdf` | `scripts/final_rank_analysis.py` |
+| Fig 1 `fig:evc_components` (expectancy, value, payoff, motivation) | `expectancy.pdf`, `value.pdf`, `payoff.pdf`, `motivation.pdf` | `scripts/plot_evp_schematics.py` |
+| Fig 2 `fig:rank-area-bands` | `rank_area_band_agents_{40,80}_open_100.png` | `scripts/aggregate_seeds.py` (Stage 2) |
+| Fig 3 `fig:motivation-heatmaps-scenarios` | `agents_80_open_100/motivation_heatmap_results/motivation_heatmap_models_agents_80_open_100.png` | `scripts/motivation_heatmap_analysis.py` (Stage 1, per-seed; copy seed-101 output to the un-suffixed paper name) |
+| Fig 4a `fig:sim-trajectories-uniform` (sim trajectories, single color) | `simulation_trajectories_5panel_uniform.png` | `scripts/plot_simulation_trajectories.py` |
+| Fig 4b `fig:sim-trajectories` (sim trajectories, motivation-colored) | `simulation_trajectories_5panel_motivation.png` | `scripts/plot_simulation_trajectories.py` |
+| Fig 5 `fig:croma-trajectories` (CROMA experimental trajectories, 1×4) | `croma_trajectories_4panel.png` | `scripts/plot_experimental_trajectories.py` |
+| Fig 6 `fig:croma-rank-area` (CROMA rank-area nM/hM) | `croma_rank_area_{nM,hM}.png` | `scripts/experimental_rank_area.py` |
+| Fig A.1 `fig:parameter-mappings` | `parameter_mappings.pdf` | `scripts/plot_evp_schematics.py` |
+| Fig A.2 `fig:final-rank-scenarios` (N=80 only) | `agents_80_open_100/final_rank_results/final_rank_vs_area_{se,v,p,pve,base_model}_agents_80_open_100.pdf` | `scripts/final_rank_analysis.py` (Stage 1, per-seed; copy seed-101 outputs to the un-suffixed paper names) |
 
-The two trajectory-panel scripts are standalone and read directly from
-existing simulation / CROMA outputs (no full pipeline rerun required):
+The trajectory-panel and schematic scripts are standalone and read
+directly from existing simulation / CROMA outputs (no full pipeline
+rerun required):
 
 ```bash
-# CROMA 4-panel (Fig 7), writes into ../motivation-for-springer/figures/
+# Schematics: expectancy/value/payoff/motivation/parameter_mappings (Fig 1, A.1)
+python scripts/plot_evp_schematics.py
+
+# CROMA 4-panel (Fig 5)
 python scripts/plot_experimental_trajectories.py
 
-# Simulation 5-panel × 2 variants (Fig 6a, 6b)
+# Simulation 5-panel × 2 variants (Fig 4a, 4b)
 python scripts/plot_simulation_trajectories.py --seed 101
+```
+
+For Fig 3 and Fig A.2 the per-seed PDFs/PNGs in
+`files/coordination_scenarios/agents_{N}_open_100/.../` carry a
+`_seedNNN` suffix; copy seed 101 to the un-suffixed paper name when
+syncing figures (the paper convention is to show a single
+representative seed):
+
+```bash
+cp files/coordination_scenarios/agents_80_open_100/motivation_heatmap_results/motivation_heatmap_models_agents_80_open_100_seed101.png \
+   ../motivation-for-springer/figures/agents_80_open_100/motivation_heatmap_results/motivation_heatmap_models_agents_80_open_100.png
+for m in se v p pve base_model; do
+  cp files/coordination_scenarios/agents_80_open_100/final_rank_results/final_rank_vs_area_${m}_agents_80_open_100_seed101.pdf \
+     ../motivation-for-springer/figures/agents_80_open_100/final_rank_results/final_rank_vs_area_${m}_agents_80_open_100.pdf
+done
 ```
 
 ## Configuration
