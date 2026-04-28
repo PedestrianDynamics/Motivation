@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -181,7 +181,7 @@ def compute_global_motivation_range(
 def make_panels_figure(
     frames_by_model: Dict[str, pd.DataFrame],
     models: List[str],
-    panel_plotter,
+    panel_plotter: Callable[..., None],
     suptitle: Optional[str] = None,
     cbar_norm: Optional[Normalize] = None,
 ) -> Figure:
