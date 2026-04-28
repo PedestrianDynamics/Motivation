@@ -334,19 +334,6 @@ def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> int
     return 1
 
 
-def parse_number_high_value(json_data: Dict[str, Any]) -> int:
-    """Return high-value agent count from a configured fraction or count."""
-    number_agents = parse_number_agents(json_data)
-    try:
-        raw_value = float(json_data["motivation_parameters"]["number_high_value"])
-    except KeyError:
-        return 1
-
-    if raw_value < 1.0:
-        return max(0, min(number_agents, int(round(number_agents * raw_value))))
-    return max(0, min(number_agents, int(round(raw_value))))
-
-
 def is_motivation_active(json_data: Dict[str, Any]) -> int:
     """Get status of motivation if activated"""
     if (

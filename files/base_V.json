@@ -65,14 +65,8 @@
         "width": 10.0,
         "height": 1.0,
         "seed": 12.0,
-        "max_value_high": 7,
-        "min_value_high": 4,
-        "max_value_low": 3,
-        "min_value_low": 1,
-        "number_high_value": 0.5,
         "agent_buffer": 0,
         "do_adjust_buffer": true,
-        "value_probability_sorting": false,
         "payoff": {
             "k": 14.0,
             "q0": 0.4,
@@ -124,7 +118,9 @@
                     ]
                 ]
             }
-        ]
+        ],
+        "min_value": 1,
+        "max_value": 7
     },
     "accessible_areas": [
         {

@@ -242,68 +242,30 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
 def ui_value_parameters(data: Dict[str, Any]) -> None:
     """Set Value function."""
     with st.sidebar.expander("Value Parameters", expanded=True):
-        c1, c2 = st.columns(2)
         value_options = [round(float(v), 2) for v in np.arange(1.0, 7.1, 0.1)]
 
         def _closest_option(options: list[float], value: float) -> float:
             return min(options, key=lambda opt: abs(opt - value))
 
-        high_max = _closest_option(
-            value_options, float(data["motivation_parameters"]["max_value_high"])
+        v_min = _closest_option(
+            value_options, float(data["motivation_parameters"]["min_value"])
         )
-        high_min = _closest_option(
-            value_options, float(data["motivation_parameters"]["min_value_high"])
+        v_max = _closest_option(
+            value_options, float(data["motivation_parameters"]["max_value"])
         )
-        if high_max > high_min:
-            high_max, high_min = high_min, high_max
+        if v_min > v_max:
+            v_min, v_max = v_max, v_min
 
-        min_value_high, max_value_high = st.select_slider(
-            "**Value high**",
-            key="value_high",
+        min_value, max_value = st.select_slider(
+            "**Value range**",
+            key="value_range",
             options=value_options,
-            value=[
-                high_max,
-                high_min,
-            ],
-            format_func=lambda x: f"{x:.2f}",
-            help="Upper/Lower limit of high Value people.",
-        )
-        data["motivation_parameters"]["min_value_high"] = min_value_high
-        data["motivation_parameters"]["max_value_high"] = max_value_high
-
-        low_min = _closest_option(
-            value_options, float(data["motivation_parameters"]["min_value_low"])
-        )
-        low_max = _closest_option(
-            value_options, float(data["motivation_parameters"]["max_value_low"])
-        )
-        if low_min > low_max:
-            low_min, low_max = low_max, low_min
-
-        min_value_low, max_value_low = st.select_slider(
-            "**Value low**",
-            key="value_low",
-            options=value_options,
-            value=[
-                low_min,
-                low_max,
-            ],
-            help="Upper/Lower limit of low Value people.",
+            value=[v_min, v_max],
+            help="Lower/Upper limit of the uniform value distribution.",
             format_func=lambda x: f"{x:.2f}",
         )
-        # st.info((min_value_low, max_value_low))
-        data["motivation_parameters"]["min_value_low"] = min_value_low
-        data["motivation_parameters"]["max_value_low"] = max_value_low
-
-        data["motivation_parameters"]["number_high_value"] = st.slider(
-            "Fraction of high **Value** people",
-            key="num_high_value",
-            step=0.01,
-            min_value=0.0,
-            max_value=1.0,
-            value=float(data["motivation_parameters"]["number_high_value"]),
-            help="Fraction of agents assigned to the high-value group.",
-        )
+        data["motivation_parameters"]["min_value"] = min_value
+        data["motivation_parameters"]["max_value"] = max_value
 
 
 def ui_payoff_parameters(data: Dict[str, Any]) -> None:

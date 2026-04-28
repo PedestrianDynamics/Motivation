@@ -28,8 +28,6 @@ class SeedOperation(Enum):
     """Enumeration of different seeding operations for tracking purposes."""
 
     AGENT_VALUE_ASSIGNMENT = auto()
-    POSITION_PROBABILITY = auto()
-    HIGH_VALUE_SELECTION = auto()
     GENERAL_RANDOMIZATION = auto()
 
 
@@ -154,19 +152,14 @@ class EVPStrategy(MotivationStrategy):
     competition_max: float = 1
     competition_decay_reward: float = 5
     seed: int = 1
-    min_value_high: float = 5.0
-    max_value_high: float = 7.0
-    min_value_low: float = 1.0
-    max_value_low: float = 3.0
-    number_high_value: int = 10
+    min_value: float = 1.0
+    max_value: float = 7.0
     nagents: int = 10
     evc: bool = True
     normal_v_0: float = 1.2
     normal_time_gap: float = 1.0
     motivation_change = 1.0  # to strengthen the change of the state. Not yet used!
-    distance_decay: float = -width / math.log(0.01)
     seed_manager: Optional[SeedManager] = None
-    value_probability: bool = True
     motivation_min: float = 0.1
     motivation_mode: str = "PVE"
     payoff_k: float = 8.0
@@ -178,10 +171,6 @@ class EVPStrategy(MotivationStrategy):
     rank_abs_cache: Dict[int, int] = field(default_factory=dict)
     rank_q_cache: Dict[int, float] = field(default_factory=dict)
     _last_rank_update_iteration: int = -1
-    # probability should be negligible (< 0.01) at self.width meters"
-    # therefore: 0.01 = exp(-width/distance_decay)
-    # Taking ln: ln(0.01) = -width/distance_decay
-    # Therefore distance_decay = -width/ln(0.01)
 
     def calculate_exit_distance(self, pos: Point) -> float:
         """Calculate distance from a position to the door center.
@@ -198,28 +187,13 @@ class EVPStrategy(MotivationStrategy):
         dy = pos[1] - self.motivation_door_center[1]
         return dx * dx + dy * dy
 
-    def get_high_value_probability(self, pos: Point) -> float:
-        """Calculate probability of being high value based on position.
-
-        Returns higher probability for positions closer to door.
-        """
-        distance = self.calculate_exit_distance(pos)
-        # Convert distance to probability using exponential decay
-        # Scale the distance to control the rate of probability decay
-
-        if self.value_probability:
-            probability = math.exp(-distance / self.distance_decay)
-        else:
-            probability = 1.0
-        return probability
-
     @staticmethod
     def get_derived_seed(base_seed: int, operation_id: int) -> int:
         """Create a new seed based on the base seed and operation type."""
         return base_seed * 1000 + operation_id
 
     def __post_init__(self) -> None:
-        """Initialize array pedestrian_value with random values in min max interval."""
+        """Assign each agent an intrinsic value drawn uniformly from [min_value, max_value]."""
         logging.info(f"EVPStrategy post_init: Seed = {self.seed}")
         if not self.agent_positions:
             logging.critical(
@@ -230,72 +204,29 @@ class EVPStrategy(MotivationStrategy):
         if self.seed is not None and self.seed_manager is None:
             self.seed_manager = SeedManager(self.seed)
 
-        if self.number_high_value > self.nagents:
-            logging.warning(
-                f"Configuration error: {self.number_high_value = } > {self.nagents = }. Change value to match!"
-            )
-            self.number_high_value = self.nagents
-        else:
-            # logging.info(f" {self.number_high_value = }, {self.nagents = }.")
-            logging.info(f"Number of agents {len(self.agent_ids) = }")
-            logging.info(f"Number of positions {len(self.agent_positions) = }")
-        # Set seed for position probability calculations
-        if self.seed_manager:
-            self.seed_manager.set_seed_for_operation(SeedOperation.POSITION_PROBABILITY)
+        logging.info(f"Number of agents {len(self.agent_ids) = }")
+        logging.info(f"Number of positions {len(self.agent_positions) = }")
+        logging.info(f"Value range: [{self.min_value}, {self.max_value}]")
 
-        # Calculate probabilities for each agent based on position
-        agent_probabilities = [
-            (agent_id, self.get_high_value_probability(pos))
-            for agent_id, pos in zip(self.agent_ids, self.agent_positions)
-        ]
-        #        logging.info(f"{agent_probabilities = }")
-        # Set seed for high value selection
-        if self.seed_manager:
-            self.seed_manager.set_seed_for_operation(SeedOperation.HIGH_VALUE_SELECTION)
-            s = self.seed_manager.get_operation_seed(
-                SeedOperation.HIGH_VALUE_SELECTION, 1
-            )
-            logging.info(f"Seed for high value section for id = 1: {s}")
-        # Sort agents by their probability of being high value
-        sorted_agents = sorted(
-            agent_probabilities,
-            key=lambda x: x[1]
-            * (1 + random.uniform(0, 0.2)),  # Multiplicative randomness
-            reverse=True,
-        )
-        #        logging.info(f"{sorted_agents = }")
-        # Take the top number_high_value agents as high value agents
-        high_value_agents = set(
-            agent_id for agent_id, _ in sorted_agents[: self.number_high_value]
-        )
-        logging.info(f"Number of high value agents: {self.number_high_value}")
         for n in self.agent_ids:
             if self.seed_manager:
                 self.seed_manager.set_seed_for_operation(
                     SeedOperation.AGENT_VALUE_ASSIGNMENT, sub_id=n
                 )
-            if n in high_value_agents:
-                # This agent gets a high value
-                self.pedestrian_value[n] = self.value(
-                    self.min_value_high,
-                    self.max_value_high,
-                    self.get_derived_seed(self.seed, n),
-                )
-            else:
-                # This agent gets a low value
-                self.pedestrian_value[n] = self.value(
-                    self.min_value_low,
-                    self.max_value_low,
-                    self.get_derived_seed(self.seed, n),
-                )
+            self.pedestrian_value[n] = self.value(
+                self.min_value,
+                self.max_value,
+                self.get_derived_seed(self.seed, n),
+            )
+
         self.motivation_mode = str(self.motivation_mode).upper()
         if self.motivation_mode not in {"E", "SE", "V", "P", "PVE", "BASE_MODEL"}:
             raise ValueError(
                 f"Unknown motivation_mode '{self.motivation_mode}'. "
                 "Use one of: E, SE, V, P, PVE, BASE_MODEL."
             )
-        self.value_min = min(self.min_value_low, self.min_value_high)
-        self.value_max = max(self.max_value_low, self.max_value_high)
+        self.value_min = self.min_value
+        self.value_max = self.max_value
 
     def configure_payoff_update_interval(self, time_step: float) -> None:
         """Configure payoff rank update cadence from seconds to simulation steps."""
@@ -502,41 +433,20 @@ class EVPStrategy(MotivationStrategy):
         # V
         V_abs = [self.get_value(agent_id=s) for s in self.agent_ids]
 
-        # Color by value group: highest N values are shown as "high-value people".
-        sorted_ids = sorted(
-            self.agent_ids,
-            key=lambda aid: self.get_value(agent_id=aid),
-            reverse=True,
-        )
-        high_ids = set(sorted_ids[: self.number_high_value])
-        low_ids = [aid for aid in self.agent_ids if aid not in high_ids]
-        high_idxs = [i for i, aid in enumerate(self.agent_ids) if aid in high_ids]
-        low_idxs = [i for i, aid in enumerate(self.agent_ids) if aid not in high_ids]
-
         x_vals = np.array(self.agent_ids, dtype=float)
-        dx = 0.08
         ax1.scatter(
-            x_vals[low_idxs] - dx,
-            np.array(V_abs)[low_idxs],
+            x_vals,
+            np.array(V_abs),
             facecolors="tab:blue",
             edgecolors="tab:blue",
             s=45,
-            label="low group",
         )
-        ax1.scatter(
-            x_vals[high_idxs] - dx,
-            np.array(V_abs)[high_idxs],
-            facecolors="tab:red",
-            edgecolors="tab:red",
-            s=45,
-            label="high group",
-        )
+        ax1.axhspan(self.min_value, self.max_value, color="tab:blue", alpha=0.08)
         ax1.grid(alpha=0.3)
         ax1.set_ylim((-0.1, max(V_abs, default=1.0) + 1.0))
         ax1.set_xlim((-0.1, self.max_reward + 1))
         ax1.set_xlabel("# Agents", size=14)
         ax1.set_ylabel("Value V", size=14)
-        ax1.legend(loc="best", fontsize=8)
         fig1.savefig("value.pdf")
         # P
         q_vals = np.linspace(0.0, 1.0, 200)
