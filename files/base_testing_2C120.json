@@ -1,0 +1,224 @@
+{
+    "comments": [
+        "This file includes all important information",
+        "to start a jupedsim simulation with the motivation model",
+        "motivation_mode options: SE, V, P, PVE, BASE_MODEL",
+        "N = 40, 80",
+        "Close",
+        "Voronoi density, index number,  ",
+        "BASE_MODEL keeps base CFSM parameters and ignores motivation-to-parameter mapping"
+    ],
+    "version": 0.1,
+    "init_trajectories_file": "../trajectories_croma/1C070_cam6_cam5_frameshift0_Combined.txt",
+    "velocity_init_parameters": {
+        "a_ped": 0.5,
+        "d_ped": 0.2,
+        "a_wall": 1.8,
+        "d_wall": 0.2,
+        "theta_max_upper_bound": 3.14,
+        "radius": 0.15
+    },
+    "simulation_parameters": {
+        "fps": 5,
+        "time_step": 0.01,
+        "number_agents": 87,
+        "numer_agents_backup": 85,
+        "simulation_time": 90,
+        "open_door_time": 100
+    },
+    "measurement_line": {
+        "vertices": [
+            [
+                -0.42,
+                19.9
+            ],
+            [
+                0.38,
+                19.9
+            ]
+        ]
+    },
+    "measurement_area": {
+        "vertices": [
+            [
+                -0.72,
+                19
+            ],
+            [
+                0.67,
+                19
+            ],
+            [
+                0.67,
+                18
+            ],
+            [
+                -0.72,
+                18
+            ]
+        ]
+    },
+    "motivation_parameters": {
+        "motivation_mode": "PVE",
+        "normal_v_0": 1.2,
+        "normal_time_gap": 1.0,
+        "width": 10.0,
+        "height": 1.0,
+        "seed": 12.0,
+        "agent_buffer": 0,
+        "do_adjust_buffer": true,
+        "payoff": {
+            "k": 14.0,
+            "q0": 0.4,
+            "rank_tie_tolerance_m": 0.001,
+            "update_interval_s": 0.2
+        },
+        "mapping_function": "logistic",
+        "motivation_min": 0.0,
+        "inflection_target": 1.0,
+        "desired_speed_anchors": {
+            "low": 0.5,
+            "normal": 1.2,
+            "high": 3.6
+        },
+        "time_gap_anchors": {
+            "low": 2.0,
+            "normal": 1.0,
+            "high": 0.01
+        },
+        "buffer_anchors": {
+            "low": 1.0,
+            "normal": 0.2,
+            "high": 0.1
+        },
+        "strength_neighbor_repulsion_anchors": {
+            "low": 0.1,
+            "normal": 0.5,
+            "high": 1.8
+        },
+        "use_manual_logistic_k": false,
+        "logistic_k": {
+            "desired_speed": 10.0,
+            "time_gap": 10.0,
+            "buffer": 10.0,
+            "strength_neighbor_repulsion": 10.0
+        },
+        "motivation_doors": [
+            {
+                "id": 1,
+                "label": "door",
+                "vertices": [
+                    [
+                        -2.5,
+                        19.0
+                    ],
+                    [
+                        2.5,
+                        19.0
+                    ]
+                ]
+            }
+        ],
+        "min_value": 4,
+        "max_value": 7
+    },
+    "accessible_areas": [
+        {
+            "id": 1,
+            "vertices": [
+                [
+                    -3.5,
+                    -11.0
+                ],
+                [
+                    3.5,
+                    -11.0
+                ],
+                [
+                    3.5,
+                    19.0
+                ],
+                [
+                    -3.5,
+                    19.0
+                ]
+            ]
+        }
+    ],
+    "way_points": [
+        {
+            "id": 1,
+            "label": "wp",
+            "coordinates": [
+                0,
+                -1
+            ],
+            "distance": 5
+        },
+        {
+            "id": 2,
+            "label": "wp",
+            "coordinates": [
+                2,
+                -1
+            ],
+            "distance": 5
+        },
+        {
+            "id": 3,
+            "label": "wp",
+            "coordinates": [
+                -2,
+                -1
+            ],
+            "distance": 5
+        }
+    ],
+    "destinations": [
+        {
+            "id": 3,
+            "label": "exit middle",
+            "vertices": [
+                [
+                    -0.2,
+                    23.0
+                ],
+                [
+                    0.2,
+                    23.0
+                ],
+                [
+                    0.2,
+                    22.0
+                ],
+                [
+                    -0.2,
+                    22.0
+                ]
+            ]
+        }
+    ],
+    "distribution_polygons": [
+        {
+            "id": 1,
+            "vertices": [
+                [
+                    -6.5,
+                    -10.5
+                ],
+                [
+                    6.5,
+                    -10.5
+                ],
+                [
+                    3,
+                    -3.0
+                ],
+                [
+                    -3,
+                    -3.0
+                ]
+            ]
+        }
+    ]
+}
