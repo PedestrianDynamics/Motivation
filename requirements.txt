@@ -1,7 +1,7 @@
 streamlit
 shapely
 jsonschema
-jupedsim @ git+https://github.com/chraibi/jupedsim.git@csm-v3
+jupedsim==1.4.0
 plotly
 numpy>=1.23
 matplotlib>=3.7
