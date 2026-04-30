@@ -4,7 +4,7 @@ jsonschema
 jupedsim==1.4.0
 plotly
 numpy>=2.2,<2.3
-matplotlib>=3.7
+matplotlib>=3.9
 pedpy
 streamlit_option_menu
 typer
