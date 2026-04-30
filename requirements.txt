@@ -3,8 +3,8 @@ shapely
 jsonschema
 jupedsim @ git+https://github.com/chraibi/jupedsim.git@csm-v3
 plotly
-matplotlib
+numpy>=1.23
+matplotlib>=3.7
 pedpy
-numpy
 streamlit_option_menu
 typer
