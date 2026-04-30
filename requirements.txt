@@ -5,6 +5,6 @@ jupedsim==1.4.0
 plotly
 numpy>=2.2,<2.3
 matplotlib>=3.9
-pedpy
+pedpy>=1.4.0
 streamlit_option_menu
 typer
