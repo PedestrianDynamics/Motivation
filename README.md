@@ -16,10 +16,36 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+The paper figures were produced with Python 3.13 and the exact versions
+in `requirements-lock.txt` (jupedsim 1.4.0, pedpy 1.4.0, matplotlib
+3.10.8). Other versions can change results: pedpy 1.5 changed its
+loader API, and other matplotlib versions change the pixels.
+
 ## Reproducing the paper results
 
-The full pipeline runs in three stages. All commands are run from
-the repository root (`simulation/`).
+### One command
+
+```bash
+make paper-figures OUT=build/paper   # ≈ 1 h: simulations, analyses, figures
+make compare OUT=build/paper         # compare with ../motivation-for-springer/figures
+```
+
+All outputs go under `OUT` (use a fresh directory: the runners refuse
+to choose between several runs of the same model and seed). The paper
+figures end up in `OUT/figures`, together with `MANIFEST.json` (git
+commit, lock-file hash, sha256 per figure). `make install-figures`
+copies them into the paper.
+
+**External data.** The CROMA trajectories are not part of this
+repository. They are expected in `../trajectories_croma/`
+(`*_Combined.txt`, PeTrack exports of runs 1C060, 1C070, 2C020, 2C070,
+2C080, 2C120, 2C130, 2C150), with the corridor geometry in
+`../trajectories_croma/delme/geometry.xml`; override the location with
+`make CROMA=<dir>`. The trajectories come from the CroMa entrance
+experiments (Adrian et al. 2020, Sieben et al. 2025).
+
+The stages below are what `make paper-figures` runs. All commands are
+run from the repository root (`simulation/`).
 
 ### Stage 1: Multi-seed simulation + per-seed analysis
 
@@ -116,53 +142,32 @@ method plus `motivation_mapping.plot_parameter_mappings()`.
 
 ### Paper figures → generating scripts
 
-Only the figures that are actually rendered in the paper are listed
-below. Three blocks (coordination-number bands, Voronoi density bands,
-N=40 final-rank scatter) are wrapped in `\iffalse` in the manuscript
-and are therefore not regenerated; the underlying analysis scripts
-still produce the data, but the PDFs are not copied into the paper.
+Figure numbers refer to the submitted manuscript (`sn-article.tex`).
+Figs 1 and 2 are a photo and an illustration and are not generated.
 
-| Figure (paper) | Output filename(s) | Produced by |
-|---|---|---|
-| Fig 1 `fig:evc_components` (expectancy, value, payoff, motivation) | `expectancy.pdf`, `value.pdf`, `payoff.pdf`, `motivation.pdf` | `scripts/plot_evp_schematics.py` |
-| Fig 2 `fig:rank-area-bands` | `rank_area_band_agents_{40,80}_open_100.png` | `scripts/aggregate_seeds.py` (Stage 2) |
-| Fig 3 `fig:motivation-heatmaps-scenarios` | `agents_80_open_100/motivation_heatmap_results/motivation_heatmap_models_agents_80_open_100.png` | `scripts/motivation_heatmap_analysis.py` (Stage 1, per-seed; copy seed-101 output to the un-suffixed paper name) |
-| Fig 4a `fig:sim-trajectories-uniform` (sim trajectories, single color) | `simulation_trajectories_5panel_uniform.png` | `scripts/plot_simulation_trajectories.py` |
-| Fig 4b `fig:sim-trajectories` (sim trajectories, motivation-colored) | `simulation_trajectories_5panel_motivation.png` | `scripts/plot_simulation_trajectories.py` |
-| Fig 5 `fig:croma-trajectories` (CROMA experimental trajectories, 1×4) | `croma_trajectories_4panel.png` | `scripts/plot_experimental_trajectories.py` |
-| Fig 6 `fig:croma-rank-area` (CROMA rank-area nM/hM) | `croma_rank_area_{nM,hM}.png` | `scripts/experimental_rank_area.py` |
-| Fig A.1 `fig:parameter-mappings` | `parameter_mappings.pdf` | `scripts/plot_evp_schematics.py` |
-| Fig A.2 `fig:final-rank-scenarios` (N=80 only) | `agents_80_open_100/final_rank_results/final_rank_vs_area_{se,v,p,pve,base_model}_agents_80_open_100.pdf` | `scripts/final_rank_analysis.py` (Stage 1, per-seed; copy seed-101 outputs to the un-suffixed paper names) |
+| Figure | Label | Output file(s) | Produced by | make target |
+|---|---|---|---|---|
+| 3a–d | `fig:evc_components` | `expectancy.pdf`, `value.pdf`, `payoff.pdf`, `motivation.pdf` | `scripts/plot_evp_schematics.py` | `schematics` |
+| 4 | `fig:rank-area-bands` | `rank_area_band_agents_{40,80}_open_100.png` | `scripts/aggregate_seeds.py` | `aggregate` |
+| 5a, 5b | `fig:croma-rank-area` | `croma_rank_area_{nM,hM}.png` | `scripts/experimental_rank_area.py` | `croma` |
+| 6 | `fig:motivation-heatmaps-scenarios` | `motivation_heatmap_models_agents_80_open_100.png` (seed 101) | `scripts/motivation_heatmap_analysis.py` | `simulations`, `seed-figures` |
+| 7 | `fig:sim-trajectories-uniform` | `simulation_trajectories_5panel_uniform.png` (seed 101) | `scripts/plot_simulation_trajectories.py` | `trajectories` |
+| 8 | `fig:sim-trajectories` | `simulation_trajectories_5panel_motivation.png` (seed 101) | `scripts/plot_simulation_trajectories.py` | `trajectories` |
+| 9 | `fig:croma-trajectories` | `croma_trajectories_4panel.png` | `scripts/plot_experimental_trajectories.py` | `trajectories` |
+| 10 | `fig:sim-testing-trajectories` | `sim_testing_trajectories_4panel.png` (seeds 101–104, configs `files/base_testing_*.json`) | `simulation.py`, `scripts/plot_sim_testing_trajectories.py` | `testing` |
+| A1 | `fig:parameter-mappings` | `parameter_mappings.pdf` | `scripts/plot_evp_schematics.py` | `schematics` |
+| A2 | `fig:final-rank-scenarios` | `final_rank_vs_area_{se,v,p,pve,base_model}_agents_80_open_100.pdf` (seed 101) | `scripts/final_rank_analysis.py` | `simulations`, `seed-figures` |
 
-The trajectory-panel and schematic scripts are standalone and read
-directly from existing simulation / CROMA outputs (no full pipeline
-rerun required):
+Numbers quoted in the text come from
+`OUT/coordination_scenarios/_aggregated/tests.csv` (rank–area
+correlations), `OUT/croma_rank_area/croma_rank_area_summary.csv`
+(experimental correlations) and `OUT/crowd_shape.csv` (crowd depth and
+spread in Figs 9 and 10, from `scripts/crowd_shape.py`).
 
-```bash
-# Schematics: expectancy/value/payoff/motivation/parameter_mappings (Fig 1, A.1)
-python scripts/plot_evp_schematics.py
-
-# CROMA 4-panel (Fig 5)
-python scripts/plot_experimental_trajectories.py
-
-# Simulation 5-panel × 2 variants (Fig 4a, 4b)
-python scripts/plot_simulation_trajectories.py --seed 101
-```
-
-For Fig 3 and Fig A.2 the per-seed PDFs/PNGs in
-`files/coordination_scenarios/agents_{N}_open_100/.../` carry a
-`_seedNNN` suffix; copy seed 101 to the un-suffixed paper name when
-syncing figures (the paper convention is to show a single
-representative seed):
-
-```bash
-cp files/coordination_scenarios/agents_80_open_100/motivation_heatmap_results/motivation_heatmap_models_agents_80_open_100_seed101.png \
-   ../motivation-for-springer/figures/agents_80_open_100/motivation_heatmap_results/motivation_heatmap_models_agents_80_open_100.png
-for m in se v p pve base_model; do
-  cp files/coordination_scenarios/agents_80_open_100/final_rank_results/final_rank_vs_area_${m}_agents_80_open_100_seed101.pdf \
-     ../motivation-for-springer/figures/agents_80_open_100/final_rank_results/final_rank_vs_area_${m}_agents_80_open_100.pdf
-done
-```
+Per-seed figures carry a `_seedNNN` suffix; the paper shows seed 101,
+which `make seed-figures` copies to the unsuffixed name. Blocks wrapped
+in `\iffalse` in the manuscript (coordination-number and Voronoi
+density bands, N=40 final-rank scatter) are not copied into the paper.
 
 ## Configuration
 
