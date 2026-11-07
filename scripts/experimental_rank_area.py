@@ -285,6 +285,37 @@ def plot_scenarios(
         )
         plt.close(fig)
 
+    # Paper figure: the "blank" runs grouped by motivation condition,
+    # as labelled in the PeTrack project names (nM normal, hM high).
+    condition_groups = {
+        "nM": [("1C060", "tab:blue", "-"), ("2C020", "cornflowerblue", "--")],
+        "hM": [("2C070", "tab:orange", "-"), ("2C120", "orangered", "--")],
+    }
+    for condition, members in condition_groups.items():
+        if any(scenario not in by_scenario for scenario, _, _ in members):
+            continue
+        fig, ax = plt.subplots(figsize=(7, 4))
+        for scenario, colour, style in members:
+            rows = by_scenario[scenario]
+            paired = sorted(
+                (int(r["crossing_order"]), float(r["area"])) for r in rows
+            )
+            ax.plot(
+                [r for r, _ in paired],
+                [a for _, a in paired],
+                color=colour,
+                linestyle=style,
+                label=scenario,
+                linewidth=1.8,
+            )
+        ax.set_xlabel("rank (crossing order)")
+        ax.set_ylabel(r"Voronoi area [$\mathrm{m}^2$]")
+        ax.grid(alpha=0.2)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(output_dir / f"croma_rank_area_{condition}.png", dpi=200)
+        plt.close(fig)
+
 
 def main() -> None:
     args = parse_args()
