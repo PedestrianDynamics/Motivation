@@ -6,7 +6,9 @@ Measures (revision/croma_replica_plan.md, amendment):
   rho_rank_area    Spearman(rank at opening, mean Voronoi area over the
                    waiting phase), cutoff 1 m,
   depth_med        median distance behind the front-most person at opening,
-  frac_front3m     fraction of people within 3 m of the front at opening.
+  frac_front3m     fraction of people within 3 m of the front at opening,
+  discharge_60s    people crossing the door (y >= 20 m) in the first 60 s
+                   after opening.
 Experiment and simulation use this code with the same walkable area.
 
   python scripts/croma_waiting.py --output build/croma_waiting.csv
@@ -34,6 +36,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DOOR = (-0.02, 20.0)
 CROMA_FPS = 50.0
 FRONT_BAND = 3.0
+DISCHARGE_WINDOW_S = 60.0
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,6 +76,13 @@ def waiting_measures(df: pd.DataFrame, fps: float, open_frame: int,
     }
 
 
+def discharge(df: pd.DataFrame, fps: float, open_frame: int) -> int:
+    """People whose first frame past the door lies in the window after opening."""
+    crossing = df[df["y"] >= DOOR[1]].groupby("id")["frame"].min()
+    end_frame = open_frame + DISCHARGE_WINDOW_S * fps
+    return int(((crossing >= open_frame) & (crossing < end_frame)).sum())
+
+
 def main() -> None:
     args = parse_args()
     walkable = load_walkable_area(None)
@@ -81,7 +91,8 @@ def main() -> None:
         df, open_frame = load_experiment(path)
         rows.append({"run": path.name[:5], "condition": condition(path),
                      "door_open_s": (open_frame - df["frame"].min()) / CROMA_FPS,
-                     **waiting_measures(df, CROMA_FPS, open_frame, walkable)})
+                     **waiting_measures(df, CROMA_FPS, open_frame, walkable),
+                     "discharge_60s": discharge(df, CROMA_FPS, open_frame)})
     table = pd.DataFrame(rows)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     table.to_csv(args.output, index=False)

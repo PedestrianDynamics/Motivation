@@ -1,8 +1,9 @@
 """Run CROMA replicas over a parameter grid and measure them at door opening.
 
 For every (run, mode, time gap, seed) the replica (croma_replica.py) is run
-until just after the door opens, and croma_waiting.waiting_measures is
-applied to the trajectory, with the experiment's walkable area. Output:
+until 60 s after the door opens; croma_waiting.waiting_measures and
+croma_waiting.discharge are applied to the trajectory, with the
+experiment's walkable area. Output:
 one CSV row per replica, plus the experimental values from
 croma_waiting.py for comparison.
 
@@ -25,7 +26,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from croma_waiting import waiting_measures
+from croma_waiting import DISCHARGE_WINDOW_S, discharge, waiting_measures
 from experimental_rank_area import load_walkable_area
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -51,7 +52,7 @@ def replica(job: tuple) -> dict:
     cmd = [sys.executable, str(PROJECT_ROOT / "scripts" / "croma_replica.py"), "--run", run,
            "--mode", mode, "--time-gap", str(time_gap), "--desired-speed", str(speed),
            "--agent-buffer", str(buffer), "--seed", str(seed),
-           "--after-open", "1", "--output", str(out)]
+           "--after-open", str(DISCHARGE_WINDOW_S), "--output", str(out)]
     proc = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=PROJECT_ROOT)
     if proc.returncode != 0:  # e.g. an agent pushed through a wall; counted, not measured
         error = (proc.stderr.strip().splitlines() or ["?"])[-1]
@@ -64,6 +65,7 @@ def replica(job: tuple) -> dict:
         fps = float(dict(con.execute("SELECT key, value FROM metadata").fetchall())["fps"])
     open_frame = round(record["door_open_s"] * fps)
     record.update(waiting_measures(df, fps, open_frame, load_walkable_area(None)))
+    record["discharge_60s"] = discharge(df, fps, open_frame)
     return record
 
 
@@ -81,7 +83,8 @@ def main() -> None:
     table["condition"] = table["run"].map(BLANK_RUNS)
     out = args.output_dir / f"grid_{args.mode}_{args.tag}.csv" if args.tag else args.output_dir / f"grid_{args.mode}.csv"
     table.to_csv(out, index=False)
-    cols = ["n_at_open", "depth_med", "frac_front3m", "rho_entry_rank", "rho_rank_area"]
+    cols = ["n_at_open", "depth_med", "frac_front3m", "rho_entry_rank", "rho_rank_area",
+            "discharge_60s"]
     ok = table[table["status"] == "ok"]
     keys = ["condition", "time_gap", "desired_speed", "agent_buffer"]
     print(ok.groupby(keys)[cols].mean().round(2).to_string())

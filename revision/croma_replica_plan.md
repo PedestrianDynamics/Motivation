@@ -64,6 +64,29 @@ apply unchanged to these measures. The discharge deadlock is itself a
 finding to report: the model has not been shown to reproduce the
 opening phase.
 
+## Second amendment (2026-11-07, before the full grid was run)
+
+The door deadlock of the first amendment was two artefacts, not a
+model property:
+
+- The replica placed nudged entrants outside the corridor walls, from
+  where they walked around the closed door. Entrants are now placed
+  inside the corridor only.
+- CollisionFreeSpeedModelV3 with agent buffer 0 stops two agents that
+  touch head-on at exactly zero speed, so the reverse floor never
+  frees them. Any buffer above 0 dissolves the jam. The static arm
+  uses buffer 0.1 m, the "normal" anchor of the motivation mapping;
+  V-only and EVP take their buffer from the mapping as before.
+
+The grid runs on jupedsim 1.4.2 with the V3 fix of PR #1721 (agents no
+longer back through walls); results are regenerated on the release
+that contains it.
+
+The measures at opening stay as amended. Added as a held-out measure,
+not used for selection: discharge, the number of people crossing the
+door (y ≥ 20 m) in the first 60 s after opening
+(`croma_waiting.discharge`). Each replica runs to 60 s after opening.
+
 ## Caveats known in advance
 
 Two blank runs per condition; long waits (2C130, 2C150, about 200 s)
