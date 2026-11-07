@@ -50,6 +50,7 @@ testing: | $(FIG)
 		$(PY) simulation.py --inifile files/base_testing_$$run.json --output-dir $(OUT)/testing_runs/test_$$run || exit 1; \
 	done
 	$(PY) scripts/plot_sim_testing_trajectories.py --runs-dir $(OUT)/testing_runs --output $(FIG)/sim_testing_trajectories_4panel.png
+	$(PY) scripts/crowd_shape.py --traj-dir $(CROMA) --runs-dir $(OUT)/testing_runs --output $(OUT)/crowd_shape.csv
 
 # The paper shows seed 101 as the representative single-seed figure.
 seed-figures: | $(FIG)

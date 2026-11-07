@@ -64,7 +64,7 @@
         "normal_time_gap": 1.0,
         "width": 10.0,
         "height": 1.0,
-        "seed": 12.0,
+        "seed": 104.0,
         "agent_buffer": 0,
         "do_adjust_buffer": true,
         "payoff": {
