@@ -67,7 +67,13 @@ def crossing_frames(data: pd.DataFrame) -> pd.Series:
 
 def analyse_run(h5_file: Path, meta: dict, cutoff: float) -> tuple[dict, pd.DataFrame]:
     traj = pedpy.load_trajectory_from_ped_data_archive_hdf5(h5_file)
-    area = clipped_walkable_area(h5_file, meta["width"])
+    return rank_area(traj, clipped_walkable_area(h5_file, meta["width"]), meta, cutoff)
+
+
+def rank_area(
+    traj: pedpy.TrajectoryData, area: shapely.Polygon, meta: dict, cutoff: float
+) -> tuple[dict, pd.DataFrame]:
+    """Rank-area measures of one run; used for experiment and simulation."""
     data = traj.data
     keep = inside(data, area)
     data = data[keep]
