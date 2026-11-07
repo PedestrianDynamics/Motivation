@@ -7,7 +7,11 @@ when boundary effects are removed? Per agent we compute
                   vertex of the crowd's convex hull,
   * nn_dist       mean nearest-neighbour distance (no cells involved),
 each over the full run and over the last ``--window`` seconds.
-The Spearman correlation with final rank is reported per seed and model.
+The Spearman correlation with final rank is reported per seed and model,
+with an effect size: the ratio of the measure's mean in the back
+quartile of final ranks to its mean in the front quartile. The ratio is
+needed because rho is scale-free: near-constant values (e.g. a jammed
+crowd at contact distance) can still give a large rho.
 
 Check 2 (circularity): does the static value V predict final rank once
 initial rank is controlled for? We report the partial Spearman
@@ -152,7 +156,8 @@ def analyse_run(model: str, seed: int, sqlite_path: Path, args: argparse.Namespa
         for measure in ("area_all", "area_interior", "nn_dist", "hull_fraction"):
             valid = agents[[measure, "final_rank"]].dropna()
             rho = spearmanr(valid["final_rank"], valid[measure]).statistic
-            rows.append(row(model, seed, "rank_vs_" + measure, window, rho, len(valid)))
+            ratio = back_front_ratio(valid["final_rank"], valid[measure])
+            rows.append(row(model, seed, "rank_vs_" + measure, window, rho, len(valid), ratio))
 
     values = static_values(sqlite_path).reindex(ranks.index)
     rho_v = partial_spearman(values, ranks["final_rank"], ranks["initial_rank"])
@@ -162,15 +167,35 @@ def analyse_run(model: str, seed: int, sqlite_path: Path, args: argparse.Namespa
     return rows
 
 
-def row(model: str, seed: int, metric: str, window: str, rho: float, n: int) -> dict:
-    return {"model": model, "seed": seed, "metric": metric, "window": window, "rho": rho, "n": n}
+def back_front_ratio(ranks: pd.Series, values: pd.Series) -> float:
+    """Mean of values in the back quartile of ranks over the front quartile."""
+    low, high = ranks.quantile(0.25), ranks.quantile(0.75)
+    front = values[ranks <= low].mean()
+    if front == 0:
+        return float("nan")
+    return float(values[ranks > high].mean() / front)
+
+
+def row(
+    model: str, seed: int, metric: str, window: str, rho: float, n: int, ratio: float = float("nan")
+) -> dict:
+    return {
+        "model": model, "seed": seed, "metric": metric, "window": window,
+        "rho": rho, "back_front_ratio": ratio, "n": n,
+    }
 
 
 def summarise(rows: list[dict]) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     return (
-        df.groupby(["metric", "window", "model"])["rho"]
-        .agg(median="median", q25=lambda s: s.quantile(0.25), q75=lambda s: s.quantile(0.75), seeds="count")
+        df.groupby(["metric", "window", "model"])
+        .agg(
+            median=("rho", "median"),
+            q25=("rho", lambda s: s.quantile(0.25)),
+            q75=("rho", lambda s: s.quantile(0.75)),
+            ratio_median=("back_front_ratio", "median"),
+            seeds=("rho", "count"),
+        )
         .reset_index()
     )
 
