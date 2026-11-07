@@ -6,8 +6,8 @@ import argparse
 import csv
 import json
 import sys
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -63,8 +63,8 @@ def normalize_model_name(name: str) -> str:
     return MODEL_ALIASES.get(name.strip().upper(), name.strip().upper())
 
 
-def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
-    overrides: Dict[str, Path] = {}
+def parse_input_overrides(items: Sequence[str]) -> dict[str, Path]:
+    overrides: dict[str, Path] = {}
     for item in items:
         if "=" not in item:
             raise ValueError(f"Invalid --input value '{item}'. Expected MODEL=SQLITE.")
@@ -73,9 +73,9 @@ def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
     return overrides
 
 
-def discover_latest_sqlite(model: str, search_dirs: Sequence[str]) -> Optional[Path]:
+def discover_latest_sqlite(model: str, search_dirs: Sequence[str]) -> Path | None:
     pattern = f"base_{model}_*.sqlite"
-    candidates: List[Path] = []
+    candidates: list[Path] = []
     for directory in search_dirs:
         base_dir = Path(directory)
         if not base_dir.exists():
@@ -93,7 +93,7 @@ def find_matching_config(sqlite_path: Path) -> Path:
     return json_path
 
 
-def load_door_center(config_path: Path) -> Tuple[float, float]:
+def load_door_center(config_path: Path) -> tuple[float, float]:
     with config_path.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     door_vertices = data["motivation_parameters"]["motivation_doors"][0]["vertices"]
@@ -103,7 +103,7 @@ def load_door_center(config_path: Path) -> Tuple[float, float]:
 
 
 def write_csv(
-    path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequence[str]
+    path: Path, rows: Iterable[dict[str, object]], fieldnames: Sequence[str]
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -123,8 +123,8 @@ def main() -> None:
     requested_models = [normalize_model_name(model) for model in args.models]
     output_dir = Path(args.output_dir)
 
-    detail_rows: List[Dict[str, object]] = []
-    missing_models: List[str] = []
+    detail_rows: list[dict[str, object]] = []
+    missing_models: list[str] = []
 
     for model in requested_models:
         sqlite_path = overrides.get(model) or discover_latest_sqlite(model, args.search_dir)

@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -21,7 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # (label, motivation_group)
-SCENARIOS: List[Tuple[str, str]] = [
+SCENARIOS: list[tuple[str, str]] = [
     ("1C060", "nM"),
     ("2C020", "nM"),
     ("2C070", "hM"),

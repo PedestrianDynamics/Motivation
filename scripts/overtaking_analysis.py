@@ -6,8 +6,8 @@ import argparse
 import csv
 import json
 import sys
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -112,8 +112,8 @@ def normalize_model_name(name: str) -> str:
     return MODEL_ALIASES.get(name.strip().upper(), name.strip().upper())
 
 
-def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
-    overrides: Dict[str, Path] = {}
+def parse_input_overrides(items: Sequence[str]) -> dict[str, Path]:
+    overrides: dict[str, Path] = {}
     for item in items:
         if "=" not in item:
             raise ValueError(f"Invalid --input value '{item}'. Expected MODEL=SQLITE.")
@@ -122,9 +122,9 @@ def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
     return overrides
 
 
-def discover_latest_sqlite(model: str, search_dirs: Sequence[str]) -> Optional[Path]:
+def discover_latest_sqlite(model: str, search_dirs: Sequence[str]) -> Path | None:
     pattern = f"base_{model}_*.sqlite"
-    candidates: List[Path] = []
+    candidates: list[Path] = []
     for directory in search_dirs:
         base_dir = Path(directory)
         if not base_dir.exists():
@@ -173,7 +173,7 @@ def compute_speed_mps(
     return distance / dt_seconds
 
 
-def build_distance_lookup(time_distance_df) -> Dict[Tuple[int, int], float]:
+def build_distance_lookup(time_distance_df) -> dict[tuple[int, int], float]:
     return {
         (int(row["id"]), int(row["frame"])): float(row["distance"])
         for _, row in time_distance_df.iterrows()
@@ -181,7 +181,7 @@ def build_distance_lookup(time_distance_df) -> Dict[Tuple[int, int], float]:
 
 
 def check_overtake_stability(
-    distance_lookup: Dict[Tuple[int, int], float],
+    distance_lookup: dict[tuple[int, int], float],
     id_a: int,
     id_b: int,
     start_frame: int,
@@ -230,7 +230,7 @@ def compute_overtakes_using_time_distance(
         how="inner",
     )
 
-    overtake_events: List[Dict[str, float]] = []
+    overtake_events: list[dict[str, float]] = []
     for frame, group in df_merged.groupby("frame"):
         agents = group.sort_values("rank_t", ascending=True).to_dict("records")
         for index, agent_a in enumerate(agents):
@@ -304,7 +304,7 @@ def filter_candidate_overtakes(
     rel_speed_threshold: float,
 ):
     distance_lookup = build_distance_lookup(time_distance_df)
-    confirmed_events: List[Dict[str, float]] = []
+    confirmed_events: list[dict[str, float]] = []
     for _, row in candidate_events.iterrows():
         frame = int(row["frame"])
         id_a = int(row["idA"])
@@ -403,7 +403,7 @@ def compute_model_rows(
         for _, row in pair_counts.iterrows()
     }
 
-    rows: List[Dict[str, float]] = []
+    rows: list[dict[str, float]] = []
     for _, row in stable_events.iterrows():
         rows.append(
             {
@@ -427,7 +427,7 @@ def compute_model_rows(
     return rows, walkable_area.polygon
 
 
-def write_csv(path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequence[str]) -> None:
+def write_csv(path: Path, rows: Iterable[dict[str, object]], fieldnames: Sequence[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -440,12 +440,12 @@ def tagged_filename(stem: str, suffix: str, tag: str) -> str:
     return f"{stem}_{tag}{suffix}" if tag else f"{stem}{suffix}"
 
 
-def build_summary_rows(detail_rows: Sequence[Dict[str, float]]) -> List[Dict[str, float]]:
-    rows_by_model: Dict[str, List[Dict[str, float]]] = {}
+def build_summary_rows(detail_rows: Sequence[dict[str, float]]) -> list[dict[str, float]]:
+    rows_by_model: dict[str, list[dict[str, float]]] = {}
     for row in detail_rows:
         rows_by_model.setdefault(str(row["model"]), []).append(row)
 
-    summary_rows: List[Dict[str, float]] = []
+    summary_rows: list[dict[str, float]] = []
     for model, rows in sorted(rows_by_model.items()):
         pair_count = len({(int(row["idA"]), int(row["idB"])) for row in rows})
         summary_rows.append(
@@ -468,13 +468,13 @@ def build_summary_rows(detail_rows: Sequence[Dict[str, float]]) -> List[Dict[str
     return summary_rows
 
 
-def build_time_summary(detail_rows: Sequence[Dict[str, float]]) -> List[Dict[str, float]]:
-    buckets: Dict[Tuple[str, float], int] = {}
+def build_time_summary(detail_rows: Sequence[dict[str, float]]) -> list[dict[str, float]]:
+    buckets: dict[tuple[str, float], int] = {}
     for row in detail_rows:
         key = (str(row["model"]), float(row["time"]))
         buckets[key] = buckets.get(key, 0) + 1
 
-    summary_rows: List[Dict[str, float]] = []
+    summary_rows: list[dict[str, float]] = []
     for (model, time_value), count in sorted(buckets.items()):
         summary_rows.append(
             {
@@ -487,11 +487,11 @@ def build_time_summary(detail_rows: Sequence[Dict[str, float]]) -> List[Dict[str
 
 
 def plot_heatmaps(
-    rows_by_model: Dict[str, List[Dict[str, float]]],
-    geometries: Dict[str, object],
+    rows_by_model: dict[str, list[dict[str, float]]],
+    geometries: dict[str, object],
     output_dir: Path,
     bins: int,
-    vmax: Optional[float],
+    vmax: float | None,
     tag: str,
 ) -> bool:
     try:
@@ -518,7 +518,7 @@ def plot_heatmaps(
 
     computed_vmax = vmax
     if computed_vmax is None:
-        maxima: List[float] = []
+        maxima: list[float] = []
         for model, rows in rows_by_model.items():
             geometry = geometries[model]
             minx, miny, maxx, maxy = geometry.bounds
@@ -639,7 +639,7 @@ def plot_heatmaps(
 
 
 def plot_model_comparison(
-    summary_rows: Sequence[Dict[str, float]], output_dir: Path, tag: str
+    summary_rows: Sequence[dict[str, float]], output_dir: Path, tag: str
 ) -> bool:
     try:
         import matplotlib
@@ -684,7 +684,7 @@ def plot_model_comparison(
 
 
 def plot_time_comparison(
-    time_summary_rows: Sequence[Dict[str, float]], output_dir: Path, tag: str
+    time_summary_rows: Sequence[dict[str, float]], output_dir: Path, tag: str
 ) -> bool:
     try:
         import matplotlib
@@ -697,7 +697,7 @@ def plot_time_comparison(
     if not time_summary_rows:
         return False
 
-    models: List[str] = []
+    models: list[str] = []
     for row in time_summary_rows:
         model = str(row["model"])
         if model not in models:
@@ -730,9 +730,9 @@ def main() -> None:
     overrides = parse_input_overrides(args.input)
     requested_models = [normalize_model_name(model) for model in args.models]
 
-    detail_rows_by_model: Dict[str, List[Dict[str, float]]] = {}
-    geometries: Dict[str, object] = {}
-    missing_models: List[str] = []
+    detail_rows_by_model: dict[str, list[dict[str, float]]] = {}
+    geometries: dict[str, object] = {}
+    missing_models: list[str] = []
 
     for model in requested_models:
         sqlite_path = overrides.get(model) or discover_latest_sqlite(model, args.search_dir)

@@ -1,5 +1,4 @@
 import json
-from typing import Dict, List, Tuple
 
 import pandas as pd
 import pedpy
@@ -65,7 +64,7 @@ def plotly_nt_series(df_data: pd.DataFrame) -> None:
     st.plotly_chart(fig_nt)
 
 
-def set_color_and_size(data_df: pd.DataFrame) -> Tuple[str, List[float]]:
+def set_color_and_size(data_df: pd.DataFrame) -> tuple[str, list[float]]:
     """Set color and size with help of trajectory data.
 
     Args:
@@ -109,7 +108,7 @@ def update_fig_layout(
     fig.update_yaxes(range=[geo_min_y, geo_max_y])
 
 
-def add_polygons_to_fig(fig: Figure, polygons: Dict[int, List[List[float]]]) -> None:
+def add_polygons_to_fig(fig: Figure, polygons: dict[int, list[list[float]]]) -> None:
     """Add polygons to figure.
 
     Args:

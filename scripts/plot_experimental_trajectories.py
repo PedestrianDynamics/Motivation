@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,7 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 DEFAULT_TRAJ_DIR = PROJECT_ROOT.parent / "trajectories_croma"
 
 # (label, filename_stem, motivation_group)
-SCENARIOS: List[Tuple[str, str, str]] = [
+SCENARIOS: list[tuple[str, str, str]] = [
     ("1C060", "1C060_cam6_cam5_frameshift0_Combined", "nM"),
     ("2C020", "2C020_cam6_cam5_frameshift0_Combined", "nM"),
     ("2C070", "2C070_cam6_cam5_frameshift0_Combined", "hM"),

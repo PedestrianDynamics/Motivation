@@ -7,7 +7,7 @@ import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, TypeAlias
+from typing import Any, ClassVar, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +16,7 @@ from matplotlib.figure import Figure
 from .logger_config import log_debug
 from .motivation_mapping import MotivationParameterMapper
 
-Point: TypeAlias = Tuple[float, float]
+Point: TypeAlias = tuple[float, float]
 
 
 def clamp(value: float, min_val: float, max_val: float) -> float:
@@ -36,7 +36,7 @@ class SeedManager:
     """Manages seeds for reproducible randomization across different operations."""
 
     base_seed: int
-    _operation_seeds: Dict[SeedOperation, int] = field(default_factory=dict)
+    _operation_seeds: dict[SeedOperation, int] = field(default_factory=dict)
 
     def __post_init__(self):
         """Initialize operation-specific seeds based on the base seed."""
@@ -48,7 +48,7 @@ class SeedManager:
             self._operation_seeds[operation] = int(hash_value[:8], 16)
 
     def get_operation_seed(
-        self, operation: SeedOperation, sub_id: Optional[int] = None
+        self, operation: SeedOperation, sub_id: int | None = None
     ) -> int:
         """Get a deterministic seed for a specific operation and optional sub-operation."""
         operation_base = self._operation_seeds[operation]
@@ -58,7 +58,7 @@ class SeedManager:
         return operation_base
 
     def set_seed_for_operation(
-        self, operation: SeedOperation, sub_id: Optional[int] = None
+        self, operation: SeedOperation, sub_id: int | None = None
     ) -> None:
         """Set the random seed for a specific operation."""
         random.seed(self.get_operation_seed(operation, sub_id))
@@ -70,17 +70,14 @@ class MotivationStrategy(ABC):
     @abstractmethod
     def motivation(self, params: dict[str, Any]) -> float:
         """Return the motivation value."""
-        pass
 
     @abstractmethod
-    def plot(self) -> List[Figure]:
+    def plot(self) -> list[Figure]:
         """Plot internal functions for debugging purpose."""
-        pass
 
     @abstractmethod
     def name(self) -> str:
         """Return name of the model."""
-        pass
 
     @abstractmethod
     def get_value(self, **kwargs: Any) -> float:
@@ -117,7 +114,7 @@ class DefaultMotivationStrategy(MotivationStrategy):
 
         return float(np.exp(expr) * np.e * self.height)
 
-    def plot(self) -> List[Figure]:
+    def plot(self) -> list[Figure]:
         """Plot functions of the strategy model."""
         fig = plt.figure()
         distances = np.linspace(0, 10, 100)
@@ -142,9 +139,9 @@ class EVPStrategy(MotivationStrategy):
     VALUE_SCALE_ALPHA: ClassVar[float] = 14.0 / 3.0
 
     motivation_door_center: Point
-    agent_ids: List[int] = field(default_factory=list)
-    agent_positions: List[Point] = field(default_factory=list)
-    pedestrian_value: Dict[int, float] = field(default_factory=dict)
+    agent_ids: list[int] = field(default_factory=list)
+    agent_positions: list[Point] = field(default_factory=list)
+    pedestrian_value: dict[int, float] = field(default_factory=dict)
     width: float = 1.0
     height: float = 1.0
     max_reward: int = 0
@@ -159,7 +156,7 @@ class EVPStrategy(MotivationStrategy):
     normal_v_0: float = 1.2
     normal_time_gap: float = 1.0
     motivation_change = 1.0  # to strengthen the change of the state. Not yet used!
-    seed_manager: Optional[SeedManager] = None
+    seed_manager: SeedManager | None = None
     motivation_min: float = 0.1
     motivation_mode: str = "PVE"
     payoff_k: float = 8.0
@@ -167,9 +164,9 @@ class EVPStrategy(MotivationStrategy):
     rank_tie_tolerance_m: float = 1e-3
     payoff_update_interval_s: float = 1.0
     payoff_update_interval_steps: int = 1
-    payoff_cache: Dict[int, float] = field(default_factory=dict)
-    rank_abs_cache: Dict[int, int] = field(default_factory=dict)
-    rank_q_cache: Dict[int, float] = field(default_factory=dict)
+    payoff_cache: dict[int, float] = field(default_factory=dict)
+    rank_abs_cache: dict[int, int] = field(default_factory=dict)
+    rank_q_cache: dict[int, float] = field(default_factory=dict)
     _last_rank_update_iteration: int = -1
 
     def calculate_exit_distance(self, pos: Point) -> float:
@@ -236,7 +233,7 @@ class EVPStrategy(MotivationStrategy):
             1, int(round(self.payoff_update_interval_s / time_step))
         )
 
-    def _rank_tolerance_squared(self, distances_sq: List[float]) -> float:
+    def _rank_tolerance_squared(self, distances_sq: list[float]) -> float:
         """Convert linear tie tolerance (m) to squared-distance tolerance."""
         if not distances_sq:
             return self.rank_tie_tolerance_m * self.rank_tie_tolerance_m
@@ -245,7 +242,7 @@ class EVPStrategy(MotivationStrategy):
         return 2.0 * mean_d * eps + eps * eps
 
     def _compute_rank_and_payoff(
-        self, agent_positions: Dict[int, Point], number_agents_in_simulation: int
+        self, agent_positions: dict[int, Point], number_agents_in_simulation: int
     ) -> None:
         """Compute rank and payoff for active agents."""
         if number_agents_in_simulation <= 0:
@@ -263,9 +260,9 @@ class EVPStrategy(MotivationStrategy):
         eps_sq = self._rank_tolerance_squared(distances_sq)
 
         n_left = max(0, self.max_reward - number_agents_in_simulation)
-        new_rank_abs: Dict[int, int] = {}
-        new_rank_q: Dict[int, float] = {}
-        new_payoff: Dict[int, float] = {}
+        new_rank_abs: dict[int, int] = {}
+        new_rank_q: dict[int, float] = {}
+        new_payoff: dict[int, float] = {}
 
         if not items:
             self.payoff_cache = new_payoff
@@ -296,7 +293,7 @@ class EVPStrategy(MotivationStrategy):
     def update_payoff_cache(
         self,
         iteration_count: int,
-        agent_positions: Dict[int, Point],
+        agent_positions: dict[int, Point],
         number_agents_in_simulation: int,
     ) -> bool:
         """Update rank/payoff cache on configured schedule."""
@@ -306,7 +303,7 @@ class EVPStrategy(MotivationStrategy):
         self._last_rank_update_iteration = iteration_count
         return True
 
-    def get_rank_payoff(self, agent_id: int) -> Tuple[int, float, float]:
+    def get_rank_payoff(self, agent_id: int) -> tuple[int, float, float]:
         """Return cached rank_abs, rank_q, payoff for an agent."""
         rank_abs = int(self.rank_abs_cache.get(agent_id, self.max_reward))
         rank_q = float(self.rank_q_cache.get(agent_id, 1.0))
@@ -372,7 +369,7 @@ class EVPStrategy(MotivationStrategy):
             return 0.0
 
     @staticmethod
-    def value(min_v: float, max_v: float, seed: Optional[float] = None) -> float:
+    def value(min_v: float, max_v: float, seed: float | None = None) -> float:
         """Random value in interval. seed is optional."""
         if seed is not None:
             random.seed(seed)
@@ -409,7 +406,7 @@ class EVPStrategy(MotivationStrategy):
 
         return clamp(M, self.motivation_min, 3.0)
 
-    def plot(self) -> List[Figure]:
+    def plot(self) -> list[Figure]:
         """Plot functions for inspection."""
         fig0, ax0 = plt.subplots(ncols=1, nrows=1)
         fig1, ax1 = plt.subplots(ncols=1, nrows=1)
@@ -534,7 +531,6 @@ class EVPStrategy(MotivationStrategy):
         ax3.set_xlabel(r"$d$ / m", size=14)
         ax3.set_ylabel("$M$", size=14)
         fig3.savefig("motivation.pdf")
-        #
         rank_m = []
         for idx, agent_id in enumerate(self.agent_ids):
             if idx < len(self.agent_positions):
@@ -578,7 +574,7 @@ class MotivationModel:
     normal_v_0: float = 1.2
     normal_time_gap: float = 1.0
     motivation_strategy: Any = None
-    parameter_mapper: Optional[MotivationParameterMapper] = None
+    parameter_mapper: MotivationParameterMapper | None = None
 
     def print_details(self) -> None:
         """Print member variables for debugging."""
@@ -598,7 +594,7 @@ class MotivationModel:
 
     def calculate_motivation_state(
         self, motivation_i: float, agent_id: int
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Return v0, T tuples depending on Motivation. (v0,T)=(1.2,1)."""
 
         if self.parameter_mapper is not None:
@@ -613,7 +609,7 @@ class MotivationModel:
         time_gap_new = self.normal_time_gap / motivation_i
         return v_0_new, time_gap_new
 
-    def plot(self) -> Tuple[Figure, Figure]:
+    def plot(self) -> tuple[Figure, Figure]:
         """Plot model."""
         fig, ax = plt.subplots(ncols=1, nrows=1)
         fig1, ax1 = plt.subplots(ncols=1, nrows=1)

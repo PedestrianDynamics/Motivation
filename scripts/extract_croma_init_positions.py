@@ -11,7 +11,6 @@ import argparse
 import csv
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TRAJ_DIR = PROJECT_ROOT.parent / "trajectories_croma"
@@ -25,8 +24,8 @@ def find_traj_file(run: str) -> Path:
     return candidates[0]
 
 
-def parse_rows(path: Path) -> List[Tuple[int, int, float, float]]:
-    rows: List[Tuple[int, int, float, float]] = []
+def parse_rows(path: Path) -> list[tuple[int, int, float, float]]:
+    rows: list[tuple[int, int, float, float]] = []
     with path.open("r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -47,17 +46,17 @@ def parse_rows(path: Path) -> List[Tuple[int, int, float, float]]:
 
 
 def first_appearance_positions(
-    rows: List[Tuple[int, int, float, float]],
+    rows: list[tuple[int, int, float, float]],
     y_max: float = 18.85,
     min_dist: float = 0.4,
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """Return each agent at the earliest frame they appear with y < y_max.
 
     Agents whose first-appearance position lies within ``min_dist`` of an
     already-accepted position are dropped, so JuPedSim's spacing
     constraint (~0.4m centre-to-centre) is satisfied at t=0.
     """
-    earliest: Dict[int, Tuple[int, float, float]] = {}
+    earliest: dict[int, tuple[int, float, float]] = {}
     for pid, frame, x, y in rows:
         if y >= y_max:
             continue
@@ -65,7 +64,7 @@ def first_appearance_positions(
         if prev is None or frame < prev[0]:
             earliest[pid] = (frame, x, y)
 
-    accepted: List[Tuple[float, float]] = []
+    accepted: list[tuple[float, float]] = []
     md2 = min_dist * min_dist
     for _, x, y in sorted(earliest.values()):
         if all((x - ax) ** 2 + (y - ay) ** 2 >= md2 for ax, ay in accepted):
@@ -73,7 +72,7 @@ def first_appearance_positions(
     return accepted
 
 
-def write_csv(path: Path, positions: List[Tuple[float, float]]) -> None:
+def write_csv(path: Path, positions: list[tuple[float, float]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)

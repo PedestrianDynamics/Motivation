@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -23,8 +23,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-MODELS: List[str] = ["SE", "V", "P", "PVE", "BASE_MODEL"]
-MODEL_TITLES: Dict[str, str] = {
+MODELS: list[str] = ["SE", "V", "P", "PVE", "BASE_MODEL"]
+MODEL_TITLES: dict[str, str] = {
     "SE": r"$SE$",
     "V": r"$V$",
     "P": r"$P$",
@@ -164,10 +164,10 @@ def plot_motivation_panel(
 
 
 def compute_global_motivation_range(
-    frames_by_model: Dict[str, pd.DataFrame],
-) -> Tuple[float, float]:
-    mins: List[float] = []
-    maxs: List[float] = []
+    frames_by_model: dict[str, pd.DataFrame],
+) -> tuple[float, float]:
+    mins: list[float] = []
+    maxs: list[float] = []
     for df in frames_by_model.values():
         means = df.groupby("id")["motivation"].mean()
         if len(means):
@@ -179,11 +179,11 @@ def compute_global_motivation_range(
 
 
 def make_panels_figure(
-    frames_by_model: Dict[str, pd.DataFrame],
-    models: List[str],
+    frames_by_model: dict[str, pd.DataFrame],
+    models: list[str],
     panel_plotter: Callable[..., None],
-    suptitle: Optional[str] = None,
-    cbar_norm: Optional[Normalize] = None,
+    suptitle: str | None = None,
+    cbar_norm: Normalize | None = None,
 ) -> Figure:
     n = len(models)
     fig, axes = plt.subplots(1, n, figsize=(3.2 * n, 7), constrained_layout=True)
@@ -220,7 +220,7 @@ def main() -> None:
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    frames_by_model: Dict[str, pd.DataFrame] = {}
+    frames_by_model: dict[str, pd.DataFrame] = {}
     for model in MODELS:
         csv_path = find_motivation_csv(args.base_runs_dir, model, args.seed)
         frames_by_model[model] = load_motivation_csv(csv_path)

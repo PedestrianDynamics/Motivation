@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from math import hypot
-from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
 import numpy as np
 
-Point = Tuple[float, float]
-Edge = Tuple[int, int]
-AgentPositions = Dict[int, Point]
+Point = tuple[float, float]
+Edge = tuple[int, int]
+AgentPositions = dict[int, Point]
 
 
 @dataclass(frozen=True)
@@ -22,7 +22,7 @@ class Triangle:
     b: int
     c: int
 
-    def edges(self) -> Tuple[Edge, Edge, Edge]:
+    def edges(self) -> tuple[Edge, Edge, Edge]:
         """Return sorted triangle edges."""
         return (
             _sorted_edge(self.a, self.b),
@@ -43,7 +43,7 @@ def _is_collinear(points: Sequence[Point]) -> bool:
     return np.linalg.matrix_rank(centered) < 2
 
 
-def _fallback_edges(points: Sequence[Point]) -> Set[Edge]:
+def _fallback_edges(points: Sequence[Point]) -> set[Edge]:
     """Connect adjacent points along the dominant axis for degenerate frames."""
     if len(points) < 2:
         return set()
@@ -82,7 +82,7 @@ def _circumcircle_contains(
     return det > eps if orient > 0 else det < -eps
 
 
-def delaunay_edges(points: Sequence[Point]) -> Set[Edge]:
+def delaunay_edges(points: Sequence[Point]) -> set[Edge]:
     """Return Delaunay edges for a set of 2D points."""
     if len(points) < 2:
         return set()
@@ -91,7 +91,7 @@ def delaunay_edges(points: Sequence[Point]) -> Set[Edge]:
     if _is_collinear(points):
         return _fallback_edges(points)
 
-    base_points: List[Point] = [(float(point[0]), float(point[1])) for point in points]
+    base_points: list[Point] = [(float(point[0]), float(point[1])) for point in points]
     xs = [point[0] for point in base_points]
     ys = [point[1] for point in base_points]
     min_x, max_x = min(xs), max(xs)
@@ -110,7 +110,7 @@ def delaunay_edges(points: Sequence[Point]) -> Set[Edge]:
     si_b = len(base_points) + 1
     si_c = len(base_points) + 2
 
-    triangles: List[Triangle] = [Triangle(si_a, si_b, si_c)]
+    triangles: list[Triangle] = [Triangle(si_a, si_b, si_c)]
 
     for point_index in range(len(base_points)):
         bad_triangles = [
@@ -147,12 +147,12 @@ def delaunay_edges(points: Sequence[Point]) -> Set[Edge]:
     return edges or _fallback_edges(points)
 
 
-def coordination_numbers(positions: AgentPositions) -> Dict[int, int]:
+def coordination_numbers(positions: AgentPositions) -> dict[int, int]:
     """Compute the number of Delaunay neighbors for each agent."""
     agent_ids = sorted(positions)
     frame_points = [positions[agent_id] for agent_id in agent_ids]
     edges = delaunay_edges(frame_points)
-    neighbors: Dict[int, Set[int]] = {agent_id: set() for agent_id in agent_ids}
+    neighbors: dict[int, set[int]] = {agent_id: set() for agent_id in agent_ids}
 
     for i, j in edges:
         agent_i = agent_ids[i]

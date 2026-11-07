@@ -6,8 +6,9 @@ import argparse
 import csv
 import json
 import sys
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -73,8 +74,8 @@ def normalize_model_name(name: str) -> str:
     return MODEL_ALIASES.get(name.strip().upper(), name.strip().upper())
 
 
-def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
-    overrides: Dict[str, Path] = {}
+def parse_input_overrides(items: Sequence[str]) -> dict[str, Path]:
+    overrides: dict[str, Path] = {}
     for item in items:
         if "=" not in item:
             raise ValueError(f"Invalid --input value '{item}'. Expected MODEL=SQLITE.")
@@ -83,9 +84,9 @@ def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
     return overrides
 
 
-def discover_latest_sqlite(model: str, search_dirs: Sequence[str]) -> Optional[Path]:
+def discover_latest_sqlite(model: str, search_dirs: Sequence[str]) -> Path | None:
     pattern = f"base_{model}_*.sqlite"
-    candidates: List[Path] = []
+    candidates: list[Path] = []
     for directory in search_dirs:
         base_dir = Path(directory)
         if not base_dir.exists():
@@ -116,7 +117,7 @@ def compute_density_rows(
     sqlite_path: Path,
     t_min: float,
     t_max: float,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     import pedpy
     from pedpy.column_identifier import DENSITY_COL, TIME_COL
 
@@ -139,7 +140,7 @@ def compute_density_rows(
     density_column = DENSITY_COL if DENSITY_COL in columns else "density"
     frame_column = "frame" if "frame" in columns else None
 
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for _, row in density_voronoi.iterrows():
         if time_column is not None:
             time_value = float(row[time_column])
@@ -171,7 +172,7 @@ def compute_density_rows(
     return rows
 
 
-def write_csv(path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequence[str]) -> None:
+def write_csv(path: Path, rows: Iterable[dict[str, object]], fieldnames: Sequence[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -185,7 +186,7 @@ def tagged_filename(stem: str, suffix: str, tag: str) -> str:
 
 
 def plot_density(
-    rows_by_model: Dict[str, List[Dict[str, Any]]], output_dir: Path, tag: str
+    rows_by_model: dict[str, list[dict[str, Any]]], output_dir: Path, tag: str
 ) -> bool:
     try:
         import matplotlib.pyplot as plt
@@ -223,8 +224,8 @@ def main() -> None:
     overrides = parse_input_overrides(args.input)
     requested_models = [normalize_model_name(model) for model in args.models]
 
-    rows_by_model: Dict[str, List[Dict[str, Any]]] = {}
-    missing_models: List[str] = []
+    rows_by_model: dict[str, list[dict[str, Any]]] = {}
+    missing_models: list[str] = []
 
     for model in requested_models:
         sqlite_path = overrides.get(model) or discover_latest_sqlite(model, args.search_dir)

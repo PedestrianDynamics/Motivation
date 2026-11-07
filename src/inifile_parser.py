@@ -6,17 +6,17 @@ Module is also used for testing
 
 import json
 import sys
-from typing import Any, Dict, List, Tuple, TypeAlias
+from typing import Any, TypeAlias
 
 import jsonschema
 import shapely
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
 
-Point: TypeAlias = Tuple[float, float]
+Point: TypeAlias = tuple[float, float]
 
 
-def parse_destinations(json_data: Dict[str, Any]) -> Dict[int, List[List[Point]]]:
+def parse_destinations(json_data: dict[str, Any]) -> dict[int, list[list[Point]]]:
     """
     Parse the 'destinations' object from a JSON string into a Python dictionary.
 
@@ -38,8 +38,8 @@ def parse_destinations(json_data: Dict[str, Any]) -> Dict[int, List[List[Point]]
 
 
 def parse_velocity_init_parameters(
-    json_data: Dict[str, Any],
-) -> Tuple[float, float, float, float]:
+    json_data: dict[str, Any],
+) -> tuple[float, float, float, float]:
     """Parse init parameters for velocity model.
 
     return a_ped, d_ped, a_wall, d_wall
@@ -54,7 +54,7 @@ def parse_velocity_init_parameters(
 
 
 def parse_radius(
-    json_data: Dict[str, Any],
+    json_data: dict[str, Any],
 ) -> float:
     """Parse radius.
 
@@ -67,7 +67,7 @@ def parse_radius(
         return 0.3
 
 
-def parse_theta_max_upper_bound(json_data: Dict[str, Any]) -> float:
+def parse_theta_max_upper_bound(json_data: dict[str, Any]) -> float:
     """Parse theta upper bound for CFSM steering search (radians)."""
     if "velocity_init_parameters" not in json_data:
         raise KeyError("Missing required block: velocity_init_parameters")
@@ -75,8 +75,8 @@ def parse_theta_max_upper_bound(json_data: Dict[str, Any]) -> float:
 
 
 def parse_way_points(
-    json_data: Dict[str, Any],
-) -> List[Tuple[Point, float]]:
+    json_data: dict[str, Any],
+) -> list[tuple[Point, float]]:
     """
     Parse the 'way_points' object from a JSON string into a Python dictionary.
 
@@ -88,7 +88,7 @@ def parse_way_points(
         ID (int) to lists of tuples, where each tuple contains a (x, y) point
         and a floating-point number representing a distance.
     """
-    _way_points: List[Tuple[Point, float]] = []
+    _way_points: list[tuple[Point, float]] = []
     if "way_points" not in json_data:
         return []
     for _, way_point in enumerate(json_data["way_points"]):
@@ -108,8 +108,8 @@ def parse_way_points(
 
 
 def parse_distribution_polygons(
-    json_data: Dict[str, Any],
-) -> Dict[int, shapely.Polygon]:
+    json_data: dict[str, Any],
+) -> dict[int, shapely.Polygon]:
     """
     Parses the 'distribution_polygons' object from a JSON string into a Python dictionary.
 
@@ -120,7 +120,7 @@ def parse_distribution_polygons(
         A dictionary with the parsed 'distribution_polygons' object. The dictionary maps
         ID (int) to lists of polygons, where each polygon is a list of (x, y) tuples.
     """
-    _distribution_polygons: Dict[int, shapely.Polygon] = {}
+    _distribution_polygons: dict[int, shapely.Polygon] = {}
     for id_polygon in json_data["distribution_polygons"]:
         id_str = id_polygon["id"]
         polygon = id_polygon["vertices"]
@@ -129,10 +129,10 @@ def parse_distribution_polygons(
     return _distribution_polygons
 
 
-def parse_measurement_line(json_data: Dict[str, Any]) -> List[Point]:
+def parse_measurement_line(json_data: dict[str, Any]) -> list[Point]:
     """Measurement line has two points."""
 
-    _points: List[Point] = []
+    _points: list[Point] = []
 
     if "measurement_line" in json_data:
         line_dict = json_data["measurement_line"]["vertices"]
@@ -142,7 +142,7 @@ def parse_measurement_line(json_data: Dict[str, Any]) -> List[Point]:
     return _points
 
 
-def parse_motivation_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
+def parse_motivation_doors(json_data: dict[str, Any]) -> dict[int, list[list[float]]]:
     """
     Parses a JSON string containing information about doors, around which people get motivated. Returns a dictionary
     mapping area IDs to a list of coordinates that define the doors.
@@ -151,7 +151,7 @@ def parse_motivation_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[flo
     :return: A dictionary mapping area IDs to a list of coordinates that define the doors.
     """
 
-    _doors: Dict[int, List[List[float]]] = {}
+    _doors: dict[int, list[list[float]]] = {}
 
     if (
         "motivation_parameters" in json_data
@@ -165,7 +165,7 @@ def parse_motivation_doors(json_data: Dict[str, Any]) -> Dict[int, List[List[flo
     return _doors
 
 
-def parse_accessible_areas(json_data: Dict[str, Any]) -> Dict[int, List[List[float]]]:
+def parse_accessible_areas(json_data: dict[str, Any]) -> dict[int, list[list[float]]]:
     """
     Parses a JSON string containing information about accessible areas and returns a dictionary
     mapping area IDs to a list of coordinates that define the area.
@@ -184,13 +184,13 @@ def parse_accessible_areas(json_data: Dict[str, Any]) -> Dict[int, List[List[flo
     return _areas
 
 
-def parse_fps(json_data: Dict[str, Any]) -> int:
+def parse_fps(json_data: dict[str, Any]) -> int:
     """Get fps if found in file, otherwise None"""
     fps = int(json_data["simulation_parameters"]["fps"])
     return fps
 
 
-def parse_grid_min_v0(json_data: Dict[str, Any]) -> float:
+def parse_grid_min_v0(json_data: dict[str, Any]) -> float:
     """Get min v0 for grid"""
 
     if "grid_parameters" in json_data and "min_v_0" in json_data["grid_parameters"]:
@@ -199,7 +199,7 @@ def parse_grid_min_v0(json_data: Dict[str, Any]) -> float:
     return 1
 
 
-def parse_grid_max_v0(json_data: Dict[str, Any]) -> float:
+def parse_grid_max_v0(json_data: dict[str, Any]) -> float:
     """Get max v0 for grid"""
 
     if "grid_parameters" in json_data and "max_v_0" in json_data["grid_parameters"]:
@@ -208,7 +208,7 @@ def parse_grid_max_v0(json_data: Dict[str, Any]) -> float:
     return 2
 
 
-def parse_grid_step_v0(json_data: Dict[str, Any]) -> float:
+def parse_grid_step_v0(json_data: dict[str, Any]) -> float:
     """Get step for v0  grid"""
 
     if "grid_parameters" in json_data and "v_0_step" in json_data["grid_parameters"]:
@@ -217,7 +217,7 @@ def parse_grid_step_v0(json_data: Dict[str, Any]) -> float:
     return 2
 
 
-def parse_grid_min_time_gap(json_data: Dict[str, Any]) -> float:
+def parse_grid_min_time_gap(json_data: dict[str, Any]) -> float:
     """Get min time_gap for grid"""
 
     if (
@@ -229,7 +229,7 @@ def parse_grid_min_time_gap(json_data: Dict[str, Any]) -> float:
     return 1
 
 
-def parse_grid_max_time_gap(json_data: Dict[str, Any]) -> float:
+def parse_grid_max_time_gap(json_data: dict[str, Any]) -> float:
     """Get max time_gap for grid"""
 
     if (
@@ -241,7 +241,7 @@ def parse_grid_max_time_gap(json_data: Dict[str, Any]) -> float:
     return 2
 
 
-def parse_grid_time_gap_step(json_data: Dict[str, Any]) -> float:
+def parse_grid_time_gap_step(json_data: dict[str, Any]) -> float:
     """Get step for time_gap  grid"""
 
     if (
@@ -253,7 +253,7 @@ def parse_grid_time_gap_step(json_data: Dict[str, Any]) -> float:
     return 0.1
 
 
-def parse_number_agents(json_data: Dict[str, Any]) -> int:
+def parse_number_agents(json_data: dict[str, Any]) -> int:
     """Get number_agents if found in file, otherwise 0."""
 
     if (
@@ -265,7 +265,7 @@ def parse_number_agents(json_data: Dict[str, Any]) -> int:
     return 0
 
 
-def parse_time_step(json_data: Dict[str, Any]) -> float:
+def parse_time_step(json_data: dict[str, Any]) -> float:
     """Get time_step if found, otherwise 0.001."""
 
     if (
@@ -277,7 +277,7 @@ def parse_time_step(json_data: Dict[str, Any]) -> float:
     return 0.001
 
 
-def parse_simulation_time(json_data: Dict[str, Any]) -> float:
+def parse_simulation_time(json_data: dict[str, Any]) -> float:
     """Get simulation if found, otherwise None."""
 
     if (
@@ -289,7 +289,7 @@ def parse_simulation_time(json_data: Dict[str, Any]) -> float:
     return 100.0
 
 
-def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
+def parse_motivation_strategy(json_data: dict[str, Any]) -> str:
     """Get motivation mode (SE, V, P, PVE, BASE_MODEL)."""
     if "motivation_parameters" not in json_data:
         raise ValueError("Missing motivation_parameters in config.")
@@ -307,7 +307,7 @@ def parse_motivation_strategy(json_data: Dict[str, Any]) -> str:
     return mode
 
 
-def parse_payoff_update_interval(json_data: Dict[str, Any]) -> float:
+def parse_payoff_update_interval(json_data: dict[str, Any]) -> float:
     """Get payoff rank update interval in seconds."""
     try:
         interval = float(json_data["motivation_parameters"]["payoff"]["update_interval_s"])
@@ -322,7 +322,7 @@ def parse_payoff_update_interval(json_data: Dict[str, Any]) -> float:
     return interval
 
 
-def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> int:
+def parse_motivation_parameter(json_data: dict[str, Any], parameter: str) -> int:
     """Get motivation parameter."""
 
     if (
@@ -334,7 +334,7 @@ def parse_motivation_parameter(json_data: Dict[str, Any], parameter: str) -> int
     return 1
 
 
-def is_motivation_active(json_data: Dict[str, Any]) -> int:
+def is_motivation_active(json_data: dict[str, Any]) -> int:
     """Get status of motivation if activated"""
     if (
         "motivation_parameters" in json_data
@@ -345,7 +345,7 @@ def is_motivation_active(json_data: Dict[str, Any]) -> int:
     return 0
 
 
-def parse_normal_v_0(json_data: Dict[str, Any]) -> float:
+def parse_normal_v_0(json_data: dict[str, Any]) -> float:
     """Get normal v0 value for walking without motivation"""
 
     if (
@@ -357,7 +357,7 @@ def parse_normal_v_0(json_data: Dict[str, Any]) -> float:
     return 1.2
 
 
-def parse_normal_time_gap(json_data: Dict[str, Any]) -> float:
+def parse_normal_time_gap(json_data: dict[str, Any]) -> float:
     """Get normal time_gap value for walking without motivation"""
 
     if (
@@ -369,7 +369,7 @@ def parse_normal_time_gap(json_data: Dict[str, Any]) -> float:
     return 1.0
 
 
-def print_obj(obj: Dict[int, Any], name: str) -> None:
+def print_obj(obj: dict[int, Any], name: str) -> None:
     """Debug plots"""
 
     print(f"{name}: ")
@@ -418,7 +418,6 @@ if __name__ == "__main__":
             normal_v_0 = parse_normal_v_0(data)
             normal_time_gap = parse_normal_time_gap(data)
             motivation_doors = parse_motivation_doors(data)
-            #
             grid_v0_min = parse_grid_min_v0(data)
             grid_v0_max = parse_grid_max_v0(data)
             grid_v0_step = parse_grid_step_v0(data)
@@ -455,7 +454,7 @@ if __name__ == "__main__":
             print("Invalid JSON:", e)
 
 
-def parse_geometry(config_file: str) -> Dict[int, List[List[float]]]:
+def parse_geometry(config_file: str) -> dict[int, list[list[float]]]:
     """
     Parse accessible areas from a JSON configuration file.
 

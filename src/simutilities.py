@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import streamlit as st
 
@@ -20,10 +20,10 @@ from src.inifile_parser import (
     parse_velocity_init_parameters,
 )
 
-Point = Tuple[float, float]
+Point = tuple[float, float]
 
 
-def _preview_agent_positions(data: Dict[str, Any]) -> Tuple[List[Point], int]:
+def _preview_agent_positions(data: dict[str, Any]) -> tuple[list[Point], int]:
     """Load deterministic preview positions for app plots without simulation runtime."""
     n_agents = parse_number_agents(data)
     init_file = data.get("init_trajectories_file")
@@ -35,7 +35,7 @@ def _preview_agent_positions(data: Dict[str, Any]) -> Tuple[List[Point], int]:
         path = next((p for p in candidate_paths if p.exists()), None)
         if path is not None:
             with path.open("r", encoding="utf8") as f:
-                rows: List[Tuple[int, int, float, float]] = []
+                rows: list[tuple[int, int, float, float]] = []
                 for line in f:
                     line = line.strip()
                     if not line or line.startswith("#"):
@@ -54,7 +54,7 @@ def _preview_agent_positions(data: Dict[str, Any]) -> Tuple[List[Point], int]:
             if rows:
                 first_frame = min(r[1] for r in rows)
                 seen: set[int] = set()
-                positions: List[Point] = []
+                positions: list[Point] = []
                 for pid, frame, x, y in sorted(rows, key=lambda r: (r[1], r[0])):
                     if frame != first_frame or pid in seen:
                         continue
@@ -77,7 +77,7 @@ def _preview_agent_positions(data: Dict[str, Any]) -> Tuple[List[Point], int]:
     return positions, n_agents
 
 
-def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
+def extract_motivation_parameters(data: dict[str, Any]) -> dict[str, Any]:
     """Extract and convert motivation parameters from the data dictionary.
 
     Args:
@@ -116,7 +116,7 @@ def extract_motivation_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
     return extracted_params
 
 
-def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
+def create_motivation_strategy(params: dict[str, Any]) -> mm.MotivationStrategy:
     """Create and return the appropriate motivation strategy based on the given parameters.
 
     Args:
@@ -174,7 +174,7 @@ def create_motivation_strategy(params: Dict[str, Any]) -> mm.MotivationStrategy:
         raise ValueError(f"Unknown strategy: {strategy}")
 
 
-def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) -> None:
+def call_simulation(config_file: str, output_file: str, data: dict[str, Any]) -> None:
     """Run the simulation based on the provided configuration and data."""
     from simulation import init_and_run_simulation
 
@@ -211,7 +211,7 @@ def call_simulation(config_file: str, output_file: str, data: Dict[str, Any]) ->
     msg.code(f"Finished simulation. Evac time {evac_time:.2f} s")
 
 
-def plot_motivation_model(params: Dict[str, Any]) -> None:
+def plot_motivation_model(params: dict[str, Any]) -> None:
     """Plot the motivation model based on the given parameters.
 
     Args:

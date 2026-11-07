@@ -8,7 +8,7 @@ import random
 from math import sqrt
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, List, Tuple, TypeAlias, Union
+from typing import Any, TypeAlias
 
 import jupedsim as jps
 import matplotlib.pyplot as plt
@@ -20,12 +20,12 @@ from pedpy import Cutoff, compute_individual_voronoi_polygons
 from shapely import GeometryCollection, Polygon
 from shapely.ops import unary_union
 
-Point: TypeAlias = Tuple[float, float]
+Point: TypeAlias = tuple[float, float]
 
 
 def parse(
-    data: Union[List[Any], Dict[str, Any], Any],
-) -> Union[List[Any], SimpleNamespace, Any]:
+    data: list[Any] | dict[str, Any] | Any,
+) -> list[Any] | SimpleNamespace | Any:
     """
     Recursively converts a nested structure of lists and dictionaries.
 
@@ -67,7 +67,7 @@ def delete_txt_files() -> None:
 
 
 def build_geometry(
-    accessible_areas: Dict[int, List[List[float]]],
+    accessible_areas: dict[int, list[list[float]]],
 ) -> GeometryCollection:
     """Build geometry object.
 
@@ -88,9 +88,9 @@ def build_geometry(
 
 def init_journey(
     simulation: jps.Simulation,
-    way_points: List[Tuple[Point, float]],
-    exits: List[List[Point]],
-) -> Tuple[int, List[int], List[int]]:
+    way_points: list[tuple[Point, float]],
+    exits: list[list[Point]],
+) -> tuple[int, list[int], list[int]]:
     """Init goals of agents to follow.
 
     Add waypoints and exits to journey. Then register journey in simulation
@@ -103,7 +103,7 @@ def init_journey(
     # log_info("Init journey with: ")
     # log_info(f"{ way_points= }")
     # log_info(f"{ exits= }")
-    exit_ids: List[int] = []
+    exit_ids: list[int] = []
     wp_ids = []
     journey = jps.JourneyDescription()
     for way_point, distance in way_points:
@@ -135,7 +135,7 @@ def calculate_distance(p1: Point, p2: Point) -> float:
     return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
 
-def calculate_centroid(points: List[Point]) -> Point:
+def calculate_centroid(points: list[Point]) -> Point:
     """Calculate the centroid of a polygon (list of points)."""
     x_coords = [p[0] for p in points]
     y_coords = [p[1] for p in points]
@@ -146,10 +146,10 @@ def calculate_centroid(points: List[Point]) -> Point:
 
 def distribute_and_add_agents(
     simulation: jps.Simulation,
-    agent_parameters_list: List[jps.CollisionFreeSpeedModelV2AgentParameters],
-    positions: List[Point],
-    exit_positions: List[List[Point]],
-) -> List[int]:
+    agent_parameters_list: list[jps.CollisionFreeSpeedModelV2AgentParameters],
+    positions: list[Point],
+    exit_positions: list[list[Point]],
+) -> list[int]:
     """Initialize positions of agents, assign each one to the nearest exit (based on centroid).
 
     and insert them into the simulation.
@@ -188,7 +188,7 @@ def load_json(filename: Path) -> Any:
         return {}
 
 
-def save_json(output: Path, data: Dict[str, Any]) -> None:
+def save_json(output: Path, data: dict[str, Any]) -> None:
     """Save data in json file."""
     with open(output, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 MOTIVATION_LOW = 0.1
 MOTIVATION_NORMAL = 1.0
@@ -13,7 +13,7 @@ MOTIVATION_HIGH = 3.0
 FIT_EPSILON = 1e-6
 DEFAULT_MOTIVATION_MIN = MOTIVATION_LOW
 
-DEFAULT_MAPPING_BLOCK: Dict[str, Any] = {
+DEFAULT_MAPPING_BLOCK: dict[str, Any] = {
     "mapping_function": "logistic",
     "motivation_min": DEFAULT_MOTIVATION_MIN,
     "inflection_target": MOTIVATION_NORMAL,
@@ -66,8 +66,8 @@ class AnchorValues:
 
     @classmethod
     def from_dict(
-        cls, values: Dict[str, Any], defaults: Dict[str, float]
-    ) -> "AnchorValues":
+        cls, values: dict[str, Any], defaults: dict[str, float]
+    ) -> AnchorValues:
         """Create anchor values from a dict and defaults."""
         return cls(
             low=float(values.get("low", defaults["low"])),
@@ -75,7 +75,7 @@ class AnchorValues:
             high=float(values.get("high", defaults["high"])),
         )
 
-    def as_dict(self) -> Dict[str, float]:
+    def as_dict(self) -> dict[str, float]:
         """Serialize to plain dictionary."""
         return {"low": self.low, "normal": self.normal, "high": self.high}
 
@@ -205,7 +205,7 @@ class LogisticCurve:
         return clamp(y, y_min, y_max)
 
 
-def merge_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]:
+def merge_mapping_block(motivation_parameters: dict[str, Any]) -> dict[str, Any]:
     """Merge mapping settings with defaults."""
     merged = copy.deepcopy(DEFAULT_MAPPING_BLOCK)
     for key in (
@@ -231,7 +231,7 @@ def merge_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]
     return merged
 
 
-def ensure_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any]:
+def ensure_mapping_block(motivation_parameters: dict[str, Any]) -> dict[str, Any]:
     """Ensure mapping defaults exist in config and return merged block."""
     merged = merge_mapping_block(motivation_parameters)
     motivation_parameters.update(merged)
@@ -242,7 +242,7 @@ def ensure_mapping_block(motivation_parameters: Dict[str, Any]) -> Dict[str, Any
 class MotivationParameterMapper:
     """Map motivation to CFSM parameters."""
 
-    mapping_block: Dict[str, Any]
+    mapping_block: dict[str, Any]
     normal_v_0: float
     range_default: float
 
@@ -318,8 +318,8 @@ class MotivationParameterMapper:
         )
 
     def _build_manual_k_params(
-        self, manual_k: Dict[str, Any]
-    ) -> Dict[str, LogisticParams]:
+        self, manual_k: dict[str, Any]
+    ) -> dict[str, LogisticParams]:
         keys = (
             "desired_speed",
             "time_gap",
@@ -332,7 +332,7 @@ class MotivationParameterMapper:
             "buffer": self.buffer_anchors,
             "strength_neighbor_repulsion": self.strength_anchors,
         }
-        params: Dict[str, LogisticParams] = {}
+        params: dict[str, LogisticParams] = {}
         for key in keys:
             if key not in manual_k:
                 raise ValueError(
@@ -387,7 +387,7 @@ class MotivationParameterMapper:
 
     def sample_curve_data(
         self, normal_time_gap: float, num_points: int = 200
-    ) -> Dict[str, List[float]]:
+    ) -> dict[str, list[float]]:
         """Sample mapping curves for plotting."""
         lower = self.motivation_min
         upper = max(MOTIVATION_HIGH, self.max_motivation())

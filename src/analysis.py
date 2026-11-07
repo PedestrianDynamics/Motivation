@@ -3,9 +3,8 @@
 import glob
 import json
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any
 
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -13,6 +12,7 @@ import pandas as pd
 import pedpy
 import streamlit as st
 from jupedsim.internal.notebook_utils import read_sqlite_file
+from matplotlib import cm
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure as matplotlib_fig
@@ -54,7 +54,7 @@ def _read_motivation_csv(path: Path) -> pd.DataFrame:
 
 def get_first_frame_pedestrian_passes_line(
     filename: Path, passing_line_y: float = 20.0
-) -> Tuple[pd.DataFrame, Optional[int]]:
+) -> tuple[pd.DataFrame, int | None]:
     """
     Return the first frame when a pedestrian passes the specified horizontal line.
 
@@ -366,7 +366,7 @@ def handle_voronoi(
 
 
 # UI handling
-def get_user_inputs(prefix: str = "") -> Tuple[float, bool, float, str]:
+def get_user_inputs(prefix: str = "") -> tuple[float, bool, float, str]:
     """Get inputs from the user for the plot configuration with unique keys."""
     c1, c2, c3 = st.columns(3)
 
@@ -418,7 +418,7 @@ def process_data(
     measurement_line: pedpy.MeasurementLine,
     motivation_file: Path,
     color_by_speed: bool,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Process and merge the data required for plotting."""
     # Compute time distance line
     df_time_distance = pedpy.compute_time_distance_line(

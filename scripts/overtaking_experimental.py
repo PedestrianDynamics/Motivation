@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple
 
 import pandas as pd
 from shapely.geometry import Polygon
@@ -114,8 +114,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
-    overrides: Dict[str, Path] = {}
+def parse_input_overrides(items: Sequence[str]) -> dict[str, Path]:
+    overrides: dict[str, Path] = {}
     for item in items:
         if "=" not in item:
             raise ValueError(f"Invalid --input value '{item}'. Expected LABEL=PATH.")
@@ -124,8 +124,8 @@ def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
     return overrides
 
 
-def discover_experiment_files(experiment_dir: Path) -> Dict[str, Path]:
-    discovered: Dict[str, Path] = {}
+def discover_experiment_files(experiment_dir: Path) -> dict[str, Path]:
+    discovered: dict[str, Path] = {}
     for path in sorted(experiment_dir.glob("*_Combined.txt")):
         discovered[path.stem.split("_cam", 1)[0]] = path
     return discovered
@@ -200,9 +200,9 @@ def build_experiment_geometry() -> Polygon:
     return Polygon(exterior)
 
 
-def load_experiment_dataframe(path: Path) -> Tuple[pd.DataFrame, float]:
+def load_experiment_dataframe(path: Path) -> tuple[pd.DataFrame, float]:
     fps = parse_frame_rate(path)
-    rows: List[Tuple[int, int, float, float, float, float]] = []
+    rows: list[tuple[int, int, float, float, float, float]] = []
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
             if not line.strip() or line.startswith("#"):
@@ -282,7 +282,7 @@ def compute_label_rows(
         for _, row in pair_counts.iterrows()
     }
 
-    rows: List[Dict[str, float]] = []
+    rows: list[dict[str, float]] = []
     for _, row in stable_events.iterrows():
         rows.append(
             {
@@ -316,8 +316,8 @@ def main() -> None:
     measurement_line = load_measurement_line(args.measurement_config)
     geometry = build_experiment_geometry()
 
-    detail_rows_by_label: Dict[str, List[Dict[str, float]]] = {}
-    geometries: Dict[str, Polygon] = {}
+    detail_rows_by_label: dict[str, list[dict[str, float]]] = {}
+    geometries: dict[str, Polygon] = {}
     for label, path in sorted(inputs.items()):
         rows, polygon = compute_label_rows(
             label=label,

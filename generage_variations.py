@@ -3,12 +3,12 @@
 import json
 import pathlib
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any
 
 import typer
 
 
-def get_nested_value(config: Dict[str, Any], param_path: str) -> Any:
+def get_nested_value(config: dict[str, Any], param_path: str) -> Any:
     """Get value from nested dictionary using dot notation."""
     keys = param_path.split("/")
     current = config
@@ -17,7 +17,7 @@ def get_nested_value(config: Dict[str, Any], param_path: str) -> Any:
     return current
 
 
-def set_nested_value(config: Dict[str, Any], param_path: str, value: Any) -> None:
+def set_nested_value(config: dict[str, Any], param_path: str, value: Any) -> None:
     """Set value in nested dictionary using dot notation."""
     keys = param_path.split("/")
     current = config
@@ -27,11 +27,11 @@ def set_nested_value(config: Dict[str, Any], param_path: str, value: Any) -> Non
 
 
 def create_parameter_variations(
-    base_config: Dict[str, Any],
+    base_config: dict[str, Any],
     param_path: str,
-    values: List[Union[float, int]],
+    values: list[float | int],
     description: str = "",
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Create variations of the configuration by varying a single parameter.
 
@@ -60,7 +60,7 @@ def create_parameter_variations(
 
 
 def save_variations(
-    variations: List[Dict[str, Any]], output_path: pathlib.Path
+    variations: list[dict[str, Any]], output_path: pathlib.Path
 ) -> None:
     """Save variations to a JSON file with proper formatting."""
     with open(output_path, "w", encoding="utf8") as f:
@@ -106,7 +106,7 @@ def main(
 
     # Parse values (handle both float and int)
     try:
-        parsed_values: List[float | int] = []
+        parsed_values: list[float | int] = []
         for v in values.split(","):
             v = v.strip()
             if "." in v:

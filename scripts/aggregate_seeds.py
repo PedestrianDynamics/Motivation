@@ -18,9 +18,10 @@ import argparse
 import csv
 import re
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from statistics import median
-from typing import Any, Dict, Iterable, List, Sequence, Tuple
+from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -51,17 +52,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_tag(tag: str) -> Tuple[str, int] | None:
+def parse_tag(tag: str) -> tuple[str, int] | None:
     match = TAG_RE.match(tag)
     if not match:
         return None
     return match.group("scenario"), int(match.group("seed"))
 
 
-def glob_tagged(results_dir: Path, stem: str) -> List[Tuple[str, int, Path]]:
+def glob_tagged(results_dir: Path, stem: str) -> list[tuple[str, int, Path]]:
     if not results_dir.exists():
         return []
-    found: List[Tuple[str, int, Path]] = []
+    found: list[tuple[str, int, Path]] = []
     for path in results_dir.glob(f"{stem}_*.csv"):
         tag = path.stem[len(stem) + 1 :]
         parsed = parse_tag(tag)
@@ -72,7 +73,7 @@ def glob_tagged(results_dir: Path, stem: str) -> List[Tuple[str, int, Path]]:
     return found
 
 
-def read_csv(path: Path) -> List[Dict[str, str]]:
+def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open("r", encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle))
 
@@ -85,7 +86,7 @@ def spearman_rho(xs: Sequence[float], ys: Sequence[float]) -> float:
     return _pearson(rx, ry)
 
 
-def _rankdata(values: Sequence[float]) -> List[float]:
+def _rankdata(values: Sequence[float]) -> list[float]:
     ordered = sorted(range(len(values)), key=lambda i: values[i])
     ranks = [0.0] * len(values)
     i = 0
@@ -139,12 +140,12 @@ def tail_ratio(ranks: Sequence[int], areas: Sequence[float]) -> float:
 
 # ---------------- Rank-area ----------------
 
-def scalars_from_rank_area(rows: List[Dict[str, str]]) -> Dict[str, Dict[str, float]]:
-    by_model: Dict[str, List[Tuple[int, float]]] = defaultdict(list)
+def scalars_from_rank_area(rows: list[dict[str, str]]) -> dict[str, dict[str, float]]:
+    by_model: dict[str, list[tuple[int, float]]] = defaultdict(list)
     for row in rows:
         by_model[row["model"]].append((int(row["final_rank"]), float(row["area"])))
 
-    out: Dict[str, Dict[str, float]] = {}
+    out: dict[str, dict[str, float]] = {}
     for model, pairs in by_model.items():
         ranks = [r for r, _ in pairs]
         areas = [a for _, a in pairs]
@@ -158,14 +159,14 @@ def scalars_from_rank_area(rows: List[Dict[str, str]]) -> Dict[str, Dict[str, fl
 
 # ---------------- Voronoi density ----------------
 
-def scalars_from_voronoi(rows: List[Dict[str, str]]) -> Dict[str, Dict[str, float]]:
-    by_model: Dict[str, List[Tuple[float, float]]] = defaultdict(list)
+def scalars_from_voronoi(rows: list[dict[str, str]]) -> dict[str, dict[str, float]]:
+    by_model: dict[str, list[tuple[float, float]]] = defaultdict(list)
     for row in rows:
         by_model[row["model"]].append(
             (float(row["time"]), float(row["voronoi_density"]))
         )
 
-    out: Dict[str, Dict[str, float]] = {}
+    out: dict[str, dict[str, float]] = {}
     for model, pairs in by_model.items():
         densities = [d for _, d in pairs]
         if not densities:
@@ -185,13 +186,13 @@ def scalars_from_voronoi(rows: List[Dict[str, str]]) -> Dict[str, Dict[str, floa
 # ---------------- Coordination number ----------------
 
 def scalars_from_coordination(
-    rows: List[Dict[str, str]],
-) -> Dict[str, Dict[str, float]]:
-    by_model: Dict[str, List[int]] = defaultdict(list)
+    rows: list[dict[str, str]],
+) -> dict[str, dict[str, float]]:
+    by_model: dict[str, list[int]] = defaultdict(list)
     for row in rows:
         by_model[row["model"]].append(int(row["coordination_number"]))
 
-    out: Dict[str, Dict[str, float]] = {}
+    out: dict[str, dict[str, float]] = {}
     for model, values in by_model.items():
         if not values:
             continue
@@ -207,7 +208,7 @@ def scalars_from_coordination(
 
 
 def _mode(values: Sequence[int]) -> int:
-    counts: Dict[int, int] = defaultdict(int)
+    counts: dict[int, int] = defaultdict(int)
     for v in values:
         counts[v] += 1
     return max(counts.items(), key=lambda kv: kv[1])[0]
@@ -215,7 +216,7 @@ def _mode(values: Sequence[int]) -> int:
 
 # ---------------- Statistical tests ----------------
 
-def wilcoxon_signed_rank(diffs: Sequence[float]) -> Tuple[float, float]:
+def wilcoxon_signed_rank(diffs: Sequence[float]) -> tuple[float, float]:
     """Return (W, two-sided p-value) via normal approximation."""
     nonzero = [d for d in diffs if d != 0.0]
     n = len(nonzero)
@@ -263,14 +264,14 @@ def cliffs_delta(xs: Sequence[float], ys: Sequence[float]) -> float:
 
 def collect_summary(
     scenarios_dir: Path,
-) -> Tuple[
-    List[Dict[str, object]],
-    Dict[str, Dict[str, Dict[str, Dict[str, List[float]]]]],
+) -> tuple[
+    list[dict[str, object]],
+    dict[str, dict[str, dict[str, dict[str, list[float]]]]],
 ]:
     """Walk scenario dirs, compute per-seed scalars, return rows + raw curves."""
-    summary_rows: List[Dict[str, object]] = []
+    summary_rows: list[dict[str, object]] = []
     # Raw curves for band plots: observable -> scenario -> model -> {axis_key -> list of lists}
-    curves: Dict[str, Dict[str, Dict[str, Dict[str, List[float]]]]] = defaultdict(
+    curves: dict[str, dict[str, dict[str, dict[str, list[float]]]]] = defaultdict(
         lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     )
 
@@ -285,7 +286,7 @@ def collect_summary(
     return summary_rows, curves
 
 
-def _collect_rank_area(scenario_path: Path, summary_rows: List[Dict[str, object]], curves: Any) -> None:
+def _collect_rank_area(scenario_path: Path, summary_rows: list[dict[str, object]], curves: Any) -> None:
     results_dir = scenario_path / "final_rank_results"
     for scenario, seed, csv_path in glob_tagged(results_dir, "final_rank_details"):
         rows = read_csv(csv_path)
@@ -301,7 +302,7 @@ def _collect_rank_area(scenario_path: Path, summary_rows: List[Dict[str, object]
                         "value": value,
                     }
                 )
-        by_model: Dict[str, List[Tuple[int, float]]] = defaultdict(list)
+        by_model: dict[str, list[tuple[int, float]]] = defaultdict(list)
         for row in rows:
             by_model[row["model"]].append(
                 (int(row["final_rank"]), float(row["area"]))
@@ -313,7 +314,7 @@ def _collect_rank_area(scenario_path: Path, summary_rows: List[Dict[str, object]
             curves["rank_area"][scenario][model]["value"].append(areas)
 
 
-def _collect_voronoi(scenario_path: Path, summary_rows: List[Dict[str, object]], curves: Any) -> None:
+def _collect_voronoi(scenario_path: Path, summary_rows: list[dict[str, object]], curves: Any) -> None:
     results_dir = scenario_path / "voronoi_density_results"
     for scenario, seed, csv_path in glob_tagged(results_dir, "voronoi_density_details"):
         rows = read_csv(csv_path)
@@ -329,7 +330,7 @@ def _collect_voronoi(scenario_path: Path, summary_rows: List[Dict[str, object]],
                         "value": value,
                     }
                 )
-        by_model: Dict[str, List[Tuple[float, float]]] = defaultdict(list)
+        by_model: dict[str, list[tuple[float, float]]] = defaultdict(list)
         for row in rows:
             by_model[row["model"]].append(
                 (float(row["time"]), float(row["voronoi_density"]))
@@ -341,7 +342,7 @@ def _collect_voronoi(scenario_path: Path, summary_rows: List[Dict[str, object]],
             curves["voronoi_density"][scenario][model]["value"].append(dens)
 
 
-def _collect_coordination(scenario_path: Path, summary_rows: List[Dict[str, object]], curves: Any) -> None:
+def _collect_coordination(scenario_path: Path, summary_rows: list[dict[str, object]], curves: Any) -> None:
     results_dir = scenario_path / "coordination_number_results"
     for scenario, seed, csv_path in glob_tagged(
         results_dir, "coordination_number_details"
@@ -360,7 +361,7 @@ def _collect_coordination(scenario_path: Path, summary_rows: List[Dict[str, obje
                     }
                 )
         # Per-seed histogram as a "curve" over coordination number buckets
-        by_model: Dict[str, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
+        by_model: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
         for row in rows:
             by_model[row["model"]][int(row["coordination_number"])] += 1
         for model, bucket in by_model.items():
@@ -376,11 +377,11 @@ def _collect_coordination(scenario_path: Path, summary_rows: List[Dict[str, obje
 # ---------------- Paired tests ----------------
 
 def compute_tests(
-    summary_rows: List[Dict[str, object]],
+    summary_rows: list[dict[str, object]],
     models: Sequence[str] = ("BASE_MODEL", "PVE"),
-) -> List[Dict[str, object]]:
+) -> list[dict[str, object]]:
     model_a, model_b = models[0], models[1]
-    grouped: Dict[Tuple[str, str, str], Dict[str, Dict[int, float]]] = defaultdict(
+    grouped: dict[tuple[str, str, str], dict[str, dict[int, float]]] = defaultdict(
         lambda: defaultdict(dict)
     )
     for row in summary_rows:
@@ -389,7 +390,7 @@ def compute_tests(
         value = float(str(row["value"]))
         grouped[key][str(row["model"])][seed_value] = value
 
-    rows: List[Dict[str, object]] = []
+    rows: list[dict[str, object]] = []
     for (observable, scenario, scalar), by_model in grouped.items():
         a = by_model.get(model_a, {})
         b = by_model.get(model_b, {})
@@ -466,22 +467,22 @@ def plot_bands(
 
 
 def _median_iqr_band(
-    rank_lists: List[List[float]], value_lists: List[List[float]]
-) -> Tuple[List[float], List[float], List[float], List[float]]:
+    rank_lists: list[list[float]], value_lists: list[list[float]]
+) -> tuple[list[float], list[float], list[float], list[float]]:
     if not rank_lists:
         return [], [], [], []
     # Resample each run onto a shared grid (union of observed x values)
     shared_x = sorted({float(x) for xs in rank_lists for x in xs})
     if not shared_x:
         return [], [], [], []
-    by_x: Dict[float, List[float]] = defaultdict(list)
+    by_x: dict[float, list[float]] = defaultdict(list)
     for xs, ys in zip(rank_lists, value_lists):
         for x, y in zip(xs, ys):
             by_x[float(x)].append(float(y))
-    med: List[float] = []
-    lo: List[float] = []
-    hi: List[float] = []
-    kept_x: List[float] = []
+    med: list[float] = []
+    lo: list[float] = []
+    hi: list[float] = []
+    kept_x: list[float] = []
     for x in shared_x:
         values = sorted(by_x[x])
         if len(values) < 2:
@@ -522,7 +523,7 @@ def _ylabel_for(observable: str) -> str:
 
 # ---------------- IO helpers ----------------
 
-def write_csv(path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequence[str]) -> None:
+def write_csv(path: Path, rows: Iterable[dict[str, object]], fieldnames: Sequence[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)

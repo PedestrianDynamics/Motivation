@@ -5,8 +5,8 @@ from __future__ import annotations
 import argparse
 import csv
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -87,8 +87,8 @@ def normalize_model_name(name: str) -> str:
     return MODEL_ALIASES.get(name.strip().upper(), name.strip().upper())
 
 
-def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
-    overrides: Dict[str, Path] = {}
+def parse_input_overrides(items: Sequence[str]) -> dict[str, Path]:
+    overrides: dict[str, Path] = {}
     for item in items:
         if "=" not in item:
             raise ValueError(f"Invalid --input value '{item}'. Expected MODEL=PATH.")
@@ -97,10 +97,10 @@ def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
     return overrides
 
 
-def discover_latest_file(model: str, search_dirs: Sequence[str]) -> Optional[Path]:
+def discover_latest_file(model: str, search_dirs: Sequence[str]) -> Path | None:
     pattern = f"base_{model}_*_motivation.csv"
     direct_name = f"base_{model}_motivation.csv"
-    candidates: List[Path] = []
+    candidates: list[Path] = []
     for directory in search_dirs:
         base_dir = Path(directory)
         if not base_dir.exists():
@@ -114,8 +114,8 @@ def discover_latest_file(model: str, search_dirs: Sequence[str]) -> Optional[Pat
     return max(candidates, key=lambda path: path.stat().st_mtime)
 
 
-def load_rows(path: Path, t_min: float, t_max: float) -> List[Tuple[float, float, float]]:
-    rows: List[Tuple[float, float, float]] = []
+def load_rows(path: Path, t_min: float, t_max: float) -> list[tuple[float, float, float]]:
+    rows: list[tuple[float, float, float]] = []
     with path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, skipinitialspace=True)
         for row in reader:
@@ -127,10 +127,10 @@ def load_rows(path: Path, t_min: float, t_max: float) -> List[Tuple[float, float
 
 
 def build_heatmap(
-    rows: Sequence[Tuple[float, float, float]],
+    rows: Sequence[tuple[float, float, float]],
     bins: int,
-    xrange: Tuple[float, float],
-    yrange: Tuple[float, float],
+    xrange: tuple[float, float],
+    yrange: tuple[float, float],
     sigma: float,
 ) -> np.ndarray:
     if not rows:
@@ -188,7 +188,7 @@ def main() -> None:
     overrides = parse_input_overrides(args.input)
     requested_models = [normalize_model_name(model) for model in args.models]
 
-    rows_by_model: Dict[str, List[Tuple[float, float, float]]] = {}
+    rows_by_model: dict[str, list[tuple[float, float, float]]] = {}
     for model in requested_models:
         input_path = overrides.get(model) or discover_latest_file(model, args.search_dir)
         if input_path is None:

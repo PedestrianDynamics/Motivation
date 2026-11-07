@@ -11,13 +11,13 @@ Looking in json for
 import json
 import sys
 import xml.etree.ElementTree as ET
-from typing import Any, Dict
+from typing import Any
 
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 
-def add_transitions(_root: ET.Element, _data: Dict[str, Any]) -> None:
+def add_transitions(_root: ET.Element, _data: dict[str, Any]) -> None:
     """Add transition to xml file
 
     :param root:
@@ -56,7 +56,7 @@ def add_transitions(_root: ET.Element, _data: Dict[str, Any]) -> None:
         )
 
 
-def add_room(_root: ET.Element, _data: Dict[str, Any]) -> None:
+def add_room(_root: ET.Element, _data: dict[str, Any]) -> None:
     """Add room to xml file.
 
     :param root:

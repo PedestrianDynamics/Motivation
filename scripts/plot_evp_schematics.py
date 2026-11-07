@@ -20,9 +20,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-import src.motivation_mapping as mmap  # noqa: E402
-import src.motivation_model as mm  # noqa: E402
-from src.simutilities import (  # noqa: E402
+import src.motivation_mapping as mmap
+import src.motivation_model as mm
+from src.simutilities import (
     create_motivation_strategy,
     extract_motivation_parameters,
 )

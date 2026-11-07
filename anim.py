@@ -8,7 +8,7 @@ reservere us the right to change the code here w.o. warning. Do not use the
 code here. Use it at your own peril.
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -95,7 +95,7 @@ def _get_colormap(
     min_value: float,
     max_value: float,
     color_mode: str,
-) -> List[Scatter]:
+) -> list[Scatter]:
     """Utilize scatter plots with varying colors for each agent instead of individual shapes.
 
     This trace is only to incorporate a colorbar in the plot.
@@ -148,7 +148,7 @@ def _get_shapes_for_frame(
     min_value: float,
     max_value: float,
     color_mode: str,
-) -> Tuple[Shape, Scatter, Shape]:
+) -> tuple[Shape, Scatter, Shape]:
     """Construct circles as Shapes for agents, Hover and Directions."""
 
     def create_shape(row: pd.DataFrame) -> Shape:
@@ -230,8 +230,8 @@ def _create_fig(
     initial_scatter_trace: Shape,
     geometry_traces: Shape,
     frames: pd.DataFrame,
-    steps: List[Dict[str, Any]],
-    area_bounds: Tuple[float, float, float, float],
+    steps: list[dict[str, Any]],
+    area_bounds: tuple[float, float, float, float],
     width: int = 800,
     height: int = 800,
     title_note: str = "",
@@ -274,7 +274,7 @@ def _create_fig(
     return fig
 
 
-def _get_animation_controls() -> Dict[str, Any]:
+def _get_animation_controls() -> dict[str, Any]:
     """Returns the animation control buttons for the figure."""
     return {
         "buttons": [
@@ -301,7 +301,7 @@ def _get_animation_controls() -> Dict[str, Any]:
     }
 
 
-def _get_slider_controls(steps: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _get_slider_controls(steps: list[dict[str, Any]]) -> dict[str, Any]:
     """Returns the slider controls for the figure."""
     return {
         "active": 0,
@@ -324,7 +324,7 @@ def _get_slider_controls(steps: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def _get_processed_frame_data(
     data_df: pd.DataFrame, frame_num: int, max_agents: int
-) -> Tuple[pd.DataFrame, int]:
+) -> tuple[pd.DataFrame, int]:
     """Process frame data and ensure it matches the maximum agent count."""
     frame_data = data_df[data_df["frame"] == frame_num]
     agent_count = len(frame_data)
@@ -450,8 +450,8 @@ def plot_frame_fast(
     frame_num: int,
     *,
     radius: float = 0.1,
-    xlim: Tuple[float, float] | None = None,
-    ylim: Tuple[float, float] | None = None,
+    xlim: tuple[float, float] | None = None,
+    ylim: tuple[float, float] | None = None,
 ) -> MatplotlibFigure:
     """Render a single frame with matplotlib for fast inspection."""
     frame_data = data_df[data_df["frame"] == frame_num].copy()

@@ -1,7 +1,7 @@
 """Init ui."""
 
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -42,7 +42,7 @@ def init_sidebar() -> Any:
     )
 
 
-def ui_simulation_controls(data: Dict[str, Any]) -> Tuple[str, str, int]:
+def ui_simulation_controls(data: dict[str, Any]) -> tuple[str, str, int]:
     """
     Display UI elements for controlling the simulation.
 
@@ -111,7 +111,7 @@ def simulation_tab() -> pd.DataFrame:
     return data
 
 
-def ui_load_save_config() -> Tuple[str, str]:
+def ui_load_save_config() -> tuple[str, str]:
     """Display UI elements for loading and saving configurations.
 
     Returns:
@@ -131,7 +131,7 @@ def ui_load_save_config() -> Tuple[str, str]:
         return file_name, new_json_name
 
 
-def ui_measurement_parameters(data: Dict[str, Any]) -> None:
+def ui_measurement_parameters(data: dict[str, Any]) -> None:
     """Measurement lines, polygons."""
     with st.sidebar.expander("Measurement Parameters", expanded=True):
         st.code("Measurement line:")
@@ -153,7 +153,7 @@ def ui_measurement_parameters(data: Dict[str, Any]) -> None:
             vertex[1] = column_2.number_input("Point Y:", value=vertex[1], key=y_key)
 
 
-def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
+def ui_velocity_model_parameters(data: dict[str, Any]) -> None:
     """Set velocity Parameters Section."""
     with st.sidebar.expander("Velocity model Parameters", expanded=False):
         c1, c2 = st.columns(2)
@@ -206,7 +206,7 @@ def ui_velocity_model_parameters(data: Dict[str, Any]) -> None:
         )
 
 
-def ui_simulation_parameters(data: Dict[str, Any]) -> None:
+def ui_simulation_parameters(data: dict[str, Any]) -> None:
     """Set simulation Parameters Section."""
     with st.sidebar.expander("Simulation Parameters"):
         data["simulation_parameters"]["fps"] = st.number_input(
@@ -239,7 +239,7 @@ def ui_simulation_parameters(data: Dict[str, Any]) -> None:
         )
 
 
-def ui_value_parameters(data: Dict[str, Any]) -> None:
+def ui_value_parameters(data: dict[str, Any]) -> None:
     """Set Value function."""
     with st.sidebar.expander("Value Parameters", expanded=True):
         value_options = [round(float(v), 2) for v in np.arange(1.0, 7.1, 0.1)]
@@ -268,7 +268,7 @@ def ui_value_parameters(data: Dict[str, Any]) -> None:
         data["motivation_parameters"]["max_value"] = max_value
 
 
-def ui_payoff_parameters(data: Dict[str, Any]) -> None:
+def ui_payoff_parameters(data: dict[str, Any]) -> None:
     """Set payoff function parameters."""
     with st.sidebar.expander("Payoff Parameters", expanded=True):
         payoff = data["motivation_parameters"].setdefault("payoff", {})
@@ -308,7 +308,7 @@ def ui_payoff_parameters(data: Dict[str, Any]) -> None:
         )
 
 
-def ui_mapping_parameters(data: Dict[str, Any]) -> None:
+def ui_mapping_parameters(data: dict[str, Any]) -> None:
     """Set motivation-to-parameter mapping options."""
     params = data["motivation_parameters"]
     mapping = mmap.ensure_mapping_block(params)
@@ -490,7 +490,7 @@ def ui_mapping_parameters(data: Dict[str, Any]) -> None:
     params.update(mapping)
 
 
-def ui_motivation_parameters(data: Dict[str, Any]) -> None:
+def ui_motivation_parameters(data: dict[str, Any]) -> None:
     """Motivation Parameters Section."""
     params = data["motivation_parameters"]
     c1, c2 = st.sidebar.columns(2)

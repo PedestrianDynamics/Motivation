@@ -6,8 +6,8 @@ import argparse
 import csv
 import sys
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence, Tuple
 
 import numpy as np
 
@@ -60,8 +60,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
-    overrides: Dict[str, Path] = {}
+def parse_input_overrides(items: Sequence[str]) -> dict[str, Path]:
+    overrides: dict[str, Path] = {}
     for item in items:
         if "=" not in item:
             raise ValueError(f"Invalid --input value '{item}'. Expected LABEL=PATH.")
@@ -70,9 +70,9 @@ def parse_input_overrides(items: Sequence[str]) -> Dict[str, Path]:
     return overrides
 
 
-def discover_experiment_files(experiment_dir: Path) -> Dict[str, Path]:
+def discover_experiment_files(experiment_dir: Path) -> dict[str, Path]:
     paths = sorted(experiment_dir.glob("*_Combined.txt"))
-    discovered: Dict[str, Path] = {}
+    discovered: dict[str, Path] = {}
     for path in paths:
         label = path.stem.split("_cam", 1)[0]
         discovered[label] = path
@@ -93,9 +93,9 @@ def read_experiment_rows(
     path: Path,
     t_min: float,
     t_max: float,
-) -> Dict[int, List[Dict[str, float]]]:
+) -> dict[int, list[dict[str, float]]]:
     fps = parse_frame_rate(path)
-    frames: Dict[int, List[Dict[str, float]]] = defaultdict(list)
+    frames: dict[int, list[dict[str, float]]] = defaultdict(list)
 
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
@@ -130,8 +130,8 @@ def build_coordination_rows(
     path: Path,
     t_min: float,
     t_max: float,
-) -> List[Dict[str, float]]:
-    rows: List[Dict[str, float]] = []
+) -> list[dict[str, float]]:
+    rows: list[dict[str, float]] = []
     frames = read_experiment_rows(label=label, path=path, t_min=t_min, t_max=t_max)
     for frame, frame_rows in frames.items():
         positions = {
@@ -155,7 +155,7 @@ def build_coordination_rows(
     return rows
 
 
-def write_csv(path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequence[str]) -> None:
+def write_csv(path: Path, rows: Iterable[dict[str, object]], fieldnames: Sequence[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -164,14 +164,14 @@ def write_csv(path: Path, rows: Iterable[Dict[str, object]], fieldnames: Sequenc
             writer.writerow(row)
 
 
-def build_time_summary(rows: Sequence[Dict[str, float]]) -> List[Dict[str, float]]:
-    buckets: Dict[Tuple[str, float], List[float]] = defaultdict(list)
+def build_time_summary(rows: Sequence[dict[str, float]]) -> list[dict[str, float]]:
+    buckets: dict[tuple[str, float], list[float]] = defaultdict(list)
     for row in rows:
         buckets[(str(row["label"]), float(row["time"]))].append(
             float(row["coordination_number"])
         )
 
-    summary: List[Dict[str, float]] = []
+    summary: list[dict[str, float]] = []
     for (label, time_value), values in sorted(buckets.items()):
         mean_value = sum(values) / len(values)
         variance = sum((value - mean_value) ** 2 for value in values) / len(values)
@@ -187,9 +187,9 @@ def build_time_summary(rows: Sequence[Dict[str, float]]) -> List[Dict[str, float
     return summary
 
 
-def build_distribution_summary(rows: Sequence[Dict[str, float]]) -> List[Dict[str, float]]:
-    buckets: Dict[Tuple[str, int], int] = defaultdict(int)
-    totals: Dict[str, int] = defaultdict(int)
+def build_distribution_summary(rows: Sequence[dict[str, float]]) -> list[dict[str, float]]:
+    buckets: dict[tuple[str, int], int] = defaultdict(int)
+    totals: dict[str, int] = defaultdict(int)
 
     for row in rows:
         label = str(row["label"])
@@ -197,7 +197,7 @@ def build_distribution_summary(rows: Sequence[Dict[str, float]]) -> List[Dict[st
         buckets[(label, coordination_number)] += 1
         totals[label] += 1
 
-    summary: List[Dict[str, float]] = []
+    summary: list[dict[str, float]] = []
     for (label, coordination_number), count in sorted(buckets.items()):
         total = totals[label]
         summary.append(
@@ -211,7 +211,7 @@ def build_distribution_summary(rows: Sequence[Dict[str, float]]) -> List[Dict[st
     return summary
 
 
-def _kde_curve(values: Sequence[float], xmin: float, xmax: float) -> Tuple[np.ndarray, np.ndarray]:
+def _kde_curve(values: Sequence[float], xmin: float, xmax: float) -> tuple[np.ndarray, np.ndarray]:
     array = np.asarray(values, dtype=float)
     if array.size == 0:
         return np.array([]), np.array([])
@@ -229,9 +229,9 @@ def _kde_curve(values: Sequence[float], xmin: float, xmax: float) -> Tuple[np.nd
 
 
 def plot_results(
-    rows_by_label: Dict[str, List[Dict[str, float]]],
-    summary_rows: Sequence[Dict[str, float]],
-    distribution_rows: Sequence[Dict[str, float]],
+    rows_by_label: dict[str, list[dict[str, float]]],
+    summary_rows: Sequence[dict[str, float]],
+    distribution_rows: Sequence[dict[str, float]],
     output_dir: Path,
 ) -> bool:
     try:
@@ -343,7 +343,7 @@ def main() -> None:
     else:
         inputs = discover_experiment_files(args.experiment_dir)
 
-    rows_by_label: Dict[str, List[Dict[str, float]]] = {}
+    rows_by_label: dict[str, list[dict[str, float]]] = {}
 
     for label, path in inputs.items():
         rows_by_label[label] = build_coordination_rows(
