@@ -18,8 +18,8 @@ initial rank is controlled for? We report the partial Spearman
 correlation rho(V, final_rank | initial_rank). BASE_MODEL draws V but
 does not use it, so it is the placebo.
 
-Inputs are the stored multi-seed runs under
-files/coordination_scenarios/agents_<N>_open_100/base_runs.
+Inputs are the multi-seed runs under
+<scenarios-dir>/agents_<N>_open_100/base_runs.
 """
 
 from __future__ import annotations
@@ -46,6 +46,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--agents", type=int, default=80)
     parser.add_argument("--window", type=float, default=30.0, help="Seconds at end of run.")
     parser.add_argument("--cutoff", type=float, default=1.0, help="Voronoi cutoff radius (paper: 1 m).")
+    parser.add_argument(
+        "--scenarios-dir",
+        type=Path,
+        default=PROJECT_ROOT / "files" / "coordination_scenarios",
+        help="Root holding agents_<N>_open_100/base_runs.",
+    )
     parser.add_argument(
         "--output-dir", type=Path, default=PROJECT_ROOT / "files" / "r3_diagnostics"
     )
@@ -202,7 +208,7 @@ def summarise(rows: list[dict]) -> pd.DataFrame:
 
 def main() -> None:
     args = parse_args()
-    runs_dir = PROJECT_ROOT / "files" / "coordination_scenarios" / f"agents_{args.agents}_open_100" / "base_runs"
+    runs_dir = args.scenarios_dir / f"agents_{args.agents}_open_100" / "base_runs"
     runs = [r for r in discover_runs(runs_dir) if r[0] in MODELS]
     if not runs:
         raise SystemExit(f"No runs found in {runs_dir}")
