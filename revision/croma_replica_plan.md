@@ -44,6 +44,26 @@ order: blank runs nM 0.83 and 1.00, hM 0.66 and 0.56)?
    interpreted; the check is repeated with CollisionFreeSpeedModelV2
    and the calibrated set C of jupedsim-dakota-calibration.
 
+## Amendment (2026-11-07, before any arm was run)
+
+Smoke tests of the static arm (2C070, seed 101, time gap 0.3–1.5 s,
+desired speed 1.2–1.5 m/s) deadlock at the 0.8 m door after it opens:
+11–84 of 89 agents are still waiting 120 s later, while the experiment
+discharges everyone at 0.95 /s. The paper's simulations never opened the
+door. The measures therefore move to the moment the door opens, which
+the experiment justifies: queue position at opening predicts crossing
+order with ρ 0.96–1.00 in all eight runs (`croma_ordering.py`).
+
+- rank: distance rank to the door at the opening time,
+- area: mean Voronoi area over the waiting phase (before opening),
+- overtaking: Spearman(entry order, rank at opening),
+- crowd shape at opening: depth and front fraction (`crowd_shape.py`).
+
+The experimental values are computed with the same code. Criteria 1–3
+apply unchanged to these measures. The discharge deadlock is itself a
+finding to report: the model has not been shown to reproduce the
+opening phase.
+
 ## Caveats known in advance
 
 Two blank runs per condition; long waits (2C130, 2C150, about 200 s)
