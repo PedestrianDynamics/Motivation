@@ -73,8 +73,8 @@ def main() -> None:
         parameter_mapper=mapper,
     )
 
-    work = Path("/tmp/evp_schematics")
-    work.mkdir(exist_ok=True)
+    work = PROJECT_ROOT / "build" / "evp_schematics"
+    work.mkdir(parents=True, exist_ok=True)
     cwd = Path.cwd()
     try:
         os.chdir(work)

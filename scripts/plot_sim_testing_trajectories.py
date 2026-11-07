@@ -34,9 +34,9 @@ DOOR_Y = 19.0  # simulation door line
 
 def latest_motivation_csv(run_dir: Path) -> Path:
     csvs = sorted(run_dir.glob("*_motivation.csv"))
-    if not csvs:
-        raise FileNotFoundError(f"No *_motivation.csv in {run_dir}")
-    return csvs[-1]
+    if len(csvs) != 1:
+        raise RuntimeError(f"Expected exactly one *_motivation.csv in {run_dir}, found {len(csvs)}")
+    return csvs[0]
 
 
 def plot_panel(ax: Axes, df: pd.DataFrame, title: str) -> None:
@@ -70,7 +70,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--runs-dir",
         type=Path,
-        default=Path("/tmp"),
+        default=PROJECT_ROOT / "build" / "testing_runs",
         help="Directory containing test_<run>/ subdirs with *_motivation.csv outputs.",
     )
     p.add_argument(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -26,7 +27,7 @@ def run_simulation_for_seed(
     config_path = configs_dir / f"base_{model}_seed{seed}.json"
     run_command(
         [
-            "python3",
+            sys.executable,
             "simulation.py",
             "--inifile",
             str(config_path),
@@ -34,6 +35,15 @@ def run_simulation_for_seed(
             str(base_runs_dir),
         ]
     )
+
+
+def only_match(candidates: list[Path], directory: Path, pattern: str) -> Path:
+    """Return the single match; several matches mean stale runs are mixed in."""
+    if len(candidates) != 1:
+        raise RuntimeError(
+            f"Expected exactly one match for {pattern} in {directory}, found {len(candidates)}"
+        )
+    return candidates[0]
 
 
 def find_seed_sqlite(base_runs_dir: Path, model: str, seed: int) -> Path:
@@ -50,8 +60,7 @@ def find_seed_sqlite(base_runs_dir: Path, model: str, seed: int) -> Path:
             f"No sqlite output found for model={model} seed={seed} "
             f"in {base_runs_dir} (pattern={pattern})"
         )
-    # If multiple runs exist for the same seed, pick the most recent.
-    return max(candidates, key=lambda path: path.stat().st_mtime)
+    return only_match(candidates, base_runs_dir, pattern)
 
 
 def find_seed_motivation_csv(base_runs_dir: Path, model: str, seed: int) -> Path:
@@ -63,7 +72,7 @@ def find_seed_motivation_csv(base_runs_dir: Path, model: str, seed: int) -> Path
             f"No motivation csv found for model={model} seed={seed} "
             f"in {base_runs_dir} (pattern={pattern})"
         )
-    return max(candidates, key=lambda path: path.stat().st_mtime)
+    return only_match(candidates, base_runs_dir, pattern)
 
 
 def build_input_overrides(
@@ -87,7 +96,7 @@ def run_seed_analyses(
     # Coordination number: PVE + BASE_MODEL
     run_command(
         [
-            "python3",
+            sys.executable,
             "scripts/coordination_number_analysis.py",
             "--models",
             "PVE",
@@ -109,7 +118,7 @@ def run_seed_analyses(
     # Motivation heatmaps: all five models
     run_command(
         [
-            "python3",
+            sys.executable,
             "scripts/motivation_heatmap_analysis.py",
             "--models",
             "P",
@@ -137,7 +146,7 @@ def run_seed_analyses(
     # Final rank: all five models
     run_command(
         [
-            "python3",
+            sys.executable,
             "scripts/final_rank_analysis.py",
             "--models",
             "P",
@@ -161,7 +170,7 @@ def run_seed_analyses(
     # Voronoi density: PVE + BASE_MODEL
     run_command(
         [
-            "python3",
+            sys.executable,
             "scripts/voronoi_density_analysis.py",
             "--models",
             "PVE",

@@ -87,7 +87,12 @@ def find_motivation_csv(base_runs_dir: Path, model: str, seed: int) -> Path:
         raise FileNotFoundError(
             f"No motivation csv for model={model} seed={seed} in {base_runs_dir}"
         )
-    return max(candidates, key=lambda path: path.stat().st_mtime)
+    if len(candidates) != 1:
+        raise RuntimeError(
+            f"Expected exactly one motivation csv for model={model} seed={seed} "
+            f"in {base_runs_dir}, found {len(candidates)}"
+        )
+    return candidates[0]
 
 
 def load_motivation_csv(path: Path) -> pd.DataFrame:
