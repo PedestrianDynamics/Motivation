@@ -37,6 +37,9 @@ CROMA_FPS = 50.0
 DOOR_Y = 20.0
 FREE_SPACING = 0.02  # extra clearance when placing an entrant [m]
 GIVE_UP_S = 10.0  # drop an entrant that finds no free spot for this long
+# inside the corridor walls of simulation.py; its walkable area also holds the space
+# outside those 2-5 cm walls, which a nudged entrant could otherwise land in
+CORRIDOR = shapely.box(-3.57, -3.0, 3.57, 19.57)
 
 
 def parse_args() -> argparse.Namespace:
@@ -137,9 +140,9 @@ def run(args: argparse.Namespace) -> dict:
     )
     templates, _ = sim_mod.create_agent_parameters(data, simulation)
     radius = data["velocity_init_parameters"]["radius"]
-    # entrants appear near y = -1 m, far from the door, so the open geometry
-    # is the right placement region
-    region = geometry_open.buffer(-(radius + 0.03))
+    # entrants appear near y = -1 m, far from the door; inside CORRIDOR the open
+    # geometry has no holes (and geometry_open itself is an invalid polygon)
+    region = CORRIDOR.buffer(-(radius + 0.03))
     ids = list(range(1, len(entries) + 1))
     model = sim_mod.init_motivation_model(data, ids, [(x, y) for _, x, y in entries])
     door = (0.5 * (model.door_point1[0] + model.door_point2[0]),
