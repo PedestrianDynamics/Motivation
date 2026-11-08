@@ -91,3 +91,33 @@ door (y ≥ 20 m) in the first 60 s after opening
 
 Two blank runs per condition; long waits (2C130, 2C150, about 200 s)
 also lower entry–crossing ρ, so waiting time confounds overtaking.
+
+## Third amendment (2026-11-08, before the fitting grid was run)
+
+Result of criterion 3 (`--static-params`, CFSM V2, runs in
+`build/croma_replica_fixed/grid_V2_*.csv`): set C and the CrowdQueue
+condition fits (h0: T 0.79 s, v0 1.17 m/s; h-: T 1.73 s, v0 1.50 m/s)
+all stand 1.0–1.3 m deep with front fraction 1.0 (experiment 3.2 m and
+0.44–0.49 in hM, 9.8–13.9 m and 0.08–0.16 in nM) and discharge 64–89
+(experiment 44–63). The static arm on V2 is therefore not interpreted
+either. Its rank–area ρ of 0.45–0.75 is reported, not used: a compact
+static crowd gives a gradient of the paper's size. V2 runs are
+deterministic; the seed only moves entrants that have to be nudged.
+
+Time gap and desired speed do not set the standing depth: at rest CFSM
+V2 keeps agents 2r apart and V3 keeps them 2r + buffer apart, and
+neither the V3 grid (T 0.3–2.0 s) nor the three V2 sets moved the depth.
+The fitted parameter is therefore the standing distance; T stays at the
+configured 1.0 s, so discharge stays held out.
+
+- Static arm (V3): agent buffer ∈ {0.1, 0.2, 0.3, 0.5, 0.7, 1.0} m,
+  selected separately per condition. This gives the static arm one more
+  fitted value than the motivation arms and makes it a descriptive
+  upper bound, not a predictive competitor.
+- V-only and EVP: the low buffer anchor of the mapping
+  ∈ {0.4, 0.6, 0.8, 1.0, 1.3, 1.6} m (normal 0.2, high 0.1 unchanged),
+  selected on nM only; hM is then a prediction from V or payoff alone.
+- Selection score per condition, mean over its two blank runs and
+  three seeds: |ln(depth_sim / depth_exp)| + |front_sim − front_exp|.
+- Held out from selection: entry–crossing ρ, rank–area ρ, discharge,
+  and every hM measure of V-only and EVP.
