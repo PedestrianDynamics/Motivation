@@ -14,6 +14,10 @@ instead of placed at t = 0) and the door timing differ.
   --mode BASE_MODEL  static: every agent keeps normal_v_0 / normal_time_gap
   --mode V           static individual values from [min_value, max_value]
   --mode PVE         full EVP
+
+With --static-params (BASE_MODEL only) the static arm runs on
+CollisionFreeSpeedModelV2 with a parameter set calibrated in
+jupedsim-dakota-calibration (crowdqueue/results/*.json) instead of V3.
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ import logging
 import sys
 from pathlib import Path
 
+import jupedsim as jps
 import numpy as np
 import pandas as pd
 import shapely
@@ -51,6 +56,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--time-gap", type=float, help="Override normal_time_gap.")
     parser.add_argument("--desired-speed", type=float, help="Override normal_v_0.")
     parser.add_argument("--agent-buffer", type=float, help="Override agent_buffer.")
+    parser.add_argument("--static-params", type=Path,
+                        help="Dakota result JSON: run the static arm on CFSM V2 with its params.")
     parser.add_argument("--seed", type=int, default=101)
     parser.add_argument("--after-open", type=float, default=120.0)
     parser.add_argument("--output", type=Path, required=True, help="Trajectory sqlite to write.")
@@ -80,6 +87,22 @@ def load_config(args: argparse.Namespace, n_agents: int) -> dict:
     if args.agent_buffer is not None:
         data["motivation_parameters"]["agent_buffer"] = args.agent_buffer
     return data
+
+
+def static_v2_template(template, params_file: Path, args: argparse.Namespace):
+    """CFSM V2 agent parameters from a dakota result file; --time-gap/--desired-speed override."""
+    p = json.loads(params_file.read_text())["params"]
+    return jps.CollisionFreeSpeedModelV2AgentParameters(
+        journey_id=template.journey_id,
+        stage_id=template.stage_id,
+        radius=p["radius"],
+        desired_speed=args.desired_speed if args.desired_speed is not None else p["desired_speed"],
+        time_gap=args.time_gap if args.time_gap is not None else p["time_gap"],
+        strength_neighbor_repulsion=p["strength_neighbor"],
+        range_neighbor_repulsion=p["range_neighbor"],
+        strength_geometry_repulsion=p["strength_geometry"],
+        range_geometry_repulsion=p["range_geometry"],
+    )
 
 
 def free_spot(x: float, y: float, live: list[tuple[float, float]], region, min_dist: float) -> bool:
@@ -135,11 +158,18 @@ def run(args: argparse.Namespace) -> dict:
     dt = sim_mod.parse_time_step(data)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.unlink(missing_ok=True)
+    if args.static_params is not None and args.mode != "BASE_MODEL":
+        raise SystemExit("--static-params needs --mode BASE_MODEL")
+    v2 = args.static_params is not None
     simulation, geometry_open = sim_mod.init_simulation(
-        data, dt, sim_mod.parse_fps(data), args.output, from_file=True
+        data, dt, sim_mod.parse_fps(data), args.output, from_file=True,
+        model=jps.CollisionFreeSpeedModelV2() if v2 else None,
     )
     templates, _ = sim_mod.create_agent_parameters(data, simulation)
     radius = data["velocity_init_parameters"]["radius"]
+    if v2:
+        templates[0] = static_v2_template(templates[0], args.static_params, args)
+        radius = templates[0].radius
     # entrants appear near y = -1 m, far from the door; inside CORRIDOR the open
     # geometry has no holes (and geometry_open itself is an invalid polygon)
     region = CORRIDOR.buffer(-(radius + 0.03))
@@ -167,15 +197,16 @@ def run(args: argparse.Namespace) -> dict:
             agent_positions=positions,
             number_agents_in_simulation=simulation.agent_count(),
         )
-        if simulation.iteration_count() % every_nth == 0:
+        if not v2 and simulation.iteration_count() % every_nth == 0:
             for agent in simulation.agents():
                 sim_mod.process_agent(agent, door, simulation, model, None, 0, 0, data)
         simulation.iterate()
     record = {
         "run": args.run, "mode": args.mode, "seed": args.seed,
-        "time_gap": data["motivation_parameters"]["normal_time_gap"],
-        "desired_speed": data["motivation_parameters"]["normal_v_0"],
-        "agent_buffer": data["motivation_parameters"]["agent_buffer"],
+        "model": f"V2:{args.static_params.stem}" if v2 else "V3",
+        "time_gap": templates[0].time_gap if v2 else data["motivation_parameters"]["normal_time_gap"],
+        "desired_speed": templates[0].desired_speed if v2 else data["motivation_parameters"]["normal_v_0"],
+        "agent_buffer": None if v2 else data["motivation_parameters"]["agent_buffer"],
         "entries": len(entries), "added": entrances.next_id - 1, "dropped": entrances.dropped,
         "door_open_s": t_open, "end_s": simulation.elapsed_time(),
         "remaining": simulation.agent_count(),

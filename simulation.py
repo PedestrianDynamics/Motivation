@@ -357,6 +357,7 @@ def init_simulation(
     _fps: int,
     _trajectory_path: pathlib.Path,
     from_file: bool = True,
+    model: Any = None,
 ) -> Any:
     """Initialize geometry.
 
@@ -465,7 +466,7 @@ def init_simulation(
         geometry_closed = build_geometry(accessible_areas)
     # areas = build_areas(destinations, labels)
     simulation = jps.Simulation(
-        model=jps.CollisionFreeSpeedModelV3(),
+        model=model or jps.CollisionFreeSpeedModelV3(),
         geometry=geometry_closed,
         dt=_time_step,
         trajectory_writer=jps.SqliteTrajectoryWriter(

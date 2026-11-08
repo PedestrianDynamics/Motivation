@@ -40,6 +40,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--desired-speeds", default="1.2")
     parser.add_argument("--agent-buffers", default="0")
     parser.add_argument("--seeds", default="101,102,103")
+    parser.add_argument("--static-params", type=Path,
+                        help="Dakota result JSON; static arm on CFSM V2 with its own T, v0 (no grid).")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--tag", default="", help="Suffix for the output CSV.")
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "build" / "croma_replica")
@@ -47,11 +49,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def replica(job: tuple) -> dict:
-    run, mode, time_gap, speed, buffer, seed, out_dir = job
-    out = out_dir / mode / f"{run}_T{time_gap}_v{speed}_b{buffer}_s{seed}.sqlite"
+    run, mode, time_gap, speed, buffer, seed, out_dir, static_params = job
+    if static_params is not None:
+        out = out_dir / f"V2_{static_params.stem}" / f"{run}_s{seed}.sqlite"
+        overrides = ["--static-params", str(static_params)]
+    else:
+        out = out_dir / mode / f"{run}_T{time_gap}_v{speed}_b{buffer}_s{seed}.sqlite"
+        overrides = ["--time-gap", str(time_gap), "--desired-speed", str(speed),
+                     "--agent-buffer", str(buffer)]
     cmd = [sys.executable, str(PROJECT_ROOT / "scripts" / "croma_replica.py"), "--run", run,
-           "--mode", mode, "--time-gap", str(time_gap), "--desired-speed", str(speed),
-           "--agent-buffer", str(buffer), "--seed", str(seed),
+           "--mode", mode, *overrides, "--seed", str(seed),
            "--after-open", str(DISCHARGE_WINDOW_S), "--output", str(out)]
     proc = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=PROJECT_ROOT)
     if proc.returncode != 0:  # e.g. an agent pushed through a wall; counted, not measured
@@ -75,20 +82,23 @@ def main() -> None:
     speeds = [float(v) for v in args.desired_speeds.split(",")]
     buffers = [float(b) for b in args.agent_buffers.split(",")]
     seeds = [int(s) for s in args.seeds.split(",")]
-    jobs = [(run, args.mode, gap, speed, buffer, seed, args.output_dir)
+    if args.static_params is not None:  # T and v0 come from the file
+        gaps, speeds, buffers = [None], [None], [None]
+    jobs = [(run, args.mode, gap, speed, buffer, seed, args.output_dir, args.static_params)
             for run, gap, speed, buffer, seed in itertools.product(BLANK_RUNS, gaps, speeds, buffers, seeds)]
     with ProcessPoolExecutor(args.workers) as pool:
         records = list(pool.map(replica, jobs))
     table = pd.DataFrame(records)
     table["condition"] = table["run"].map(BLANK_RUNS)
-    out = args.output_dir / f"grid_{args.mode}_{args.tag}.csv" if args.tag else args.output_dir / f"grid_{args.mode}.csv"
+    stem = f"V2_{args.static_params.stem}" if args.static_params is not None else args.mode
+    out = args.output_dir / f"grid_{stem}_{args.tag}.csv" if args.tag else args.output_dir / f"grid_{stem}.csv"
     table.to_csv(out, index=False)
     cols = ["n_at_open", "depth_med", "frac_front3m", "rho_entry_rank", "rho_rank_area",
             "discharge_60s"]
     ok = table[table["status"] == "ok"]
     keys = ["condition", "time_gap", "desired_speed", "agent_buffer"]
-    print(ok.groupby(keys)[cols].mean().round(2).to_string())
-    print(table.groupby(keys)["status"].apply(lambda s: (s == "failed").sum()).rename("failed").to_string())
+    print(ok.groupby(keys, dropna=False)[cols].mean().round(2).to_string())
+    print(table.groupby(keys, dropna=False)["status"].apply(lambda s: (s == "failed").sum()).rename("failed").to_string())
     print(f"Wrote {out}")
 
 
