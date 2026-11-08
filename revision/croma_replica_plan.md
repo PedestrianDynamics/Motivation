@@ -168,3 +168,26 @@ discharge, and all nM discharges are too slow.
   4–7 straddle the steep step of the mapping (buffer 1.3 → 0.1 m and v0
   0.7 → 2.6 m/s between V 4 and 5.5), and value predicts advance over
   entry order with ρ 0.68. EVP weakens this link (ρ 0.11–0.20).
+
+## Fourth amendment (2026-11-08, before the low-anchor grid was run)
+
+The nM failure lies in the low anchors (previous section), so the fit
+is widened to the three parameters that set nM behaviour, with the same
+grid for every arm, and nM discharge becomes a fit target.
+
+- Grid: standing distance ∈ {1.0, 1.3, 1.6, 2.0} m × desired speed
+  ∈ {0.6, 0.8, 1.0, 1.2} m/s × neighbour strength ∈ {0.1, 0.3, 0.5}.
+  V-only and EVP vary the low anchors (buffer, desired speed, strength;
+  normal and high unchanged), fitted on nM only, and are run on hM once
+  at the selected point. The static arm varies agent buffer, normal_v_0
+  and a_ped: on nM with this grid, on hM with buffer ∈ {0.1, 0.2, 0.3,
+  0.5} and the same speed and strength values.
+- Score per condition, mean over its two blank runs and seeds:
+  |ln(depth_sim/depth_exp)| + |front_sim − front_exp|
+  + |ln(discharge_sim/discharge_exp)|.
+- The static arm's hM fit now also uses hM discharge. For V-only and
+  EVP every hM measure stays held out. Entry–crossing ρ and rank–area ρ
+  stay held out in every arm and condition.
+- Changing a low anchor reshapes the whole logistic curve, so it also
+  moves hM agents (at V = 5.5, v0 2.2 m/s with low anchor 0.6 against
+  3.6 m/s with 1.0). That is part of the prediction, not corrected.
