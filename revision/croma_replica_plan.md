@@ -146,3 +146,25 @@ V 0.35, EVP 0.31. Held out (experiment in brackets):
 V-only predicts the hM measures best from the nM fit; the EVP dynamics
 make them worse. No arm reproduces nM ordering together with nM
 discharge, and all nM discharges are too slow.
+
+## Why the motivation arms reorder nM (2026-11-08)
+
+`scripts/croma_value_rank.py`, `scripts/croma_nm_factorial.py`.
+
+- The mapping is saturated in nM. Values 1–3 give motivation 0.21–0.64,
+  where every agent gets buffer 1.3 m (the low anchor), v0 0.50–0.52 m/s,
+  T 1.5–1.9 s and neighbour strength 0.10–0.13. The nM agents are
+  effectively identical, and value does not predict rank at opening
+  (ρ −0.04 to 0.01 in V, −0.06 to −0.02 in EVP).
+- A static replica with these values reproduces the V arm in nM:
+  entry–crossing ρ 0.35–0.37 (V 0.43–0.44), discharge 12 (V 13).
+  One at a time from the static arm at buffer 1.3 m (ρ 0.84–0.95,
+  discharge 30): v0 0.5 gives ρ 0.64–0.68 and discharge 15; neighbour
+  strength 0.1 gives ρ 0.65–0.67 and a crowd 10–15 m deep; T 1.9 s
+  changes neither.
+- The nM failure is therefore a property of the low anchors of the
+  mapping (v0 0.5 m/s, strength 0.1), not of motivation or its dynamics.
+- In hM the V arm's overtaking does come from heterogeneity: values
+  4–7 straddle the steep step of the mapping (buffer 1.3 → 0.1 m and v0
+  0.7 → 2.6 m/s between V 4 and 5.5), and value predicts advance over
+  entry order with ρ 0.68. EVP weakens this link (ρ 0.11–0.20).
