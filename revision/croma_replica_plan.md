@@ -191,3 +191,31 @@ grid for every arm, and nM discharge becomes a fit target.
 - Changing a low anchor reshapes the whole logistic curve, so it also
   moves hM agents (at V = 5.5, v0 2.2 m/s with low anchor 0.6 against
   3.6 m/s with 1.0). That is part of the prediction, not corrected.
+
+## Result of the low-anchor fit (2026-11-08)
+
+`scripts/croma_anchor_fit.py`, `build/croma_anchor_fit/`, 1164 replicas,
+none failed. All three arms select the same nM point: buffer 1.0 m,
+desired speed 1.2 m/s, strength 0.1. Speed and strength sit at the grid
+edge; for V and EVP a low speed anchor above the normal anchor (1.2) is
+not a valid mapping, so speed cannot go higher without changing the
+normal anchor too. nM scores: EVP 0.60, static 0.75, V 0.80.
+
+nM (fitted on shape and discharge; experiment in brackets): depth
+8.7–11.6 m (9.8, 13.9), entry–crossing ρ 0.67–0.79 in every arm
+(0.81, 0.99), discharge 29–38 (44–46). The nM over-reordering is
+largely gone in every arm; nM discharge is still too slow everywhere.
+
+hM (static fitted per condition: buffer 0.1, v0 1.2, a_ped 0.5;
+V and EVP predicted from the nM point):
+
+| measure            | static    | V         | EVP       | experiment |
+|--------------------|-----------|-----------|-----------|------------|
+| depth [m]          | 2.98–3.03 | 2.84      | 2.95–3.14 | 3.15–3.30  |
+| entry–crossing ρ   | 0.91      | 0.61–0.62 | 0.32–0.41 | 0.46–0.66  |
+| rank–area ρ        | −0.15–−0.12 | 0.06–0.07 | 0.54–0.59 | 0.42–0.51 |
+| discharge 60 s     | 48–49     | 79–80     | 86–88     | 63         |
+
+The static arm cannot reorder hM or produce the rank–area gradient even
+when fitted on hM. V-only predicts hM overtaking, EVP predicts the hM
+rank–area gradient, and both discharge hM too fast.
