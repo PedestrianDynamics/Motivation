@@ -121,3 +121,28 @@ configured 1.0 s, so discharge stays held out.
   three seeds: |ln(depth_sim / depth_exp)| + |front_sim − front_exp|.
 - Held out from selection: entry–crossing ρ, rank–area ρ, discharge,
   and every hM measure of V-only and EVP.
+
+## Result of the standing-distance fit (2026-11-08)
+
+`scripts/croma_fit_select.py` on `build/croma_fit/`. Deviation, made
+after seeing the first grid: the static nM optimum sat at the edge
+(1.0 m) while the motivation arms could reach 1.6 m, so the static
+buffer grid was extended to 1.3, 1.6 and 2.0 m. Its optimum is still at
+the edge (2.0 m); the selected values are static nM 2.0 / hM 0.1,
+V low anchor 1.3, EVP low anchor 1.6 (edge; scores flat from 1.0).
+
+Shape (fitted): every arm reaches hM shape; nM scores static 0.43,
+V 0.35, EVP 0.31. Held out (experiment in brackets):
+
+- nM entry–crossing ρ: static 0.89–0.90 (0.81–0.99), V 0.43–0.44,
+  EVP 0.28–0.40. Both motivation arms reorder nM far too much.
+- hM entry–crossing ρ: static 0.91 (0.46–0.66), V 0.46–0.50, EVP
+  0.00–0.03. Only V-only reproduces hM overtaking.
+- hM rank–area ρ: static −0.12 to −0.15 (0.42–0.51), V 0.34–0.35,
+  EVP 0.06–0.16.
+- Discharge in 60 s: nM static 27, V 13, EVP 13–22 (44–46);
+  hM static 48–49, V 74–75, EVP 59–75 (63).
+
+V-only predicts the hM measures best from the nM fit; the EVP dynamics
+make them worse. No arm reproduces nM ordering together with nM
+discharge, and all nM discharges are too slow.

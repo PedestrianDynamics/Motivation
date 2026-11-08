@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--time-gaps", default="0.3,0.5,0.8,1.0,1.3,1.6,2.0")
     parser.add_argument("--desired-speeds", default="1.2")
     parser.add_argument("--agent-buffers", default="0")
+    parser.add_argument("--buffer-lows", default="", help="Low buffer anchors (V, PVE); default: config.")
     parser.add_argument("--seeds", default="101,102,103")
     parser.add_argument("--static-params", type=Path,
                         help="Dakota result JSON; static arm on CFSM V2 with its own T, v0 (no grid).")
@@ -49,14 +50,17 @@ def parse_args() -> argparse.Namespace:
 
 
 def replica(job: tuple) -> dict:
-    run, mode, time_gap, speed, buffer, seed, out_dir, static_params = job
+    run, mode, time_gap, speed, buffer, buffer_low, seed, out_dir, static_params = job
     if static_params is not None:
         out = out_dir / f"V2_{static_params.stem}" / f"{run}_s{seed}.sqlite"
         overrides = ["--static-params", str(static_params)]
     else:
-        out = out_dir / mode / f"{run}_T{time_gap}_v{speed}_b{buffer}_s{seed}.sqlite"
+        low = "" if buffer_low is None else f"_bl{buffer_low}"
+        out = out_dir / mode / f"{run}_T{time_gap}_v{speed}_b{buffer}{low}_s{seed}.sqlite"
         overrides = ["--time-gap", str(time_gap), "--desired-speed", str(speed),
                      "--agent-buffer", str(buffer)]
+        if buffer_low is not None:
+            overrides += ["--buffer-low", str(buffer_low)]
     cmd = [sys.executable, str(PROJECT_ROOT / "scripts" / "croma_replica.py"), "--run", run,
            "--mode", mode, *overrides, "--seed", str(seed),
            "--after-open", str(DISCHARGE_WINDOW_S), "--output", str(out)]
@@ -64,7 +68,8 @@ def replica(job: tuple) -> dict:
     if proc.returncode != 0:  # e.g. an agent pushed through a wall; counted, not measured
         error = (proc.stderr.strip().splitlines() or ["?"])[-1]
         return {"run": run, "mode": mode, "seed": seed, "time_gap": time_gap,
-                "desired_speed": speed, "agent_buffer": buffer, "status": "failed", "error": error[:160]}
+                "desired_speed": speed, "agent_buffer": buffer, "buffer_low": buffer_low,
+                "status": "failed", "error": error[:160]}
     record = json.loads(out.with_suffix(".json").read_text())
     record["status"] = "ok"
     with sqlite3.connect(f"file:{out}?mode=ro", uri=True) as con:
@@ -82,10 +87,12 @@ def main() -> None:
     speeds = [float(v) for v in args.desired_speeds.split(",")]
     buffers = [float(b) for b in args.agent_buffers.split(",")]
     seeds = [int(s) for s in args.seeds.split(",")]
+    lows = [float(b) for b in args.buffer_lows.split(",")] if args.buffer_lows else [None]
     if args.static_params is not None:  # T and v0 come from the file
         gaps, speeds, buffers = [None], [None], [None]
-    jobs = [(run, args.mode, gap, speed, buffer, seed, args.output_dir, args.static_params)
-            for run, gap, speed, buffer, seed in itertools.product(BLANK_RUNS, gaps, speeds, buffers, seeds)]
+    jobs = [(run, args.mode, gap, speed, buffer, low, seed, args.output_dir, args.static_params)
+            for run, gap, speed, buffer, low, seed
+            in itertools.product(BLANK_RUNS, gaps, speeds, buffers, lows, seeds)]
     with ProcessPoolExecutor(args.workers) as pool:
         records = list(pool.map(replica, jobs))
     table = pd.DataFrame(records)
@@ -96,7 +103,7 @@ def main() -> None:
     cols = ["n_at_open", "depth_med", "frac_front3m", "rho_entry_rank", "rho_rank_area",
             "discharge_60s"]
     ok = table[table["status"] == "ok"]
-    keys = ["condition", "time_gap", "desired_speed", "agent_buffer"]
+    keys = ["condition", "time_gap", "desired_speed", "agent_buffer", "buffer_low"]
     print(ok.groupby(keys, dropna=False)[cols].mean().round(2).to_string())
     print(table.groupby(keys, dropna=False)["status"].apply(lambda s: (s == "failed").sum()).rename("failed").to_string())
     print(f"Wrote {out}")

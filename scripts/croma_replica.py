@@ -56,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--time-gap", type=float, help="Override normal_time_gap.")
     parser.add_argument("--desired-speed", type=float, help="Override normal_v_0.")
     parser.add_argument("--agent-buffer", type=float, help="Override agent_buffer.")
+    parser.add_argument("--buffer-low", type=float, help="Override the low buffer anchor (V, PVE).")
     parser.add_argument("--static-params", type=Path,
                         help="Dakota result JSON: run the static arm on CFSM V2 with its params.")
     parser.add_argument("--seed", type=int, default=101)
@@ -86,6 +87,8 @@ def load_config(args: argparse.Namespace, n_agents: int) -> dict:
         data["motivation_parameters"]["normal_v_0"] = args.desired_speed
     if args.agent_buffer is not None:
         data["motivation_parameters"]["agent_buffer"] = args.agent_buffer
+    if args.buffer_low is not None:
+        data["motivation_parameters"]["buffer_anchors"]["low"] = args.buffer_low
     return data
 
 
@@ -207,6 +210,7 @@ def run(args: argparse.Namespace) -> dict:
         "time_gap": templates[0].time_gap if v2 else data["motivation_parameters"]["normal_time_gap"],
         "desired_speed": templates[0].desired_speed if v2 else data["motivation_parameters"]["normal_v_0"],
         "agent_buffer": None if v2 else data["motivation_parameters"]["agent_buffer"],
+        "buffer_low": data["motivation_parameters"]["buffer_anchors"]["low"],
         "entries": len(entries), "added": entrances.next_id - 1, "dropped": entrances.dropped,
         "door_open_s": t_open, "end_s": simulation.elapsed_time(),
         "remaining": simulation.agent_count(),
