@@ -219,3 +219,28 @@ V and EVP predicted from the nM point):
 The static arm cannot reorder hM or produce the rank–area gradient even
 when fitted on hM. V-only predicts hM overtaking, EVP predicts the hM
 rank–area gradient, and both discharge hM too fast.
+
+## Waiting-phase time series (exploratory, not part of the fit)
+
+`scripts/croma_timeseries.py --replica-dir build/croma_anchor_fit`,
+`scripts/plot_croma_timeseries.py`, `build/croma_timeseries/`. Measured
+every 1 s up to door opening on the selected points of the low-anchor
+fit, seeds 101–103. Stop-then-advance: a person stands still
+(< 0.1 m/s) for 5 s and afterwards moves more than 3 m forward before
+the door opens. Defined after looking at the experimental series, so it
+is descriptive, not a preregistered test.
+
+| run (cond.)  | experiment | static | V   | EVP |
+|--------------|------------|--------|-----|-----|
+| 1C060 (nM)   | 1 %        | 0 %    | 3 % | 5 %  |
+| 2C020 (nM)   | 0 %        | 3 %    | 7 % | 12 % |
+| 2C070 (hM)   | 0 %        | 0 %    | 0 % | 33 % |
+| 2C120 (hM)   | 45 %       | 0 %    | 0 % | 34 % |
+
+The runs not in the paper show it too: 2C130 38 %, 2C150 47 % (both
+nM, norm70), 1C070 1 %, 2C080 3 %. Only EVP produces it among the
+models, through the cascade of rank and distance changes. EVP shows it
+in both hM runs, the experiment only in 2C120, and EVP's hM crowds
+stretch further (about 19 m against 9–12 m) and compact later
+(2C070) than observed. nM 2C020 stays about 13.5 m deep in the
+experiment; every arm settles at about 9 m.
