@@ -38,7 +38,9 @@ def parse_args() -> argparse.Namespace:
 
 def span(values: pd.Series, fmt: str) -> str:
     lo, hi = (fmt.format(v).replace("-", "$-$") for v in (values.min(), values.max()))
-    return lo if lo == hi else f"{lo}--{hi}"
+    if lo == hi:
+        return lo
+    return f"{lo} to {hi}" if lo.startswith("$-$") else f"{lo}--{hi}"
 
 
 def main() -> None:
