@@ -244,3 +244,33 @@ in both hM runs, the experiment only in 2C120, and EVP's hM crowds
 stretch further (about 19 m against 9–12 m) and compact later
 (2C070) than observed. nM 2C020 stays about 13.5 m deep in the
 experiment; every arm settles at about 9 m.
+
+## What sets the discharge (2026-11-09, diagnostic, not a fit)
+
+`scripts/croma_discharge_factorial.py`, `build/croma_discharge/`. From
+the selected low-anchor point, one mapping anchor changed at a time, V
+and EVP, three seeds; reference values from `build/croma_anchor_fit/`.
+Built on jupedsim 1.4.2 plus the V3 wall fix, source
+`jupedsim-rls14` at f6977e1 (branch v3-no-reverse-into-wall).
+
+| condition | anchor (reference)  | levels       | V discharge   | EVP discharge | experiment |
+|-----------|---------------------|--------------|---------------|---------------|------------|
+| nM        | low time gap (2.0)  | 1.5, 1.2, 1.0| 29 → 29–32    | 34 → 35–37    | 44–46      |
+| hM        | high time gap (0.01)| 0.1, 0.3, 0.5| 80 → 78–85    | 87 → 84–88    | 63         |
+| hM        | high v0 (3.6)       | 2.4, 1.8     | 80 → 72, 67   | 87 → 83, 78   | 63         |
+
+- nM discharge does not depend on the time gap. All arms, including
+  the static one, select buffer 1.0 m on nM to match the standing
+  depth, and that buffer also throttles the flow after opening (static
+  with buffer 0.1 m and T 1.0 s discharges about 48). In the experiment
+  the nM crowd waits widely spaced and still discharges at 44–46: the
+  spacing changes when the door opens. No arm changes anything at
+  opening, so no anchor in the current design can fit nM depth and nM
+  discharge together.
+- hM discharge does not depend on the high time gap; the high desired
+  speed sets it. The hM levels were run to find the mechanism only:
+  hM stays held out for V and EVP, so no hM level is selected.
+- Consequence: no fifth amendment of the anchors. Options are to report
+  the nM and hM discharge misses as such, to take a high desired-speed
+  anchor from outside CROMA, or to let expectancy respond to the door
+  opening (a model change).

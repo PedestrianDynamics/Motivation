@@ -60,6 +60,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--v0-low", type=float, help="Override the low desired-speed anchor (V, PVE).")
     parser.add_argument("--strength-low", type=float,
                         help="Override the low neighbour-strength anchor (V, PVE).")
+    parser.add_argument("--v0-high", type=float, help="Override the high desired-speed anchor (V, PVE).")
+    parser.add_argument("--time-gap-low", type=float, help="Override the low time-gap anchor (V, PVE).")
+    parser.add_argument("--time-gap-high", type=float, help="Override the high time-gap anchor (V, PVE).")
     parser.add_argument("--a-ped", type=float, help="Override a_ped (static neighbour strength).")
     parser.add_argument("--static-params", type=Path,
                         help="Dakota result JSON: run the static arm on CFSM V2 with its params.")
@@ -97,6 +100,12 @@ def load_config(args: argparse.Namespace, n_agents: int) -> dict:
         data["motivation_parameters"]["desired_speed_anchors"]["low"] = args.v0_low
     if args.strength_low is not None:
         data["motivation_parameters"]["strength_neighbor_repulsion_anchors"]["low"] = args.strength_low
+    if args.v0_high is not None:
+        data["motivation_parameters"]["desired_speed_anchors"]["high"] = args.v0_high
+    if args.time_gap_low is not None:
+        data["motivation_parameters"]["time_gap_anchors"]["low"] = args.time_gap_low
+    if args.time_gap_high is not None:
+        data["motivation_parameters"]["time_gap_anchors"]["high"] = args.time_gap_high
     if args.a_ped is not None:
         data["velocity_init_parameters"]["a_ped"] = args.a_ped
     return data
@@ -223,6 +232,9 @@ def run(args: argparse.Namespace) -> dict:
         "buffer_low": data["motivation_parameters"]["buffer_anchors"]["low"],
         "v0_low": data["motivation_parameters"]["desired_speed_anchors"]["low"],
         "strength_low": data["motivation_parameters"]["strength_neighbor_repulsion_anchors"]["low"],
+        "v0_high": data["motivation_parameters"]["desired_speed_anchors"]["high"],
+        "time_gap_low": data["motivation_parameters"]["time_gap_anchors"]["low"],
+        "time_gap_high": data["motivation_parameters"]["time_gap_anchors"]["high"],
         "a_ped": data["velocity_init_parameters"]["a_ped"],
         "entries": len(entries), "added": entrances.next_id - 1, "dropped": entrances.dropped,
         "door_open_s": t_open, "end_s": simulation.elapsed_time(),
