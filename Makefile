@@ -18,7 +18,7 @@ MODELS   := se v p pve base_model
 
 export MOTIVATION_SCENARIOS_DIR := $(abspath $(SCEN))
 
-.PHONY: paper-figures simulations aggregate schematics trajectories croma testing seed-figures check manifest compare install-figures
+.PHONY: paper-figures simulations aggregate schematics trajectories croma testing replica seed-figures check manifest compare install-figures
 
 paper-figures: simulations aggregate schematics trajectories croma testing seed-figures check manifest
 
@@ -51,6 +51,19 @@ testing: | $(FIG)
 	done
 	$(PY) scripts/plot_sim_testing_trajectories.py --runs-dir $(OUT)/testing_runs --output $(FIG)/sim_testing_trajectories_4panel.png
 	$(PY) scripts/crowd_shape.py --traj-dir $(CROMA) --runs-dir $(OUT)/testing_runs --output $(OUT)/crowd_shape.csv
+
+# CROMA replica: fit of the three models, held-out table and waiting-phase
+# time series. Needs a jupedsim release with the V3 wall fix (PR #1721);
+# not yet part of paper-figures. REPLICA_PY may point to such a build.
+REPLICA_PY ?= $(PY)
+replica: | $(FIG)
+	$(REPLICA_PY) scripts/croma_waiting.py --traj-dir $(CROMA) --output $(OUT)/croma_waiting.csv
+	for mode in BASE_MODEL V PVE; do \
+		$(REPLICA_PY) scripts/croma_anchor_fit.py --mode $$mode --experiment $(OUT)/croma_waiting.csv --output-dir $(OUT)/croma_anchor_fit || exit 1; \
+	done
+	$(PY) scripts/croma_results_table.py --fit-dir $(OUT)/croma_anchor_fit --experiment $(OUT)/croma_waiting.csv --output $(FIG)/croma_heldout_table.tex
+	$(PY) scripts/croma_timeseries.py --traj-dir $(CROMA) --replica-dir $(OUT)/croma_anchor_fit --output-dir $(OUT)/croma_timeseries
+	$(PY) scripts/plot_croma_timeseries.py --input-dir $(OUT)/croma_timeseries --output-dir $(FIG)
 
 # The paper shows seed 101 as the representative single-seed figure.
 seed-figures: | $(FIG)

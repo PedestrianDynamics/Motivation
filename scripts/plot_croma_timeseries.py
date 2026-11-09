@@ -6,6 +6,7 @@ lines the mean over seeds with the seed range shaded. Each panel states the
 fraction of persons who stood still for 5 s and then advanced more than 3 m.
 
   python scripts/plot_croma_timeseries.py --input-dir build/croma_timeseries
+writes croma_depth_timeseries.pdf/.png to the paper's figures/ directory.
 """
 
 from __future__ import annotations
@@ -25,6 +26,11 @@ def parse_args():
     parser.add_argument(
         "--input-dir", type=Path, default=PROJECT_ROOT / "build" / "croma_timeseries"
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=PROJECT_ROOT.parent / "motivation-for-springer" / "figures",
+    )
     parser.add_argument("--t-min", type=float, default=-90.0)
     return parser.parse_args()
 
@@ -34,7 +40,7 @@ def main():
 
     Saves
     -----
-    croma_depth_timeseries.pdf and .png in the input directory.
+    croma_depth_timeseries.pdf and .png in the output directory.
     """
     args = parse_args()
 
@@ -177,7 +183,7 @@ def main():
     # --- Save ---
     for ext in ("pdf", "png"):
         fig.savefig(
-            args.input_dir / f"croma_depth_timeseries.{ext}",
+            args.output_dir / f"croma_depth_timeseries.{ext}",
             dpi=150,
             bbox_inches="tight",
         )
