@@ -53,7 +53,7 @@ def main() -> None:
         " & & Static & Fixed value & EVP & Experiment \\\\",
         "\\midrule",
     ]
-    for cond, label in [("nM", "nM (fitted)"), ("hM", "hM (predicted)")]:
+    for cond, label in [("nM", "nM"), ("hM", "hM")]:
         lines.append(f"\\multicolumn{{6}}{{@{{}}l}}{{\\emph{{{label}}}}} \\\\")
         for key, name, fmt in MEASURES:
             mark = "" if key in FITTED else "$^{\\dagger}$"

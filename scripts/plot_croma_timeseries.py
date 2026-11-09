@@ -64,7 +64,7 @@ def main():
         "experiment": {"label": "Experiment", "color": "black", "ls": "-", "lw": 2.4},
         "BASE_MODEL": {"label": "Static", "color": "grey", "ls": ":", "lw": 1.8},
         "V": {
-            "label": "Static heterogeneity (V)",
+            "label": "Fixed value",
             "color": pal[2],
             "ls": "--",
             "lw": 1.8,
@@ -157,24 +157,6 @@ def main():
         edgecolor="lightgrey",
         labelcolor="dimgrey",
         fontsize=9,
-    )
-    peak = (
-        series[series["run"] == "2C120"]
-        .groupby(["source", "t"])["depth_med"]
-        .mean()
-        .groupby("source")
-        .max()
-    )
-    fig.text(
-        0.99,
-        0.01,
-        "Among the models only EVP lets persons stand and then advance; in 2C120 its crowd "
-        f"stretches to {peak['PVE']:.0f} m before compacting (experiment {peak['experiment']:.0f} m)",
-        ha="right",
-        va="bottom",
-        fontsize=9,
-        color="dimgrey",
-        style="italic",
     )
     for ax in axes:
         for spine in ax.spines.values():
