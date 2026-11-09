@@ -215,8 +215,8 @@ def make_panels_figure(
             sm,
             ax=axes,
             label="per-agent mean motivation",
-            shrink=0.7,
-            pad=0.01,
+            shrink=0.6,
+            pad=0.04,
         )
     return fig
 
