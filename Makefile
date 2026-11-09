@@ -18,7 +18,7 @@ MODELS   := se v p pve base_model
 
 export MOTIVATION_SCENARIOS_DIR := $(abspath $(SCEN))
 
-.PHONY: paper-figures simulations aggregate schematics trajectories croma testing replica seed-figures check manifest compare install-figures
+.PHONY: paper-figures simulations aggregate schematics trajectories croma testing replica two-exit seed-figures check manifest compare install-figures
 
 paper-figures: simulations aggregate schematics trajectories croma testing seed-figures check manifest
 
@@ -64,6 +64,11 @@ replica: | $(FIG)
 	$(PY) scripts/croma_results_table.py --fit-dir $(OUT)/croma_anchor_fit --experiment $(OUT)/croma_waiting.csv --output $(FIG)/croma_heldout_table.tex
 	$(PY) scripts/croma_timeseries.py --traj-dir $(CROMA) --replica-dir $(OUT)/croma_anchor_fit --output-dir $(OUT)/croma_timeseries
 	$(PY) scripts/plot_croma_timeseries.py --input-dir $(OUT)/croma_timeseries --output-dir $(FIG)
+
+# Two-exit demonstration: distance and rank per goal (Appendix).
+two-exit: | $(FIG)
+	$(REPLICA_PY) scripts/two_exit_demo.py --seed 101 --output-dir $(OUT)/two_exit_demo
+	$(PY) scripts/plot_two_exit_demo.py --input $(OUT)/two_exit_demo/two_exit_seed101_motivation.csv --output-dir $(FIG)
 
 # The paper shows seed 101 as the representative single-seed figure.
 seed-figures: | $(FIG)
