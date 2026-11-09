@@ -274,3 +274,8 @@ Built on jupedsim 1.4.2 plus the V3 wall fix, source
   the nM and hM discharge misses as such, to take a high desired-speed
   anchor from outside CROMA, or to let expectancy respond to the door
   opening (a model change).
+
+Decision (2026-11-09): option 1. The fit stays as selected in the
+fourth amendment. The nM and hM discharge misses are reported as
+limitations; a response of expectancy to the door opening is named as
+the next model step, not implemented in this revision.
