@@ -162,7 +162,7 @@ def build_heatmap(
 
 
 def _gaussian_kernel1d(sigma: float) -> np.ndarray:
-    radius = max(1, int(round(3.0 * sigma)))
+    radius = max(1, round(3.0 * sigma))
     x = np.arange(-radius, radius + 1, dtype=float)
     kernel = np.exp(-(x**2) / (2.0 * sigma**2))
     kernel /= kernel.sum()
@@ -217,18 +217,12 @@ def main() -> None:
     }
 
     nmodels = len(heatmaps)
+    plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.labelsize": 15})
     figure, axes = plt.subplots(1, nmodels, figsize=(4.5 * nmodels, 5), squeeze=False)
+    finite_all = np.concatenate([h[np.isfinite(h)] for h in heatmaps.values()])
+    vmin, vmax = (0.0, 1.0) if finite_all.size == 0 else (0.0, float(finite_all.max()))
     for axis, (model, heatmap) in zip(axes[0], heatmaps.items()):
         finite = heatmap[np.isfinite(heatmap)]
-        if finite.size == 0:
-            vmin = 0.0
-            vmax = 1.0
-        elif float(finite.max()) - float(finite.min()) < 1e-12:
-            vmin = float(finite.min()) - 0.05
-            vmax = float(finite.max()) + 0.05
-        else:
-            vmin = float(finite.min())
-            vmax = float(finite.max())
         image = axis.imshow(
             heatmap,
             origin="lower",
@@ -244,8 +238,8 @@ def main() -> None:
             axis.set_title(f"{model}\n[{float(finite.min()):.2f}, {float(finite.max()):.2f}]")
         axis.set_xlabel("x [m]")
         axis.set_ylabel("y [m]")
-        figure.colorbar(image, ax=axis, label="mean motivation")
     figure.tight_layout()
+    figure.colorbar(image, ax=axes[0].tolist(), label="mean motivation", fraction=0.02, pad=0.01)
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

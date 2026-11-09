@@ -97,12 +97,13 @@ def plot_panel(ax: Axes, data: np.ndarray, title: str) -> None:
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_aspect("equal")
-    ax.legend(loc="lower right", fontsize=7, frameon=False)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=11, frameon=False)
 
 
 def main() -> None:
     args = parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.labelsize": 15})
 
     fig, axes = plt.subplots(1, 4, figsize=(14, 8), constrained_layout=True)
 

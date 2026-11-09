@@ -224,6 +224,7 @@ def make_panels_figure(
 def main() -> None:
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.labelsize": 15})
 
     frames_by_model: dict[str, pd.DataFrame] = {}
     for model in MODELS:
@@ -236,7 +237,7 @@ def main() -> None:
         plot_uniform_panel,
     )
     uniform_path = args.output_dir / f"{args.stem}_uniform.png"
-    uniform_fig.savefig(uniform_path, dpi=200)
+    uniform_fig.savefig(uniform_path, dpi=200, bbox_inches="tight")
     print(f"Wrote {uniform_path}")
     plt.close(uniform_fig)
 
@@ -249,7 +250,7 @@ def main() -> None:
         cbar_norm=norm,
     )
     motivation_path = args.output_dir / f"{args.stem}_motivation.png"
-    motivation_fig.savefig(motivation_path, dpi=200)
+    motivation_fig.savefig(motivation_path, dpi=200, bbox_inches="tight")
     print(f"Wrote {motivation_path}")
     plt.close(motivation_fig)
 
