@@ -113,7 +113,7 @@ def plot_uniform_panel(ax: Axes, df: pd.DataFrame, title: str) -> None:
             grp["x"].to_numpy(),
             grp["y"].to_numpy(),
             color=UNIFORM_COLOR,
-            linewidth=0.6,
+            linewidth=0.3,
             alpha=0.7,
         )
     lp = last_positions(df)
@@ -121,10 +121,10 @@ def plot_uniform_panel(ax: Axes, df: pd.DataFrame, title: str) -> None:
         lp["x"],
         lp["y"],
         marker="o",
-        s=18,
+        s=6,
         facecolor=MARKER_COLOR,
         edgecolor="black",
-        linewidth=0.4,
+        linewidth=0.2,
         zorder=5,
     )
     ax.set_title(title)
@@ -146,7 +146,7 @@ def plot_motivation_panel(
             grp["x"].to_numpy(),
             grp["y"].to_numpy(),
             color=color,
-            linewidth=0.6,
+            linewidth=0.3,
             alpha=0.85,
         )
     lp = last_positions(df)
@@ -157,10 +157,10 @@ def plot_motivation_panel(
         lp["x"],
         lp["y"],
         marker="o",
-        s=18,
+        s=6,
         c=lp_colors,
         edgecolor="black",
-        linewidth=0.4,
+        linewidth=0.2,
         zorder=5,
     )
     ax.set_title(title)
@@ -191,7 +191,7 @@ def make_panels_figure(
     cbar_norm: Normalize | None = None,
 ) -> Figure:
     n = len(models)
-    fig, axes = plt.subplots(1, n, figsize=(3.2 * n, 7), constrained_layout=True)
+    fig, axes = plt.subplots(1, n, figsize=(1.1 * n, 3.4), constrained_layout=True)
     if n == 1:
         axes = [axes]
 
@@ -224,7 +224,7 @@ def make_panels_figure(
 def main() -> None:
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.labelsize": 15})
+    plt.rcParams.update({"font.size": 8, "axes.titlesize": 8, "axes.labelsize": 8})
 
     frames_by_model: dict[str, pd.DataFrame] = {}
     for model in MODELS:

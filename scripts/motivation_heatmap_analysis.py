@@ -217,8 +217,8 @@ def main() -> None:
     }
 
     nmodels = len(heatmaps)
-    plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.labelsize": 15})
-    figure, axes = plt.subplots(1, nmodels, figsize=(4.5 * nmodels, 5), squeeze=False)
+    plt.rcParams.update({"font.size": 8, "axes.titlesize": 8, "axes.labelsize": 8})
+    figure, axes = plt.subplots(1, nmodels, figsize=(1.05 * nmodels, 2.6), squeeze=False)
     finite_all = np.concatenate([h[np.isfinite(h)] for h in heatmaps.values()])
     vmin, vmax = (0.0, 1.0) if finite_all.size == 0 else (0.0, float(finite_all.max()))
     for axis, (model, heatmap) in zip(axes[0], heatmaps.items()):
@@ -237,7 +237,8 @@ def main() -> None:
         else:
             axis.set_title(f"{model}\n[{float(finite.min()):.2f}, {float(finite.max()):.2f}]")
         axis.set_xlabel("x [m]")
-        axis.set_ylabel("y [m]")
+        axis.xaxis.set_major_locator(plt.MaxNLocator(3))
+    axes[0][0].set_ylabel("y [m]")
     figure.tight_layout()
     figure.colorbar(image, ax=axes[0].tolist(), label="mean motivation", fraction=0.02, pad=0.01)
 
@@ -249,7 +250,7 @@ def main() -> None:
         else "motivation_heatmap_models.png"
     )
     output_path = output_dir / filename
-    figure.savefig(output_path, dpi=200)
+    figure.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close(figure)
     print(f"Wrote {output_path}")
 

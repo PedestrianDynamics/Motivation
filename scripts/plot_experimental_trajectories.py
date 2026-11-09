@@ -74,7 +74,7 @@ def plot_panel(ax: Axes, data: np.ndarray, title: str) -> None:
             xs[mask][order],
             ys[mask][order],
             color=TRAJ_COLOR,
-            linewidth=0.6,
+            linewidth=0.3,
             alpha=0.7,
         )
 
@@ -84,12 +84,11 @@ def plot_panel(ax: Axes, data: np.ndarray, title: str) -> None:
         snapshot[:, 2],
         snapshot[:, 3],
         marker="o",
-        s=18,
+        s=6,
         facecolor=MARKER_COLOR,
         edgecolor="black",
-        linewidth=0.4,
+        linewidth=0.2,
         zorder=5,
-        label=f"door opens (frame {t_open})",
     )
     ax.axhline(DOOR_Y, color="gray", linestyle="--", linewidth=0.6, alpha=0.6)
 
@@ -97,15 +96,15 @@ def plot_panel(ax: Axes, data: np.ndarray, title: str) -> None:
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_aspect("equal")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=11, frameon=False)
+    ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
 
 def main() -> None:
     args = parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.labelsize": 15})
+    plt.rcParams.update({"font.size": 8, "axes.titlesize": 8, "axes.labelsize": 8})
 
-    fig, axes = plt.subplots(1, 4, figsize=(14, 8), constrained_layout=True)
+    fig, axes = plt.subplots(1, 4, figsize=(5.2, 4.0), constrained_layout=True)
 
     for (label, stem, group), ax in zip(SCENARIOS, axes):
         traj_path = args.traj_dir / f"{stem}.txt"
